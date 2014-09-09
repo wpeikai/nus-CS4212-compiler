@@ -12,7 +12,6 @@ let alphanumunderscore = (lower_alpha|upper_alpha|digits|'_')
 let identifier = lower_alpha(alphanumunderscore)*
 let classname = upper_alpha(alphanumunderscore)*
 let intexp = ['1'-'9'](digits)*
-let boolean_literal = "true"|"false"
 let varidexp = lower_alpha+
 
 rule token = parse
@@ -21,12 +20,9 @@ rule token = parse
 | "+" { printf "PLUS\n"; PLUS }
 | "-" { printf "MINUS\n"; MINUS }
 | "*" { printf "MULTIPLY\n"; MULTIPLY }
-| "<" { printf "LOWER_OP\n"; LOWER_OP }
-| "<=" { printf "LOWER_EQ_OP\n"; LOWER_EQ_OP }
-| ">" { printf "HIGHER_OP\n"; HIGHER_OP }
-| ">=" { printf "HIGHER_EQ_OP\n"; HIGHER_EQ_OP }
 | "/" { printf "DIVIDE\n"; DIVIDE }
 | "^" { printf "CARET\n"; CARET }
+| "<" | "<=" | ">" | ">=" { printf "ARITH_OPERATOR\n"; ARITH_OPERATOR }
 | "(" { printf "LPAREN\n"; LPAREN }
 | ")" { printf "RPAREN\n"; RPAREN }
 | "[" { printf "LBRACE\n"; LBRACE }
@@ -38,15 +34,26 @@ rule token = parse
 | "!" { printf "EXCLAMATION_POINT \n"; EXCLAMATION_POINT }
 | "?" { printf "QUESTION_POINT \n"; QUESTION_POINT }
 | "=" { printf "EQ \n"; EQ }
-| ';' { printf "SEMICOLON \n"; SEMICOLON }
+| ";" { printf "SEMICOLON \n"; SEMICOLON }
+| ";" { printf "COLON \n"; COLON }
+| "&&" { printf "AND_OPERATOR \n"; AND_OPERATOR }
+| "||" { printf "OR_OPERATOR \n"; OR_OPERATOR }
 | "void" { printf "VOID_KEYWORD\n"; VOID_KEYWORD }
 | "main" { printf "MAIN_KEYWORD\n"; MAIN_KEYWORD }
+| "if" { printf "IF_KEYWORD\n"; IF_KEYWORD }
+| "else" { printf "ELSE_KEYWORD\n"; ELSE_KEYWORD }
+| "return" { printf "RETURN_KEYWORD\n"; RETURN_KEYWORD }
+| "while" { printf "WHILE_KEYWORD\n"; WHILE_KEYWORD }
+| "this" { printf "THIS_KEYWORD\n"; THIS_KEYWORD }
+| "new" { printf "NEW_KEYWORD\n"; NEW_KEYWORD }
 | "class" { printf "CLASS_KEYWORD \n"; CLASS_KEYWORD }
+| "readln" { printf "READLN_KEYWORD \n"; READLN_KEYWORD }
+| "println" { printf "PRINTLN_KEYWORD \n"; PRINTLN_KEYWORD }
+| "null" { printf "NULL_KEYWORD\n"; NULL_KEYWORD }
+| "true"|"false" { printf "BOOLEAN_LITERAL\n"; BOOLEAN_LITERAL }
 | identifier as id { printf "IDENTIFIER %s\n" id; IDENTIFIER }
 | classname as cname { printf "CLASSNAME %s\n" cname; CLASSNAME }
 | intexp as s { printf "INTLIT\n"; INTLIT (int_of_string s) }
-| boolean_literal { printf "BOOLEAN_LITERAL\n"; BOOLEAN_LITERAL }
-| "NULL" { printf "NULL\n"; NULL }
 | varidexp as v { printf "VARID %s \n" v; VARID v}
 | white { token lexbuf } (* ignore white space *)
 | eof { printf "RAAAAIIIISSEE\n"; exit 0}

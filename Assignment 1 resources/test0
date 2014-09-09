@@ -13,7 +13,7 @@ Can your compiler optimize it to a tail-recursive function?
 */
     Int computeFac(Int num) {
         Int num_aux;
-        if (num < 1) // shouldn’t it be num <= 1?
+        if (num <= 1) // shouldn’t it be num <= 1?
             num_aux = 1 ;
         else
             num_aux = num * (this.computeFac(num-1)) ;
