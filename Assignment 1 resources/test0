@@ -1,0 +1,22 @@
+class Factorial {
+    void main (Int a) {
+        println(new Fac().computeFac(a)) ;
+        return ;
+    }
+}
+
+class Fac {
+/* This is the factorial function that is not written
+in tail-recursive manner. (A tail recursive factorial
+function is expected to take in two parameters.)
+Can your compiler optimize it to a tail-recursive function?
+*/
+    Int computeFac(Int num) {
+        Int num_aux;
+        if (num < 1) // shouldn’t it be num <= 1?
+            num_aux = 1 ;
+        else
+            num_aux = num * (this.computeFac(num-1)) ;
+        return num_aux ;
+    }
+}
