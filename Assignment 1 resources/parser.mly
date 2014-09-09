@@ -3,11 +3,10 @@
 %}
 
 
-
 %token DOT
 %token ASSSIGN
 %token PLUS MINUS MULTIPLY DIVIDE CARET
-%token ARITH_OPERATOR
+%token RELATIVE_OPERATOR
 %token LPAREN RPAREN
 %token LBRACE RBRACE
 %token OPEN_BRACKET CLOSE_BRACKET
@@ -16,20 +15,21 @@
 %token VOID_KEYWORD MAIN_KEYWORD IF_KEYWORD ELSE_KEYWORD
 %token IF_KEYWORD RETURN_KEYWORD WHILE_KEYWORD THIS_KEYWORD 
 %token NEW_KEYWORD CLASS_KEYWORD READLN_KEYWORD PRINTLN_KEYWORD NULL_KEYWORD
+%token BOOLEAN_LITERAL
 %token IDENTIFIER
 %token CLASSNAME
-%token BOOLEAN_LITERAL
 
 
 %token <float> NUM
 %token <int> INTLIT
 %token <string> VARID
 
-%left NEG /* negation -- unary minus */
 %left PLUS MINUS
-%left MULT DIV
+%left MULTIPLY DIVIDE
+%right EXCLAMATION_POINT /* negation operator */
 %right CARET /* exponentiation */
-%right EQ /* assignment */
+%right ASSSIGN /* assignment */
+%right MINUS /* Negative operator */
 
 %start stmt
 %type <unit> stmt
