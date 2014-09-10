@@ -11,6 +11,7 @@ let parse =
       End_of_file -> exit 0 *)
 
 let parse =
+  print_string "begiiiin\n";
 	let channelf = open_in ("test0") in
 	let lexbuf = Lexing.from_channel channelf in
 		try

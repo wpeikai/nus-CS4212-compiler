@@ -1,5 +1,5 @@
 %{
-
+    open Jlite
 %}
 
 
@@ -17,7 +17,7 @@
 %token NEW_KEYWORD CLASS_KEYWORD READLN_KEYWORD PRINTLN_KEYWORD NULL_KEYWORD
 %token BOOLEAN_LITERAL
 %token IDENTIFIER
-%token CLASSNAME
+%token <string> CLASSNAME
 %token INT_KEYWORD BOOL_KEYWORD STRING_KEYWORD
 %token STRING_LITERAL
 
@@ -36,16 +36,15 @@
 %type <unit> program
 %%
 
-program: {}
-        |    mainclass classdeclkleene  {print_string "\n prgramm; ";}
+program: mainclass classdeclkleene  {print_string "mainprogram\n"}
 ;
 
-classdeclkleene:    {}
-        |       classdeclkleene classdecl   {}
+classdeclkleene:    {print_string "classdeclkleeneepty\n"}
+        |       classdeclkleene classdecl   {print_string "classdeclkleene classdecl\n"}
 ;
 
 mainclass:      CLASS_KEYWORD CLASSNAME LBRACKET VOID_KEYWORD
-                    MAIN_KEYWORD LPAREN fmllist RPAREN mdbody RBRACKET  {}
+                    MAIN_KEYWORD LPAREN fmllist RPAREN mdbody RBRACKET  {print_string "mainclass\n"}
 ;
 
 classdecl:      CLASS_KEYWORD CLASSNAME LBRACKET vardeclkleene
@@ -77,7 +76,7 @@ fmlrestkleene:  {}
 fmlrest:        COMMA typee IDENTIFIER  {}
 ;
 
-typee:           INT_KEYWORD {}
+typee:          INT_KEYWORD {}
         |       BOOL_KEYWORD    {}
         |       VOID_KEYWORD    {}
         |       CLASSNAME   {}

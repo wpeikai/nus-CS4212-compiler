@@ -57,7 +57,7 @@ rule token = parse
 | "true"|"false" { printf "BOOLEAN_LITERAL\n"; BOOLEAN_LITERAL }
 | string_literal { printf "STRING_LITERAL\n"; STRING_LITERAL }
 | identifier as id { printf "IDENTIFIER %s\n" id; IDENTIFIER }
-| classname as cname { printf "CLASSNAME %s\n" cname; CLASSNAME }
+| classname as cname { printf "CLASSNAME %s\n" cname; CLASSNAME cname}
 | intexp as s { printf "INTLIT\n"; INTLIT (int_of_string s) }
 | varidexp as v { printf "VARID %s \n" v; VARID v}
 | white { token lexbuf } (* ignore white space *)
@@ -74,17 +74,3 @@ and commentsmultiline = parse
   | _ { commentsmultiline lexbuf }
   | eof   { print_endline "commentsmultiline are not closed";
         raise End_of_file}
-
-{
-  let rec parse lexbuf =
-      let zz = token lexbuf in
-      (*print_newline zz;*) 
-      (* do nothing in this example *)
-      parse lexbuf
-  let mai () =
-    let lexbuf = Lexing.from_channel (open_in "test0") in
-    while true do
-      token lexbuf;
-    done
-  let _ = Printexc.print mai ()
-}
