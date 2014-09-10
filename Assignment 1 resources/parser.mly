@@ -6,7 +6,7 @@
 %token DOT
 %token ASSSIGN
 %token PLUS MINUS MULTIPLY DIVIDE CARET
-%token RELATIVE_OPERATOR
+%token <string> RELATIVE_OPERATOR
 %token LPAREN RPAREN
 %token LBRACE RBRACE
 %token LBRACKET RBRACKET
@@ -16,10 +16,10 @@
 %token IF_KEYWORD RETURN_KEYWORD WHILE_KEYWORD THIS_KEYWORD 
 %token NEW_KEYWORD CLASS_KEYWORD READLN_KEYWORD PRINTLN_KEYWORD NULL_KEYWORD
 %token BOOLEAN_LITERAL
-%token IDENTIFIER
+%token <string> IDENTIFIER
 %token <string> CLASSNAME
 %token INT_KEYWORD BOOL_KEYWORD STRING_KEYWORD
-%token STRING_LITERAL
+%token <string> STRING_LITERAL
 
 %token <float> NUM
 %token <int> INTLIT
@@ -59,14 +59,14 @@ mddeclkleene:  {}
         |       mddeclkleene mddecl     {}
 ;
 
-vardecl:        typee IDENTIFIER SEMICOLON   {}
+vardecl:        typee IDENTIFIER SEMICOLON   {print_string "typpee\n"}
 ;
 
-mddecl:         typee IDENTIFIER LPAREN fmllist RPAREN mdbody    {}
+mddecl:         typee IDENTIFIER LPAREN fmllist RPAREN mdbody    {print_endline (string_of_jlite_type $1)}
 ;
 
 fmllist:    {}
-        |       typee IDENTIFIER fmlrestkleene   {}
+        |       typee IDENTIFIER fmlrestkleene   {print_string (string_of_jlite_type $1); print_endline "\n"}
 ;
 
 fmlrestkleene:  {}
@@ -76,13 +76,14 @@ fmlrestkleene:  {}
 fmlrest:        COMMA typee IDENTIFIER  {}
 ;
 
-typee:          INT_KEYWORD {}
-        |       BOOL_KEYWORD    {}
-        |       VOID_KEYWORD    {}
-        |       CLASSNAME   {}
+typee:          INT_KEYWORD { IntT }
+        |       BOOL_KEYWORD    { BoolT }
+        |       STRING_KEYWORD    { StringT }
+        |       VOID_KEYWORD    { VoidT }
+        |       CLASSNAME   { ObjectT $1 }
 ;
 
-mdbody:         LBRACKET vardeclkleene stmtpositive RBRACKET    {}
+mdbody:         LBRACKET vardeclkleene stmtpositive RBRACKET    {print_string "mdbody\n"}
 ;
 
 stmtkleene:     {}
@@ -121,8 +122,8 @@ rexp:       aexp bop aexp {}
         |   bgrd {}
 ;
 
-bop:        RELATIVE_OPERATOR {}
-        |   EXCLAMATION_POINT ASSSIGN {}
+bop:        RELATIVE_OPERATOR { RelationalOp $1}
+        |   EXCLAMATION_POINT ASSSIGN { BooleanOp "!="}
 ;
 
 bgrd:       EXCLAMATION_POINT bgrd {}

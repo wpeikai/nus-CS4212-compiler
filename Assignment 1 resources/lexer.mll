@@ -23,7 +23,7 @@ rule token = parse
 | "*" { printf "MULTIPLY\n"; MULTIPLY }
 | "/" { printf "DIVIDE\n"; DIVIDE }
 | "^" { printf "CARET\n"; CARET }
-| "<"|"<="|">"|">=" { printf "RELATIVE_OPERATOR\n"; RELATIVE_OPERATOR }
+| "<"|"<="|">"|">=" as relative_op { printf "RELATIVE_OPERATOR\n"; RELATIVE_OPERATOR relative_op}
 | "(" { printf "LPAREN\n"; LPAREN }
 | ")" { printf "RPAREN\n"; RPAREN }
 | "[" { printf "LBRACE\n"; LBRACE }
@@ -55,8 +55,8 @@ rule token = parse
 | "println" { printf "PRINTLN_KEYWORD \n"; PRINTLN_KEYWORD }
 | "null" { printf "NULL_KEYWORD\n"; NULL_KEYWORD }
 | "true"|"false" { printf "BOOLEAN_LITERAL\n"; BOOLEAN_LITERAL }
-| string_literal { printf "STRING_LITERAL\n"; STRING_LITERAL }
-| identifier as id { printf "IDENTIFIER %s\n" id; IDENTIFIER }
+| string_literal as string_l { printf "STRING_LITERAL\n"; STRING_LITERAL string_l}
+| identifier as id { printf "IDENTIFIER %s\n" id; IDENTIFIER id}
 | classname as cname { printf "CLASSNAME %s\n" cname; CLASSNAME cname}
 | intexp as s { printf "INTLIT\n"; INTLIT (int_of_string s) }
 | varidexp as v { printf "VARID %s \n" v; VARID v}
