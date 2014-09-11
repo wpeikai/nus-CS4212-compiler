@@ -1,5 +1,6 @@
 %{
     open Jlite
+    open Printf
 %}
 
 
@@ -21,6 +22,8 @@
 %token INT_KEYWORD BOOL_KEYWORD STRING_KEYWORD
 %token <string> STRING_LITERAL
 
+%token UMINUS
+
 %token <float> NUM
 %token <int> INTLIT
 %token <string> VARID
@@ -30,7 +33,7 @@
 %right EXCLAMATION_POINT /* negation operator */
 %right CARET /* exponentiation */
 %right ASSSIGN /* assignment */
-%right MINUS /* Negative operator */
+%nonassoc UMINUS
 
 %start program
 %type <unit> program
@@ -39,34 +42,48 @@
 program: mainclass classdeclkleene  {print_string "mainprogram\n"}
 ;
 
-classdeclkleene:    {print_string "classdeclkleeneepty\n"}
+classdeclkleene:    {print_string "class declkleene emmmmmmpty\n"}
         |       classdeclkleene classdecl   {print_string "classdeclkleene classdecl\n"}
 ;
 
 mainclass:      CLASS_KEYWORD CLASSNAME LBRACKET VOID_KEYWORD
-                    MAIN_KEYWORD LPAREN fmllist RPAREN mdbody RBRACKET  {print_string "mainclass\n"}
+                    MAIN_KEYWORD LPAREN fmllist RPAREN mdbody RBRACKET  {printf "%s clllllllassssss\n" $2}
 ;
 
-classdecl:      CLASS_KEYWORD CLASSNAME LBRACKET vardeclkleene
-                    mddeclkleene RBRACKET   {}
+classdecl:      CLASS_KEYWORD CLASSNAME LBRACKET classbody RBRACKET   { printf "%s classdecl\n" $2}
 ;
 
-vardeclkleene: {}
-        |       vardeclkleene vardecl   {}
+classbody: {}
+        |   aaaaa {}
 ;
 
-mddeclkleene:  {}
-        |       mddeclkleene mddecl     {}
+aaaaa: typee IDENTIFIER ffff {}
 ;
 
-vardecl:        typee IDENTIFIER SEMICOLON   {print_string "typpee\n"}
+ffff: SEMICOLON aaaaa {}
+    | LPAREN fmllist RPAREN mdbody  {}
 ;
 
-mddecl:         typee IDENTIFIER LPAREN fmllist RPAREN mdbody    {print_endline (string_of_jlite_type $1)}
+vardecl: typee IDENTIFIER SEMICOLON   {print_string "typpee\n"}
 ;
+
+mddecl:  typee IDENTIFIER LPAREN fmllist RPAREN mdbody    {print_endline (string_of_jlite_type $1)}
+;
+
+mddeclkleene:  {}  
+        |   mddeclkleene mddecl {}
+;
+
+vardeclpos: vardeclpos vardecl {}
+;
+
+vardeclkleenemdbodt: {}
+        |   vardeclkleenemdbodt vardecl {}
+;
+
 
 fmllist:    {}
-        |       typee IDENTIFIER fmlrestkleene   {print_string (string_of_jlite_type $1); print_endline "\n"}
+        |       typee IDENTIFIER fmlrestkleene   {printf "list of decl var %s %s\n" (string_of_jlite_type $1) ($2)}
 ;
 
 fmlrestkleene:  {}
@@ -83,7 +100,7 @@ typee:          INT_KEYWORD { IntT }
         |       CLASSNAME   { ObjectT $1 }
 ;
 
-mdbody:         LBRACKET vardeclkleene stmtpositive RBRACKET    {print_string "mdbody\n"}
+mdbody:         LBRACKET vardeclkleenemdbodt stmtpositive RBRACKET    {print_string "mdbody\n"}
 ;
 
 stmtkleene:     {}
@@ -98,9 +115,9 @@ stmt:           IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive RBRACKET ELSE
         |       WHILE_KEYWORD LPAREN exp RPAREN LBRACKET stmtkleene RBRACKET    {}
         |       READLN_KEYWORD LPAREN IDENTIFIER RPAREN SEMICOLON   {}
         |       PRINTLN_KEYWORD LPAREN exp RPAREN SEMICOLON     {}
-        |       IDENTIFIER ASSSIGN exp SEMICOLON    {}
+        |       IDENTIFIER ASSSIGN exp SEMICOLON  {}
         |       atom DOT IDENTIFIER ASSSIGN exp SEMICOLON   {}
-        |       atom LPAREN explist RPAREN  {}
+        |       atom LPAREN explist RPAREN SEMICOLON {}
         |       RETURN_KEYWORD exp SEMICOLON    {}
         |       RETURN_KEYWORD SEMICOLON    {}
 ;
@@ -110,12 +127,18 @@ exp:            bexp    {}
         |       sexp    {}
 ;
 
-bexp:       bexp OR_OPERATOR conj {}
-        |   conj {}
+bexp:      conj {}
+        |    bexp OR_OPERATOR conjs {}
+
+conjs:      conj {}
+        |   conjs conj {}
 ;
 
-conj:       conj AND_OPERATOR rexp {}
-        |   rexp {}
+conj:       rexp {}
+        |   conj AND_OPERATOR rexps {}
+
+rexps:      rexp {}
+        |   rexps rexp {}
 ;
 
 rexp:       aexp bop aexp {}
@@ -131,19 +154,16 @@ bgrd:       EXCLAMATION_POINT bgrd {}
         |   atom {}
 ;
 
-aexp:       aexp PLUS term {}
-        |   aexp MINUS term {}
-        |   term {}
-;
-
-term:       term MULTIPLY ftr {}
-        |   aexp DIVIDE ftr {}
-        |   ftr {}
+aexp:       ftr {}
+        |   aexp PLUS aexp {}
+        |   aexp MINUS aexp {}
+        |   aexp MULTIPLY aexp {}
+        |   aexp DIVIDE aexp {}
 ;
 
 ftr:        INTLIT {}
         |   MINUS ftr {}
-        |   ftr {}
+        |   atom {}
 ;
 
 sexp:       STRING_LITERAL {}
@@ -169,38 +189,3 @@ exprestkeene: {}
 
 exprest:    COMMA exp {}
 ;
-
-/*
-program: 
-    varrule ASSSIGN exp {print_string "\n reduce statement; ";}
-;
-
-
-varrule: 
-    VARID {print_string (" shift varid:" ^ $1);} 
-;
-
-intrule :
-    INTLIT { print_string " shift int "}
-;
-
-exp: exp PLUS term {print_string "\n reduce addition exp to exp; "}
-    | term      { print_string "\n reduce term to exp; "}
-;
-
-term : term MULT atom {print_string " reduce multiplication to term; "}
-    | atom      { print_string " reduce atom to term; "}
-;
-
-atom : INTLIT { print_string " reduce to atom:"; print_int $1; print_string "; ";}
-        | VARID {print_string " reduce to atom:"; print_string ($1 ^ "; ");}
-;
-
-/*BNF pdf*/
-
-/*program: mainclass classdecl*
-
-mainclass: CLASS_KEYWORD CNAME OPEN_BRACKET VOID_KEYWORD MAIN_KEYWORD OPEN_PARENT fmllist CLOSE_PARENT mdbody CLOSE_BRACKET { print_string " reduce to atom:" }
-    
-
-*/	
