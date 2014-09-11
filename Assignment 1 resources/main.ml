@@ -12,7 +12,7 @@ let parse =
 
 let parse =
   print_string "begiiiin\n";
-	let channelf = open_in ("test3") in
+	let channelf = open_in ("test4") in
 	let lexbuf = Lexing.from_channel channelf in
 		try
 			let _ = Parser.program (Lexer.token) lexbuf in
