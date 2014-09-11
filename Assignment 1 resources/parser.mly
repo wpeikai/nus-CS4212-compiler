@@ -107,37 +107,37 @@ typee:          INT_KEYWORD { IntT }
 mdbody:         LBRACKET vardeclkeene stmtpositive RBRACKET    {print_string "mdbody\n"}
 ;
 
-stmtkleene:     {}
-        |       stmtkleene stmt    {}
+stmtkleene:     { [] }
+        |       stmtkleene stmt    { $2 :: $1 }
 ;
 
-stmtpositive:   stmtkleene stmt  {}
+stmtpositive:   stmtkleene stmt  { $2 :: $1 }
 ;
 
 stmt:           IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive RBRACKET ELSE_KEYWORD  
-                    LBRACKET stmtpositive RBRACKET  {}
-        |       WHILE_KEYWORD LPAREN exp RPAREN LBRACKET stmtkleene RBRACKET    {}
-        |       READLN_KEYWORD LPAREN IDENTIFIER RPAREN SEMICOLON   {}
-        |       PRINTLN_KEYWORD LPAREN exp RPAREN SEMICOLON     {}
-        |       IDENTIFIER ASSSIGN exp SEMICOLON  {}
-        |       atom DOT IDENTIFIER ASSSIGN exp SEMICOLON   {}
-        |       atom LPAREN explist RPAREN SEMICOLON {}
-        |       RETURN_KEYWORD exp SEMICOLON    {}
-        |       RETURN_KEYWORD SEMICOLON    {}
+                    LBRACKET stmtpositive RBRACKET  { IfStmt ($3, $6, $10) }
+        |       WHILE_KEYWORD LPAREN exp RPAREN LBRACKET stmtkleene RBRACKET    { WhileStmt ($3, $6) }
+        |       READLN_KEYWORD LPAREN IDENTIFIER RPAREN SEMICOLON   { ReadStmt (SimpleVarId $3) }
+        |       PRINTLN_KEYWORD LPAREN exp RPAREN SEMICOLON     { PrintStmt $3 }
+        |       IDENTIFIER ASSSIGN exp SEMICOLON  { AssignStmt ((SimpleVarId $1), $3) }
+        |       atom DOT IDENTIFIER ASSSIGN exp SEMICOLON   { AssignFieldStmt (FieldAccess ($1, (SimpleVarId $3)), $5) }
+        |       atom LPAREN explist RPAREN { MdCallStmt (MdCall ($1, $3)) }
+        |       RETURN_KEYWORD exp SEMICOLON    { ReturnStmt $2 }
+        |       RETURN_KEYWORD SEMICOLON    { ReturnVoidStmt }
 ;
 
-exp:            bexp    {}
-        |       aexp    {}
-        |       sexp    {}
+exp:            bexp    { $1 }
+        |       aexp    { $1 }
+        |       sexp    { $1 }
 ;
 
-bexp:       rexp {}
-        |   rexp AND_OPERATOR rexp {}
-        |   rexp OR_OPERATOR rexp {}
+bexp:       rexp { $1 }
+        |   rexp AND_OPERATOR rexp { BinaryExp (BooleanOp "&&", $1, $3) }
+        |   rexp OR_OPERATOR rexp { BinaryExp (BooleanOp "||", $1, $3) }
 
 
-rexp:       aexp bop aexp {}
-        |   bgrd {}
+rexp:       aexp bop aexp { BinaryExp ($2, $1, $3) }
+        |   bgrd { $1 }
 ;
 
 bop:        RELATIVE_OPERATOR { RelationalOp $1}
@@ -150,20 +150,20 @@ bgrd:       EXCLAMATION_POINT bgrd { UnaryExp (UnaryOp "!", $2) }
         |   atom { $1 }
 ;
 
-aexp:       ftr {}
-        |   aexp PLUS aexp {}
-        |   aexp MINUS aexp {}
-        |   aexp MULTIPLY aexp {}
-        |   aexp DIVIDE aexp {}
+aexp:       ftr { $1 }
+        |   aexp PLUS aexp { BinaryExp (AritmeticOp "+", $1, $3) }
+        |   aexp MINUS aexp { BinaryExp (AritmeticOp "-", $1, $3) }
+        |   aexp MULTIPLY aexp { BinaryExp (AritmeticOp "*", $1, $3) }
+        |   aexp DIVIDE aexp { BinaryExp (AritmeticOp "/", $1, $3) }
 ;
 
-ftr:        INTLIT { }
-        |   MINUS ftr {}
-        |   atom {}
+ftr:        INTLIT { IntLiteral $1 }
+        |   MINUS ftr { UnaryExp (UnaryOp "-", $2) }
+        |   atom { $1 }
 ;
 
-sexp:       STRING_LITERAL {}
-        |   atom {}
+sexp:       STRING_LITERAL { StringLiteral $1 }
+        |   atom { $1 }
 ;
 
 atom:       atom DOT IDENTIFIER { FieldAccess ($1, (SimpleVarId $3)) }
@@ -175,10 +175,10 @@ atom:       atom DOT IDENTIFIER { FieldAccess ($1, (SimpleVarId $3)) }
         |   NULL_KEYWORD { NullWord }
 ;
 
-explist:    {}
-        |   exprlists {}
+explist:    { [] }
+        |   exprlists { $1 }
 ;
 
-exprlists:  exp {}
-        |   exp COMMA exp {}
+exprlists:  exp { $1 :: [] }
+        |   exprlists COMMA exp { $3 :: $1 }
 ;
