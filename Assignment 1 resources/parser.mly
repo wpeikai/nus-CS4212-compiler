@@ -78,7 +78,7 @@ mddecllist:     typee IDENTIFIER LPAREN fmllist RPAREN mdbody mddecllist {}
 ;
 
 
-vardecl:        typee IDENTIFIER SEMICOLON   {print_string "typpee\n"}
+vardecl:        typee IDENTIFIER SEMICOLON   { $1 $2 }
 ;
 
 vardeclkeene:   {}
@@ -94,7 +94,7 @@ fmlrestkleene:  {}
         |       fmlrestkleene fmlrest   {}
 ;
 
-fmlrest:        COMMA typee IDENTIFIER  {}
+fmlrest:        COMMA typee IDENTIFIER  { $2 $3 }
 ;
 
 typee:          INT_KEYWORD { IntT }
@@ -104,7 +104,7 @@ typee:          INT_KEYWORD { IntT }
         |       CLASSNAME   { ObjectT $1 }
 ;
 
-mdbody:         LBRACKET vardeclkeene stmtpositive RBRACKET    {print_string "mdbody\n"}
+mdbody:         LBRACKET vardeclkeene stmtpositive RBRACKET    { }
 ;
 
 stmtkleene:     { [] }
@@ -121,7 +121,7 @@ stmt:           IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive RBRACKET ELSE
         |       PRINTLN_KEYWORD LPAREN exp RPAREN SEMICOLON     { PrintStmt $3 }
         |       IDENTIFIER ASSSIGN exp SEMICOLON  { AssignStmt ((SimpleVarId $1), $3) }
         |       atom DOT IDENTIFIER ASSSIGN exp SEMICOLON   { AssignFieldStmt (FieldAccess ($1, (SimpleVarId $3)), $5) }
-        |       atom LPAREN explist RPAREN { MdCallStmt (MdCall ($1, $3)) }
+        |       atom LPAREN explist RPAREN SEMICOLON { MdCallStmt (MdCall ($1, $3)) }
         |       RETURN_KEYWORD exp SEMICOLON    { ReturnStmt $2 }
         |       RETURN_KEYWORD SEMICOLON    { ReturnVoidStmt }
 ;
