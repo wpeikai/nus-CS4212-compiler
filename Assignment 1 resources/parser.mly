@@ -1,6 +1,9 @@
 %{
     open Jlite
     open Printf
+
+    let second_item (a, b) = b
+    let first_item (a, b) = a
 %}
 
 
@@ -44,57 +47,53 @@
 %type <unit> program
 %%
 
-program: mainclass classdeclkleene  {print_string "mainprogram\n"}
+/*program: mainclass classdeclkleene  { $1 $2 }*/
+program: mainclass classdeclkleene  { }
 ;
 
-classdeclkleene:    {print_string "class declkleene emmmmmmpty\n"}
-        |       classdeclkleene classdecl   {print_string "classdeclkleene classdecl\n"}
+classdeclkleene:    { }
+        |       classdeclkleene classdecl   { }
 ;
+/*
+classdeclkleene:    { [] }
+        |       classdeclkleene classdecl   { $2 :: $1 }
+;*/
 
 mainclass:      CLASS_KEYWORD CLASSNAME LBRACKET VOID_KEYWORD
-                    MAIN_KEYWORD LPAREN fmllist RPAREN mdbody RBRACKET  {printf "%s clllllllassssss\n" $2}
-;
+                    MAIN_KEYWORD LPAREN fmllist RPAREN mdbody RBRACKET  {}
 
-classdecl:      CLASS_KEYWORD CLASSNAME LBRACKET classbody RBRACKET   { printf "%s classdecl\n" $2}
+classdecl:      CLASS_KEYWORD CLASSNAME LBRACKET classbody RBRACKET   {}
 ;
 
 classbody: {}
-        |   aaaaa {}
+        |   vardeclist mddecllist {  }
 ;
 
-aaaaa: typee IDENTIFIER ffff {}
+vardeclist : vardecl { }
+        | vardeclist vardecl {}
 ;
 
-ffff: SEMICOLON aaaaa {}
-    | mddeclliststart {}
+mddecllist:  { [] }
+        | mthd mddecllist { $1 :: $2 }
 ;
 
+mthd: typee IDENTIFIER LPAREN fmllist RPAREN mdbody {
+    {jliteid=(SimpleVarId $2); rettype=$1; params=$4; localvars=(first_item $6); stmts=(second_item $6); ir3id=(SimpleVarId $2)} }
 
-mddeclliststart:  LPAREN fmllist RPAREN mdbody mddecllist  {}
+
+vardeclkeene:   { [] }
+        |       vardeclkeene vardecl { $2 :: $1 }
 ;
 
-mddecllist:     typee IDENTIFIER LPAREN fmllist RPAREN mdbody mddecllist {}
-        |        {}
+vardecl: typee IDENTIFIER SEMICOLON   { ($1, (SimpleVarId $2)) }
 ;
 
-
-vardecl:        typee IDENTIFIER SEMICOLON   { $1 $2 }
+fmllist:    { [] }
+        |   fmllists { $1 }
 ;
 
-vardeclkeene:   {}
-        |       vardeclkeene vardecl {}
-;
-
-
-fmllist:    {}
-        |       typee IDENTIFIER fmlrestkleene   {printf "list of decl var %s %s\n" (string_of_jlite_type $1) ($2)}
-;
-
-fmlrestkleene:  {}
-        |       fmlrestkleene fmlrest   {}
-;
-
-fmlrest:        COMMA typee IDENTIFIER  { $2 $3 }
+fmllists:   typee IDENTIFIER { ($1, (SimpleVarId $2)) :: [] }
+        |   fmllists COMMA typee IDENTIFIER { ($3, (SimpleVarId $4)) :: $1 }
 ;
 
 typee:          INT_KEYWORD { IntT }
@@ -104,7 +103,7 @@ typee:          INT_KEYWORD { IntT }
         |       CLASSNAME   { ObjectT $1 }
 ;
 
-mdbody:         LBRACKET vardeclkeene stmtpositive RBRACKET    { }
+mdbody:         LBRACKET vardeclkeene stmtpositive RBRACKET { ($2, $3) }
 ;
 
 stmtkleene:     { [] }
