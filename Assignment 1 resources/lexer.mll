@@ -42,7 +42,7 @@ rule token = parse
 | "{" { LBRACKET }
 | "}" { RBRACKET }
 | "//" { print_endline "comments start"; commentsoneline lexbuf }
-| "/*" { print_endline "comments start"; commentsmultiline lexbuf }
+| "/*" { print_endline "comments multiline start"; commentsmultiline lexbuf }
 | "!" { EXCLAMATION_POINT }
 | "?" { QUESTION_POINT }
 | "=" { EQ }
@@ -50,7 +50,7 @@ rule token = parse
 | "," { COMMA }
 | "&&" { AND_OPERATOR }
 | "||" { OR_OPERATOR }
-| "void" { VOID_KEYWORD }
+| "Void" { VOID_KEYWORD }
 | "main" { MAIN_KEYWORD }
 | "if" { IF_KEYWORD }
 | "else" { ELSE_KEYWORD }
@@ -72,7 +72,7 @@ rule token = parse
 | intexp as s { INTLIT (int_of_string s) }
 | varidexp as v { VARID v}
 | white { token lexbuf } (* ignore white space *)
-| eof { exit 0}
+| eof { END_OF_FILE }
 
 and commentsoneline = parse
   | "\n" { print_endline "commentsoneline close"; token lexbuf }

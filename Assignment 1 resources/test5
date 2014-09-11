@@ -1,5 +1,5 @@
 class MainTest {
-    void main (Int a, String b) {
+    Void main (Int a, String b) {
         println(new Fac().computeFac(a)) ;
         return b;
     }
@@ -34,13 +34,22 @@ class A {
 
 class B {
 
-    String b;
+    String b1234;
     Bool equals(String a) {
         Bool res;
         res = a == b;
         resClass = new A();
         resClass.print_result(res);
         return;
+    }
+}
+
+
+class C {
+    String k789;
+    Void aaaaaa(String a) {
+        Bool res;
+        while ( pass == uu1_uu ) { return ; }
     }
 }
 

@@ -26,6 +26,7 @@
 %token <string> STRING_LITERAL
 
 %token UMINUS
+%token END_OF_FILE
 
 %token <float> NUM
 %token <int> INTLIT
@@ -44,33 +45,32 @@
 
 
 %start program
-%type <unit> program
+%type <Jlite.jlite_program> program
+%type <Jlite.class_decl> classdecl
+%type <Jlite.class_main> mainclass
+%type <Jlite.md_decl> mthd
+%type <Jlite.jlite_stmt list> stmtpositive
+%type <Jlite.var_decl list * Jlite.jlite_stmt list> mdbody
 %%
 
-/*program: mainclass classdeclkleene  { $1 $2 }*/
-program: mainclass classdeclkleene  { }
-;
+program: mainclass classdeclkleene END_OF_FILE { ($1, $2) }
 
-classdeclkleene:    { }
-        |       classdeclkleene classdecl   { }
-;
-/*
 classdeclkleene:    { [] }
         |       classdeclkleene classdecl   { $2 :: $1 }
-;*/
+;
 
 mainclass:      CLASS_KEYWORD CLASSNAME LBRACKET VOID_KEYWORD
-                    MAIN_KEYWORD LPAREN fmllist RPAREN mdbody RBRACKET  {}
+                    MAIN_KEYWORD LPAREN fmllist RPAREN mdbody RBRACKET  { ($2, {jliteid=(SimpleVarId "main"); rettype=VoidT; params=$7; localvars=(first_item $9); stmts=(second_item $9); ir3id=(SimpleVarId $2)}) }
 
-classdecl:      CLASS_KEYWORD CLASSNAME LBRACKET classbody RBRACKET   {}
+classdecl:      CLASS_KEYWORD CLASSNAME LBRACKET classbody RBRACKET   { ($2, (first_item $4), (second_item $4)) }
 ;
 
-classbody: {}
-        |   vardeclist mddecllist {  }
+classbody: { ([], []) }
+        |   vardeclist mddecllist { ($1, $2) }
 ;
 
-vardeclist : vardecl { }
-        | vardeclist vardecl {}
+vardeclist : vardecl { $1 :: [] }
+        | vardeclist vardecl { $2 :: $1 }
 ;
 
 mddecllist:  { [] }
