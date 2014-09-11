@@ -28,12 +28,17 @@
 %token <int> INTLIT
 %token <string> VARID
 
+
+%left OR_OPERATOR
+%left AND_OPERATOR
+
 %left PLUS MINUS
 %left MULTIPLY DIVIDE
 %right EXCLAMATION_POINT /* negation operator */
 %right CARET /* exponentiation */
 %right ASSSIGN /* assignment */
-%nonassoc UMINUS
+
+
 
 %start program
 %type <unit> program
@@ -61,24 +66,17 @@ aaaaa: typee IDENTIFIER ffff {}
 ;
 
 ffff: SEMICOLON aaaaa {}
-    | LPAREN fmllist RPAREN mdbody  {}
+    | mddecl  {}
 ;
 
 vardecl: typee IDENTIFIER SEMICOLON   {print_string "typpee\n"}
 ;
 
-mddecl:  typee IDENTIFIER LPAREN fmllist RPAREN mdbody    {print_endline (string_of_jlite_type $1)}
+mddecl:  LPAREN fmllist RPAREN mdbody    {}
 ;
 
-mddeclkleene:  {}  
-        |   mddeclkleene mddecl {}
-;
-
-vardeclpos: vardeclpos vardecl {}
-;
-
-vardeclkleenemdbodt: {}
-        |   vardeclkleenemdbodt vardecl {}
+vardeclkeene:   {}
+        |       vardeclkeene vardecl {}
 ;
 
 
@@ -100,7 +98,7 @@ typee:          INT_KEYWORD { IntT }
         |       CLASSNAME   { ObjectT $1 }
 ;
 
-mdbody:         LBRACKET vardeclkleenemdbodt stmtpositive RBRACKET    {print_string "mdbody\n"}
+mdbody:         LBRACKET vardeclkeene stmtpositive RBRACKET    {print_string "mdbody\n"}
 ;
 
 stmtkleene:     {}
@@ -127,19 +125,9 @@ exp:            bexp    {}
         |       sexp    {}
 ;
 
-bexp:      conj {}
-        |    bexp OR_OPERATOR conjs {}
+bexp:        rexp AND_OPERATOR rexp {}
+        |    rexp OR_OPERATOR rexp {}
 
-conjs:      conj {}
-        |   conjs conj {}
-;
-
-conj:       rexp {}
-        |   conj AND_OPERATOR rexps {}
-
-rexps:      rexp {}
-        |   rexps rexp {}
-;
 
 rexp:       aexp bop aexp {}
         |   bgrd {}
