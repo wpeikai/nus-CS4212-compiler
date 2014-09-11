@@ -16,7 +16,7 @@
 %token VOID_KEYWORD MAIN_KEYWORD IF_KEYWORD ELSE_KEYWORD
 %token IF_KEYWORD RETURN_KEYWORD WHILE_KEYWORD THIS_KEYWORD 
 %token NEW_KEYWORD CLASS_KEYWORD READLN_KEYWORD PRINTLN_KEYWORD NULL_KEYWORD
-%token BOOLEAN_LITERAL
+%token <bool> BOOLEAN_LITERAL
 %token <string> IDENTIFIER
 %token <string> CLASSNAME
 %token INT_KEYWORD BOOL_KEYWORD STRING_KEYWORD
@@ -145,9 +145,9 @@ bop:        RELATIVE_OPERATOR { RelationalOp $1}
         |   ASSSIGN ASSSIGN { BooleanOp "=="}
 ;
 
-bgrd:       EXCLAMATION_POINT bgrd {}
-        |   BOOLEAN_LITERAL {}
-        |   atom {}
+bgrd:       EXCLAMATION_POINT bgrd { UnaryExp (UnaryOp "!", $2) }
+        |   BOOLEAN_LITERAL { BoolLiteral $1}
+        |   atom { $1 }
 ;
 
 aexp:       ftr {}
@@ -157,7 +157,7 @@ aexp:       ftr {}
         |   aexp DIVIDE aexp {}
 ;
 
-ftr:        INTLIT {}
+ftr:        INTLIT { }
         |   MINUS ftr {}
         |   atom {}
 ;
@@ -166,22 +166,19 @@ sexp:       STRING_LITERAL {}
         |   atom {}
 ;
 
-atom:       atom DOT IDENTIFIER {}
-        |   atom LPAREN explist RPAREN {}
-        |   THIS_KEYWORD {}
-        |   IDENTIFIER {}
-        |   NEW_KEYWORD CLASSNAME LPAREN RPAREN {}
-        |   LPAREN exp RPAREN {}
-        |   NULL_KEYWORD {}
+atom:       atom DOT IDENTIFIER { FieldAccess ($1, (SimpleVarId $3)) }
+        |   atom LPAREN explist RPAREN { MdCall ($1, $3) }
+        |   THIS_KEYWORD { ThisWord }
+        |   IDENTIFIER { Var (SimpleVarId $1) }
+        |   NEW_KEYWORD CLASSNAME LPAREN RPAREN { ObjectCreate $2 }
+        |   LPAREN exp RPAREN { $2 }
+        |   NULL_KEYWORD { NullWord }
 ;
 
 explist:    {}
-        |   exp exprestkeene{}
+        |   exprlists {}
 ;
 
-exprestkeene: {}
-        |   exprestkeene exprest {}
-;
-
-exprest:    COMMA exp {}
+exprlists:  exp {}
+        |   exp COMMA exp {}
 ;

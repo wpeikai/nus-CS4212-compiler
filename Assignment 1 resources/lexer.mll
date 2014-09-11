@@ -65,7 +65,7 @@ rule token = parse
 | "readln" { READLN_KEYWORD }
 | "println" { PRINTLN_KEYWORD }
 | "null" { NULL_KEYWORD }
-| "true"|"false" { BOOLEAN_LITERAL }
+| "true"|"false" as boolean_lit { BOOLEAN_LITERAL (bool_of_string boolean_lit) }
 | string_literal as string_l { STRING_LITERAL string_l}
 | identifier as id { IDENTIFIER id}
 | classname as cname { CLASSNAME cname}

@@ -99,14 +99,12 @@
   70       | NULL_KEYWORD
 
   71  explist :
-  72          | exp exprestkeene
+  72          | exprlists
 
-  73  exprestkeene :
-  74               | exprestkeene exprest
+  73  exprlists : exp
+  74            | exp COMMA exp
 
-  75  exprest : COMMA exp
-
-  76  %entry% : '\001' program
+  75  %entry% : '\001' program
 
 state 0
 	$accept : . %entry% $end  (0)
@@ -118,7 +116,7 @@ state 0
 
 
 state 1
-	%entry% : '\001' . program  (76)
+	%entry% : '\001' . program  (75)
 
 	CLASS_KEYWORD  shift 3
 	.  error
@@ -141,9 +139,9 @@ state 3
 
 
 state 4
-	%entry% : '\001' program .  (76)
+	%entry% : '\001' program .  (75)
 
-	.  reduce 76
+	.  reduce 75
 
 
 state 5
@@ -1031,12 +1029,13 @@ state 91
 	rexp  goto 79
 	bgrd  goto 80
 	ftr  goto 81
+	exprlists  goto 120
 
 
 state 92
 	mddecllist : typee IDENTIFIER . LPAREN fmllist RPAREN mdbody mddecllist  (12)
 
-	LPAREN  shift 120
+	LPAREN  shift 121
 	.  error
 
 
@@ -1096,7 +1095,7 @@ state 97
 state 98
 	atom : atom DOT . IDENTIFIER  (64)
 
-	IDENTIFIER  shift 121
+	IDENTIFIER  shift 122
 	.  error
 
 
@@ -1118,19 +1117,20 @@ state 99
 
 	exp  goto 118
 	atom  goto 75
-	explist  goto 122
+	explist  goto 123
 	bexp  goto 76
 	aexp  goto 77
 	sexp  goto 78
 	rexp  goto 79
 	bgrd  goto 80
 	ftr  goto 81
+	exprlists  goto 120
 
 
 state 100
 	bop : ASSSIGN . ASSSIGN  (50)
 
-	ASSSIGN  shift 123
+	ASSSIGN  shift 124
 	.  error
 
 
@@ -1147,7 +1147,7 @@ state 101
 	.  error
 
 	atom  goto 93
-	aexp  goto 124
+	aexp  goto 125
 	ftr  goto 81
 
 
@@ -1164,7 +1164,7 @@ state 102
 	.  error
 
 	atom  goto 93
-	aexp  goto 125
+	aexp  goto 126
 	ftr  goto 81
 
 
@@ -1181,7 +1181,7 @@ state 103
 	.  error
 
 	atom  goto 93
-	aexp  goto 126
+	aexp  goto 127
 	ftr  goto 81
 
 
@@ -1198,7 +1198,7 @@ state 104
 	.  error
 
 	atom  goto 93
-	aexp  goto 127
+	aexp  goto 128
 	ftr  goto 81
 
 
@@ -1211,7 +1211,7 @@ state 105
 state 106
 	bop : EXCLAMATION_POINT . ASSSIGN  (49)
 
-	ASSSIGN  shift 128
+	ASSSIGN  shift 129
 	.  error
 
 
@@ -1228,7 +1228,7 @@ state 107
 	.  error
 
 	atom  goto 93
-	aexp  goto 129
+	aexp  goto 130
 	ftr  goto 81
 
 
@@ -1246,9 +1246,9 @@ state 108
 	INTLIT  shift 73
 	.  error
 
-	atom  goto 130
-	aexp  goto 131
-	rexp  goto 132
+	atom  goto 131
+	aexp  goto 132
+	rexp  goto 133
 	bgrd  goto 80
 	ftr  goto 81
 
@@ -1267,9 +1267,9 @@ state 109
 	INTLIT  shift 73
 	.  error
 
-	atom  goto 130
-	aexp  goto 131
-	rexp  goto 133
+	atom  goto 131
+	aexp  goto 132
+	rexp  goto 134
 	bgrd  goto 80
 	ftr  goto 81
 
@@ -1277,7 +1277,7 @@ state 109
 state 110
 	stmt : IF_KEYWORD LPAREN exp . RPAREN LBRACKET stmtpositive RBRACKET ELSE_KEYWORD LBRACKET stmtpositive RBRACKET  (31)
 
-	RPAREN  shift 134
+	RPAREN  shift 135
 	.  error
 
 
@@ -1290,35 +1290,35 @@ state 111
 state 112
 	stmt : WHILE_KEYWORD LPAREN exp . RPAREN LBRACKET stmtkleene RBRACKET  (32)
 
-	RPAREN  shift 135
+	RPAREN  shift 136
 	.  error
 
 
 state 113
 	atom : NEW_KEYWORD CLASSNAME LPAREN . RPAREN  (68)
 
-	RPAREN  shift 136
+	RPAREN  shift 137
 	.  error
 
 
 state 114
 	stmt : READLN_KEYWORD LPAREN IDENTIFIER . RPAREN SEMICOLON  (33)
 
-	RPAREN  shift 137
+	RPAREN  shift 138
 	.  error
 
 
 state 115
 	stmt : PRINTLN_KEYWORD LPAREN exp . RPAREN SEMICOLON  (34)
 
-	RPAREN  shift 138
+	RPAREN  shift 139
 	.  error
 
 
 state 116
 	stmt : IDENTIFIER ASSSIGN exp . SEMICOLON  (35)
 
-	SEMICOLON  shift 139
+	SEMICOLON  shift 140
 	.  error
 
 
@@ -1326,29 +1326,34 @@ state 117
 	stmt : atom DOT IDENTIFIER . ASSSIGN exp SEMICOLON  (36)
 	atom : atom DOT IDENTIFIER .  (64)
 
-	ASSSIGN  shift 140
+	ASSSIGN  shift 141
 	DOT  reduce 64
 	LPAREN  reduce 64
 
 
 state 118
-	explist : exp . exprestkeene  (72)
-	exprestkeene : .  (73)
+	exprlists : exp .  (73)
+	exprlists : exp . COMMA exp  (74)
 
-	.  reduce 73
-
-	exprestkeene  goto 141
+	COMMA  shift 142
+	RPAREN  reduce 73
 
 
 state 119
 	stmt : atom LPAREN explist . RPAREN SEMICOLON  (37)
 	atom : atom LPAREN explist . RPAREN  (65)
 
-	RPAREN  shift 142
+	RPAREN  shift 143
 	.  error
 
 
 state 120
+	explist : exprlists .  (72)
+
+	.  reduce 72
+
+
+state 121
 	mddecllist : typee IDENTIFIER LPAREN . fmllist RPAREN mdbody mddecllist  (12)
 	fmllist : .  (17)
 
@@ -1359,30 +1364,30 @@ state 120
 	STRING_KEYWORD  shift 20
 	RPAREN  reduce 17
 
-	fmllist  goto 143
+	fmllist  goto 144
 	typee  goto 25
 
 
-state 121
+state 122
 	atom : atom DOT IDENTIFIER .  (64)
 
 	.  reduce 64
 
 
-state 122
+state 123
 	atom : atom LPAREN explist . RPAREN  (65)
 
-	RPAREN  shift 144
+	RPAREN  shift 145
 	.  error
 
 
-state 123
+state 124
 	bop : ASSSIGN ASSSIGN .  (50)
 
 	.  reduce 50
 
 
-state 124
+state 125
 	aexp : aexp . PLUS aexp  (55)
 	aexp : aexp PLUS aexp .  (55)
 	aexp : aexp . MINUS aexp  (56)
@@ -1403,7 +1408,7 @@ state 124
 	OR_OPERATOR  reduce 55
 
 
-state 125
+state 126
 	aexp : aexp . PLUS aexp  (55)
 	aexp : aexp . MINUS aexp  (56)
 	aexp : aexp MINUS aexp .  (56)
@@ -1424,7 +1429,7 @@ state 125
 	OR_OPERATOR  reduce 56
 
 
-state 126
+state 127
 	aexp : aexp . PLUS aexp  (55)
 	aexp : aexp . MINUS aexp  (56)
 	aexp : aexp . MULTIPLY aexp  (57)
@@ -1434,7 +1439,7 @@ state 126
 	.  reduce 57
 
 
-state 127
+state 128
 	aexp : aexp . PLUS aexp  (55)
 	aexp : aexp . MINUS aexp  (56)
 	aexp : aexp . MULTIPLY aexp  (57)
@@ -1444,13 +1449,13 @@ state 127
 	.  reduce 58
 
 
-state 128
+state 129
 	bop : EXCLAMATION_POINT ASSSIGN .  (49)
 
 	.  reduce 49
 
 
-state 129
+state 130
 	rexp : aexp bop aexp .  (46)
 	aexp : aexp . PLUS aexp  (55)
 	aexp : aexp . MINUS aexp  (56)
@@ -1468,7 +1473,7 @@ state 129
 	OR_OPERATOR  reduce 46
 
 
-state 130
+state 131
 	bgrd : atom .  (53)
 	ftr : atom .  (61)
 	atom : atom . DOT IDENTIFIER  (64)
@@ -1488,7 +1493,7 @@ state 130
 	COMMA  reduce 53
 
 
-state 131
+state 132
 	rexp : aexp . bop aexp  (46)
 	aexp : aexp . PLUS aexp  (55)
 	aexp : aexp . MINUS aexp  (56)
@@ -1507,59 +1512,59 @@ state 131
 	bop  goto 107
 
 
-state 132
+state 133
 	bexp : rexp AND_OPERATOR rexp .  (44)
 
 	.  reduce 44
 
 
-state 133
+state 134
 	bexp : rexp OR_OPERATOR rexp .  (45)
 
 	.  reduce 45
 
 
-state 134
-	stmt : IF_KEYWORD LPAREN exp RPAREN . LBRACKET stmtpositive RBRACKET ELSE_KEYWORD LBRACKET stmtpositive RBRACKET  (31)
-
-	LBRACKET  shift 145
-	.  error
-
-
 state 135
-	stmt : WHILE_KEYWORD LPAREN exp RPAREN . LBRACKET stmtkleene RBRACKET  (32)
+	stmt : IF_KEYWORD LPAREN exp RPAREN . LBRACKET stmtpositive RBRACKET ELSE_KEYWORD LBRACKET stmtpositive RBRACKET  (31)
 
 	LBRACKET  shift 146
 	.  error
 
 
 state 136
+	stmt : WHILE_KEYWORD LPAREN exp RPAREN . LBRACKET stmtkleene RBRACKET  (32)
+
+	LBRACKET  shift 147
+	.  error
+
+
+state 137
 	atom : NEW_KEYWORD CLASSNAME LPAREN RPAREN .  (68)
 
 	.  reduce 68
 
 
-state 137
-	stmt : READLN_KEYWORD LPAREN IDENTIFIER RPAREN . SEMICOLON  (33)
-
-	SEMICOLON  shift 147
-	.  error
-
-
 state 138
-	stmt : PRINTLN_KEYWORD LPAREN exp RPAREN . SEMICOLON  (34)
+	stmt : READLN_KEYWORD LPAREN IDENTIFIER RPAREN . SEMICOLON  (33)
 
 	SEMICOLON  shift 148
 	.  error
 
 
 state 139
+	stmt : PRINTLN_KEYWORD LPAREN exp RPAREN . SEMICOLON  (34)
+
+	SEMICOLON  shift 149
+	.  error
+
+
+state 140
 	stmt : IDENTIFIER ASSSIGN exp SEMICOLON .  (35)
 
 	.  reduce 35
 
 
-state 140
+state 141
 	stmt : atom DOT IDENTIFIER ASSSIGN . exp SEMICOLON  (36)
 
 	MINUS  shift 68
@@ -1574,7 +1579,7 @@ state 140
 	INTLIT  shift 73
 	.  error
 
-	exp  goto 149
+	exp  goto 150
 	atom  goto 75
 	bexp  goto 76
 	aexp  goto 77
@@ -1584,78 +1589,8 @@ state 140
 	ftr  goto 81
 
 
-state 141
-	explist : exp exprestkeene .  (72)
-	exprestkeene : exprestkeene . exprest  (74)
-
-	COMMA  shift 150
-	RPAREN  reduce 72
-
-	exprest  goto 151
-
-
 state 142
-	stmt : atom LPAREN explist RPAREN . SEMICOLON  (37)
-	atom : atom LPAREN explist RPAREN .  (65)
-
-	SEMICOLON  shift 152
-	DOT  reduce 65
-	LPAREN  reduce 65
-
-
-state 143
-	mddecllist : typee IDENTIFIER LPAREN fmllist . RPAREN mdbody mddecllist  (12)
-
-	RPAREN  shift 153
-	.  error
-
-
-state 144
-	atom : atom LPAREN explist RPAREN .  (65)
-
-	.  reduce 65
-
-
-state 145
-	stmt : IF_KEYWORD LPAREN exp RPAREN LBRACKET . stmtpositive RBRACKET ELSE_KEYWORD LBRACKET stmtpositive RBRACKET  (31)
-	stmtkleene : .  (28)
-
-	.  reduce 28
-
-	stmtpositive  goto 154
-	stmtkleene  goto 47
-
-
-state 146
-	stmt : WHILE_KEYWORD LPAREN exp RPAREN LBRACKET . stmtkleene RBRACKET  (32)
-	stmtkleene : .  (28)
-
-	.  reduce 28
-
-	stmtkleene  goto 155
-
-
-state 147
-	stmt : READLN_KEYWORD LPAREN IDENTIFIER RPAREN SEMICOLON .  (33)
-
-	.  reduce 33
-
-
-state 148
-	stmt : PRINTLN_KEYWORD LPAREN exp RPAREN SEMICOLON .  (34)
-
-	.  reduce 34
-
-
-state 149
-	stmt : atom DOT IDENTIFIER ASSSIGN exp . SEMICOLON  (36)
-
-	SEMICOLON  shift 156
-	.  error
-
-
-state 150
-	exprest : COMMA . exp  (75)
+	exprlists : exp COMMA . exp  (74)
 
 	MINUS  shift 68
 	LPAREN  shift 52
@@ -1669,7 +1604,7 @@ state 150
 	INTLIT  shift 73
 	.  error
 
-	exp  goto 157
+	exp  goto 151
 	atom  goto 75
 	bexp  goto 76
 	aexp  goto 77
@@ -1679,8 +1614,68 @@ state 150
 	ftr  goto 81
 
 
+state 143
+	stmt : atom LPAREN explist RPAREN . SEMICOLON  (37)
+	atom : atom LPAREN explist RPAREN .  (65)
+
+	SEMICOLON  shift 152
+	DOT  reduce 65
+	LPAREN  reduce 65
+
+
+state 144
+	mddecllist : typee IDENTIFIER LPAREN fmllist . RPAREN mdbody mddecllist  (12)
+
+	RPAREN  shift 153
+	.  error
+
+
+state 145
+	atom : atom LPAREN explist RPAREN .  (65)
+
+	.  reduce 65
+
+
+state 146
+	stmt : IF_KEYWORD LPAREN exp RPAREN LBRACKET . stmtpositive RBRACKET ELSE_KEYWORD LBRACKET stmtpositive RBRACKET  (31)
+	stmtkleene : .  (28)
+
+	.  reduce 28
+
+	stmtpositive  goto 154
+	stmtkleene  goto 47
+
+
+state 147
+	stmt : WHILE_KEYWORD LPAREN exp RPAREN LBRACKET . stmtkleene RBRACKET  (32)
+	stmtkleene : .  (28)
+
+	.  reduce 28
+
+	stmtkleene  goto 155
+
+
+state 148
+	stmt : READLN_KEYWORD LPAREN IDENTIFIER RPAREN SEMICOLON .  (33)
+
+	.  reduce 33
+
+
+state 149
+	stmt : PRINTLN_KEYWORD LPAREN exp RPAREN SEMICOLON .  (34)
+
+	.  reduce 34
+
+
+state 150
+	stmt : atom DOT IDENTIFIER ASSSIGN exp . SEMICOLON  (36)
+
+	SEMICOLON  shift 156
+	.  error
+
+
 state 151
-	exprestkeene : exprestkeene exprest .  (74)
+	exprlists : exp COMMA exp .  (74)
 
 	.  reduce 74
 
@@ -1697,13 +1692,13 @@ state 153
 	LBRACKET  shift 34
 	.  error
 
-	mdbody  goto 158
+	mdbody  goto 157
 
 
 state 154
 	stmt : IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive . RBRACKET ELSE_KEYWORD LBRACKET stmtpositive RBRACKET  (31)
 
-	RBRACKET  shift 159
+	RBRACKET  shift 158
 	.  error
 
 
@@ -1712,7 +1707,7 @@ state 155
 	stmt : WHILE_KEYWORD LPAREN exp RPAREN LBRACKET stmtkleene . RBRACKET  (32)
 
 	LPAREN  shift 52
-	RBRACKET  shift 160
+	RBRACKET  shift 159
 	IF_KEYWORD  shift 53
 	RETURN_KEYWORD  shift 54
 	WHILE_KEYWORD  shift 55
@@ -1724,7 +1719,7 @@ state 155
 	IDENTIFIER  shift 61
 	.  error
 
-	stmt  goto 161
+	stmt  goto 160
 	atom  goto 63
 
 
@@ -1735,12 +1730,6 @@ state 156
 
 
 state 157
-	exprest : COMMA exp .  (75)
-
-	.  reduce 75
-
-
-state 158
 	mddecllist : typee IDENTIFIER LPAREN fmllist RPAREN mdbody . mddecllist  (12)
 	mddecllist : .  (13)
 
@@ -1752,59 +1741,59 @@ state 158
 	RBRACKET  reduce 13
 
 	typee  goto 65
-	mddecllist  goto 162
+	mddecllist  goto 161
 
 
-state 159
+state 158
 	stmt : IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive RBRACKET . ELSE_KEYWORD LBRACKET stmtpositive RBRACKET  (31)
 
-	ELSE_KEYWORD  shift 163
+	ELSE_KEYWORD  shift 162
 	.  error
 
 
-state 160
+state 159
 	stmt : WHILE_KEYWORD LPAREN exp RPAREN LBRACKET stmtkleene RBRACKET .  (32)
 
 	.  reduce 32
 
 
-state 161
+state 160
 	stmtkleene : stmtkleene stmt .  (29)
 
 	.  reduce 29
 
 
-state 162
+state 161
 	mddecllist : typee IDENTIFIER LPAREN fmllist RPAREN mdbody mddecllist .  (12)
 
 	.  reduce 12
 
 
-state 163
+state 162
 	stmt : IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive RBRACKET ELSE_KEYWORD . LBRACKET stmtpositive RBRACKET  (31)
 
-	LBRACKET  shift 164
+	LBRACKET  shift 163
 	.  error
 
 
-state 164
+state 163
 	stmt : IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive RBRACKET ELSE_KEYWORD LBRACKET . stmtpositive RBRACKET  (31)
 	stmtkleene : .  (28)
 
 	.  reduce 28
 
-	stmtpositive  goto 165
+	stmtpositive  goto 164
 	stmtkleene  goto 47
 
 
-state 165
+state 164
 	stmt : IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive RBRACKET ELSE_KEYWORD LBRACKET stmtpositive . RBRACKET  (31)
 
-	RBRACKET  shift 166
+	RBRACKET  shift 165
 	.  error
 
 
-state 166
+state 165
 	stmt : IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive RBRACKET ELSE_KEYWORD LBRACKET stmtpositive RBRACKET .  (31)
 
 	.  reduce 31
@@ -1817,5 +1806,5 @@ Rules never reduced:
 State 75 contains 6 reduce/reduce conflicts.
 
 
-47 terminals, 33 nonterminals
-77 grammar rules, 167 states
+47 terminals, 32 nonterminals
+76 grammar rules, 166 states
