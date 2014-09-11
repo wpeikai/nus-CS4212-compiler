@@ -13,16 +13,11 @@ let parse =
       End_of_file -> exit 0 *)
 
 let parse =
-  print_string "begiiiin\n";
 	let channelf = open_in ("sample.jlite") in
 	let lexbuf = Lexing.from_channel channelf in
-		try
-			let a = Parser.program (Lexer.token) lexbuf in
-			close_in channelf;
-      print_string (string_of_jlite_program a);
-		with
-			End_of_file -> exit 0
-
+		let a = Parser.program (Lexer.token) lexbuf in
+		close_in channelf;
+    print_string (string_of_jlite_program a);
 
 
 

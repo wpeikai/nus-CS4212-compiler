@@ -195,9 +195,11 @@ let string_of_jlite_stmt (s:jlite_stmt):string =
 			(string_of_indented_stmt_list "\n" helper_func stmts2) in 
 		ifExpr ^ thenBranch ^ elseExpr ^ elseBranch
     | WhileStmt (e, stmts) -> 
-		print_tab() ^ "While("^(string_of_jlite_expr e)^") {\n" 
-		^ indent_inc() ^ (string_of_list stmts helper_func  "\n") 
-		^ indent_dec() ^ "\n}"
+		print_tab() ^ "While(" ^ (string_of_jlite_expr e)^ ") {\n" 
+		^ (string_of_indented_stmt_list "\n" helper_func stmts) 
+        (* Fix error in subject
+        ^ indent_inc() ^ (string_of_list stmts helper_func  "\n")  
+        ^ indent_dec() ^ "\n}" *)
     | ReturnStmt e ->  
 		print_tab() ^ "Return " ^ (string_of_jlite_expr e)^";"
 	| ReturnVoidStmt ->  

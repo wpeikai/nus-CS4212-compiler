@@ -4,6 +4,7 @@ ocamlyacc -v parser.mly
 ocamlc -c parser.mli
 ocamllex lexer.mll
 
+ocamlc -c jlite.ml
 ocamlc -c lexer.ml
 ocamlc -c parser.ml
 ocamlc -c main.ml

@@ -120,7 +120,7 @@ stmt:           IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive RBRACKET ELSE
         |       PRINTLN_KEYWORD LPAREN exp RPAREN SEMICOLON     { PrintStmt $3 }
         |       IDENTIFIER ASSSIGN exp SEMICOLON  { AssignStmt ((SimpleVarId $1), $3) }
         |       atom DOT IDENTIFIER ASSSIGN exp SEMICOLON   { AssignFieldStmt (FieldAccess ($1, (SimpleVarId $3)), $5) }
-        |       atom LPAREN explist RPAREN SEMICOLON { MdCallStmt (MdCall ($1, $3)) }
+        |       atom LPAREN explist RPAREN SEMICOLON { MdCallStmt (MdCall ($1, $3)) } /* Error in */
         |       RETURN_KEYWORD exp SEMICOLON    { ReturnStmt $2 }
         |       RETURN_KEYWORD SEMICOLON    { ReturnVoidStmt }
 ;
