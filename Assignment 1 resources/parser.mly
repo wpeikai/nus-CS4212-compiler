@@ -66,13 +66,19 @@ aaaaa: typee IDENTIFIER ffff {}
 ;
 
 ffff: SEMICOLON aaaaa {}
-    | mddecl  {}
+    | mddeclliststart {}
 ;
 
-vardecl: typee IDENTIFIER SEMICOLON   {print_string "typpee\n"}
+
+mddeclliststart:  LPAREN fmllist RPAREN mdbody mddecllist  {}
 ;
 
-mddecl:  LPAREN fmllist RPAREN mdbody    {}
+mddecllist:     typee IDENTIFIER LPAREN fmllist RPAREN mdbody mddecllist {}
+        |        {}
+;
+
+
+vardecl:        typee IDENTIFIER SEMICOLON   {print_string "typpee\n"}
 ;
 
 vardeclkeene:   {}
@@ -125,8 +131,9 @@ exp:            bexp    {}
         |       sexp    {}
 ;
 
-bexp:        rexp AND_OPERATOR rexp {}
-        |    rexp OR_OPERATOR rexp {}
+bexp:       rexp {}
+        |   rexp AND_OPERATOR rexp {}
+        |   rexp OR_OPERATOR rexp {}
 
 
 rexp:       aexp bop aexp {}
@@ -135,6 +142,7 @@ rexp:       aexp bop aexp {}
 
 bop:        RELATIVE_OPERATOR { RelationalOp $1}
         |   EXCLAMATION_POINT ASSSIGN { BooleanOp "!="}
+        |   ASSSIGN ASSSIGN { BooleanOp "=="}
 ;
 
 bgrd:       EXCLAMATION_POINT bgrd {}
