@@ -75,6 +75,10 @@ rule token = parse
 | white                                   { token lexbuf } (* ignore white space *)
 | eof                                     { END_OF_FILE }
 
+(*  For comments, we declare another lexer output.
+  Since, we do not care about what is written there, we only check if the 
+  next token will end the comments, so that we can move our pointer to the
+  code parser*)
 and commentsoneline = parse
   | "\n" { token lexbuf }
   | _ { commentsoneline lexbuf }
