@@ -66,6 +66,7 @@ classdecl:      CLASS_KEYWORD CLASSNAME LBRACKET classbody RBRACKET   { ($2, (fi
 ;
 
 classbody: { ([], []) }
+        |   mddecllist { ([], $1) }
         |   vardeclist mddecllist { ($1, $2) }
 ;
 
