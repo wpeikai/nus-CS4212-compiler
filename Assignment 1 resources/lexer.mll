@@ -11,10 +11,9 @@ let white = [' ' '\t' '\n']+
 let alphanumunderscore = (lower_alpha|upper_alpha|digits|'_')
 let identifier = lower_alpha(alphanumunderscore)*
 let classname = upper_alpha(alphanumunderscore)*
-let intexp = ['1'-'9'](digits)* | '0'
-let varidexp = lower_alpha+
+let intexp = ['1'-'9'](digits)* | '0' (* Do not forget 0 *)
 (*
-All ascii chars from 32 to 127 except 47(2F in Hexadecimal) + [\\, \n, \r, \t, \b])
+All ascii chars from 32 to 127 except 47(2F in Hexadecimal which is ) + [\\, \n, \r, \t, \b])
 *)
 let string_literal_authorized_chars = ['\x20' '\x21' '\x23' '\x24' '\x25' '\x26'
 '\x27' '\x28' '\x29' '\x2A' '\x2B' '\x2C' '\x2D' '\x2E' '\x30'
@@ -30,61 +29,58 @@ let string_literal_authorized_chars = ['\x20' '\x21' '\x23' '\x24' '\x25' '\x26'
 let string_literal = "\"" string_literal_authorized_chars* "\""
 
 rule token = parse
-| "." { DOT }
-| "=" { ASSSIGN }
-| "+" { PLUS }
-| "-" { MINUS }
-| "*" { MULTIPLY }
-| "/" { DIVIDE }
-| "^" { CARET }
-| "<"|"<="|">"|">=" as relative_op { RELATIVE_OPERATOR relative_op}
-| "(" { LPAREN }
-| ")" { RPAREN }
-| "[" { LBRACE }
-| "]" { RBRACE }
-| "{" { LBRACKET }
-| "}" { RBRACKET }
-| "//" { print_endline "comments start"; commentsoneline lexbuf }
-| "/*" { print_endline "comments multiline start"; commentsmultiline lexbuf }
-| "!" { EXCLAMATION_POINT }
-| "?" { QUESTION_POINT }
-| "=" { EQ }
-| ";" { SEMICOLON }
-| "," { COMMA }
-| "&&" { AND_OPERATOR }
-| "||" { OR_OPERATOR }
-| "Void" { VOID_KEYWORD }
-| "main" { MAIN_KEYWORD }
-| "if" { IF_KEYWORD }
-| "else" { ELSE_KEYWORD }
-| "return" { RETURN_KEYWORD }
-| "while" { WHILE_KEYWORD }
-| "this" { THIS_KEYWORD }
-| "new" { NEW_KEYWORD }
-| "Int" { INT_KEYWORD }
-| "Bool" { BOOL_KEYWORD }
-| "String" { STRING_KEYWORD }
-| "class" { CLASS_KEYWORD }
-| "readln" { READLN_KEYWORD }
-| "println" { PRINTLN_KEYWORD }
-| "null" { NULL_KEYWORD }
-| "true"|"false" as boolean_lit { BOOLEAN_LITERAL (bool_of_string boolean_lit) }
-| string_literal as string_l { STRING_LITERAL string_l}
-| identifier as id { IDENTIFIER id}
-| classname as cname { CLASSNAME cname}
-| intexp as s { INTLIT (int_of_string s) }
-| varidexp as v { VARID v}
-| white { token lexbuf } (* ignore white space *)
-| eof { END_OF_FILE }
+| "."                                     { DOT }
+| "="                                     { ASSSIGN }
+| "+"                                     { PLUS }
+| "-"                                     { MINUS }
+| "*"                                     { MULTIPLY }
+| "/"                                     { DIVIDE }
+| "^"                                     { CARET }
+| "<"|"<="|">"|">=" as relative_op        { RELATIVE_OPERATOR relative_op}
+| "("                                     { LPAREN }
+| ")"                                     { RPAREN }
+| "["                                     { LBRACE }
+| "]"                                     { RBRACE }
+| "{"                                     { LBRACKET }
+| "}"                                     { RBRACKET }
+| "//"                                    { commentsoneline lexbuf } (* comment on line starts *)
+| "/*"                                    { commentsmultiline lexbuf }  (* comment on multiline starts *)
+| "!"                                     { EXCLAMATION_POINT }
+| "?"                                     { QUESTION_POINT }
+| "="                                     { EQ }
+| ";"                                     { SEMICOLON }
+| ","                                     { COMMA }
+| "&&"                                    { AND_OPERATOR }
+| "||"                                    { OR_OPERATOR }
+| "Void"                                  { VOID_KEYWORD }
+| "main"                                  { MAIN_KEYWORD }
+| "if"                                    { IF_KEYWORD }
+| "else"                                  { ELSE_KEYWORD }
+| "return"                                { RETURN_KEYWORD }
+| "while"                                 { WHILE_KEYWORD }
+| "this"                                  { THIS_KEYWORD }
+| "new"                                   { NEW_KEYWORD }
+| "Int"                                   { INT_KEYWORD }
+| "Bool"                                  { BOOL_KEYWORD }
+| "String"                                { STRING_KEYWORD }
+| "class"                                 { CLASS_KEYWORD }
+| "readln"                                { READLN_KEYWORD }
+| "println"                               { PRINTLN_KEYWORD }
+| "null"                                  { NULL_KEYWORD }
+| "true"|"false" as boolean_lit           { BOOLEAN_LITERAL (bool_of_string boolean_lit) }
+| string_literal as string_l              { STRING_LITERAL string_l}
+| identifier as id                        { IDENTIFIER id}
+| classname as cname                      { CLASSNAME cname}
+| intexp as s                             { INTLIT (int_of_string s) }
+| white                                   { token lexbuf } (* ignore white space *)
+| eof                                     { END_OF_FILE }
 
 and commentsoneline = parse
-  | "\n" { print_endline "commentsoneline close"; token lexbuf }
+  | "\n" { token lexbuf }
   | _ { commentsoneline lexbuf }
-  | eof   { print_endline "commentsoneline are not closed";
-        raise End_of_file}
+  | eof   { END_OF_FILE }
 
 and commentsmultiline = parse
-  | "*/" { print_endline "commentsmultiline close"; token lexbuf }
-  | _ { commentsmultiline lexbuf }
-  | eof   { print_endline "commentsmultiline are not closed";
-        raise End_of_file}
+  | "*/" { token lexbuf }
+  | _     { commentsmultiline lexbuf }
+  | eof   { END_OF_FILE }
