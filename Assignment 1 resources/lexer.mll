@@ -14,6 +14,7 @@ let classname = upper_alpha(alphanumunderscore)*
 let intexp = ['1'-'9'](digits)* | '0' (* Do not forget 0 *)
 (*
 All ascii chars from 32 to 127 except 47(2F in Hexadecimal which is ) + [\\, \n, \r, \t, \b])
+Add \" escaped double quote "
 *)
 let string_literal_authorized_chars = ['\x20' '\x21' '\x23' '\x24' '\x25' '\x26'
 '\x27' '\x28' '\x29' '\x2A' '\x2B' '\x2C' '\x2D' '\x2E' '\x30'
@@ -24,9 +25,10 @@ let string_literal_authorized_chars = ['\x20' '\x21' '\x23' '\x24' '\x25' '\x26'
 '\x59' '\x5A' '\x5B' '\x5D' '\x5E' '\x5F' '\x60' '\x61' '\x62' '\x63'
 '\x64' '\x65' '\x66' '\x67' '\x68' '\x69' '\x6A' '\x6B' '\x6C' '\x6D'
 '\x6E' '\x6F' '\x70' '\x71' '\x72' '\x73' '\x74' '\x75' '\x76' '\x77'
-'\x78' '\x79' '\x7A' '\x7B' '\x7C' '\x7D' '\x7E' '\x7F' '\\' '\n' '\r' '\t' '\b']
+'\x78' '\x79' '\x7A' '\x7B' '\x7C' '\x7D' '\x7E' '\x7F' '\\' '\n' '\r' '\t' '\b' '\"']
 
-let string_literal = "\"" string_literal_authorized_chars* "\""
+
+let string_literal = '"' string_literal_authorized_chars* '"'
 
 rule token = parse
 | "."                                     { DOT }

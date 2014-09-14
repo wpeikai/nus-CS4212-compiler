@@ -81,11 +81,6 @@ mddecllist:  { [] }
 mthd: typee IDENTIFIER LPAREN fmllist RPAREN mdbody {
     {jliteid=(SimpleVarId $2); rettype=$1; params=$4; localvars=(first_item $6); stmts=(second_item $6); ir3id=(SimpleVarId $2)} }
 
-
-vardeclkeene:   { [] }
-        |       vardeclkeene vardecl { $2 :: $1 }
-;
-
 vardecl: typee IDENTIFIER SEMICOLON   { ($1, (SimpleVarId $2)) }
 ;
 
@@ -107,11 +102,19 @@ typee:          INT_KEYWORD { IntT }
 mdbody:         LBRACKET vardeclkeene stmtpositive RBRACKET { ($2, $3) }
 ;
 
-stmtkleene:     { [] }
-        |       stmtkleene stmt    { $2 :: $1 }
+vardeclkeene:   { [] }
+        |       vardeclkeene vardecl { $2 :: $1 }
 ;
 
-stmtpositive:   stmtkleene stmt  { $2 :: $1 }
+stmtkleene:     { [] }
+        |       stmtlist    { $2 :: $1 }
+;
+
+
+stmtlist:   stmtlist stmt  { $2 :: $1 }
+
+
+stmtpositive:   stmtpositive stmt  { $2 :: $1 }
 ;
 
 stmt:           IF_KEYWORD LPAREN exp RPAREN LBRACKET stmtpositive RBRACKET ELSE_KEYWORD  
@@ -158,7 +161,7 @@ aexp:       ftr { $1 }
 ;
 
 ftr:        INTLIT { IntLiteral $1 }
-        |   MINUS ftr { UnaryExp (UnaryOp "-", $2) }
+        |   MINUS %prec ftr { UnaryExp (UnaryOp "-", $2) }
         |   atom { $1 }
 ;
 

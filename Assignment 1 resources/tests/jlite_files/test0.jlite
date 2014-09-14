@@ -1,5 +1,5 @@
 class Factorial {
-    void main (Int a) {
+    Void main (Int a) {
         return 4 + 5;
     }
 }

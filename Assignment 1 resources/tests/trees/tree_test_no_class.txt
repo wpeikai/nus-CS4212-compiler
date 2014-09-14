@@ -1,0 +1,14 @@
+
+======= JLite Program =======
+
+class MainTest{
+  void main(){
+    Return;
+  }
+
+} 
+
+
+
+======= End of JLite Program =======
+

@@ -1,0 +1,20 @@
+
+======= JLite Program =======
+
+class Factorial{
+  void main(Int a){
+    Return;
+    println([new Fac().computeFac(a)]);
+  }
+
+} 
+
+class Dev{
+  void n789456123;
+  String a;
+
+
+}
+
+======= End of JLite Program =======
+

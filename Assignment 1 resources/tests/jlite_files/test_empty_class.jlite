@@ -1,0 +1,7 @@
+class Factorial {
+    Void main () {
+        return ;
+    }
+}
+
+class A{}

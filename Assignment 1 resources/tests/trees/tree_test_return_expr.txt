@@ -1,0 +1,14 @@
+
+======= JLite Program =======
+
+class MainTest{
+  void main(){
+    Return [[[[[[a,b](*),c](*),d](*),e](*),f](*),g](*);
+  }
+
+} 
+
+
+
+======= End of JLite Program =======
+

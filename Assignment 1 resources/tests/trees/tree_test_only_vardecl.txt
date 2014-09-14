@@ -1,0 +1,23 @@
+
+======= JLite Program =======
+
+class MainTest{
+  void main(String b,Int a){
+    Return b;
+    println([new Fac().computeFac(a)]);
+  }
+
+} 
+
+class A{
+  Mlmkl___ l_______;
+  void m777777777_;
+  String a;
+  Bool re;
+  Bool result1;
+
+
+}
+
+======= End of JLite Program =======
+

@@ -1,0 +1,17 @@
+class MainTest {
+    Void main (Int a, String b) {
+        println(new Fac().computeFac(a)) ;
+        return b;
+    }
+}
+
+class A {
+    String screen_result(Bool xxxxesult2) {
+        if (dpzoeesult1 != dpzoeesult2) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+}

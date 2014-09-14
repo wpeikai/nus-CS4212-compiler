@@ -1,0 +1,7 @@
+class MainTest {
+    Void main () {
+        a = "azertyuiopqsdfghjklmwxcvbn";
+        b = "\"";
+        this.finish();
+    }
+}

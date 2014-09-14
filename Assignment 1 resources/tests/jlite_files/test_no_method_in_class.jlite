@@ -5,30 +5,9 @@ class MainTest {
     }
 }
 
-class A {
+class NoMethod999 {
     Bool result1;
     Int print_times;
-
-    String screen_result(Bool result2, Int uselessvar) {
-        if (result1 != result2) {
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
-
-    Void print_result(Bool b) {
-        Int i;
-        i = 0;
-        print_screen = this.screen_result(b);
-
-        while (i <= this.print_times) {
-            println(this.result1);
-            i = i+1;
-        }
-        return;
-    }
 }
 
 

@@ -1,0 +1,14 @@
+class MainTest {
+    Void main (Int a, String b) {
+        println(new Fac().computeFac(a)) ;
+        return b;
+    }
+}
+
+class A {
+    Bool result1;
+    Bool re;
+    String a;
+    Void m777777777_;
+    Mlmkl___ l_______;
+}

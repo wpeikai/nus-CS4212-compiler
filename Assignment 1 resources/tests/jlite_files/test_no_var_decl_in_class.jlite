@@ -1,0 +1,17 @@
+class MainTest {
+    Void main () {
+        return;
+    }
+}
+
+class N {
+    String screen_result(Bool result2, Int uselessvar) {
+        if (result1 && result2) {
+            return false;
+        }
+        else {
+            return !true;
+        }
+    }
+
+}

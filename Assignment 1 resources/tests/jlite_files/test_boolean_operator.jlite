@@ -1,0 +1,11 @@
+class MainTest {
+    Void main () {
+        if ((8 >= 6 && p== 9) || ((ert != rt.ml) || (mlk.lk == zer))) {
+            let_s_do_smth();
+        }
+        else {
+            m = opop == 87;
+            let_s_do_smth_else();
+        }
+    }
+}

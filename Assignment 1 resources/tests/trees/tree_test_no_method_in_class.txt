@@ -1,0 +1,44 @@
+
+======= JLite Program =======
+
+class MainTest{
+  void main(String b,Int a){
+    Return b;
+    println([new Fac().computeFac(a)]);
+  }
+
+} 
+
+class C{
+  String k789;
+
+  void aaaaaa(String a){
+    Bool res;
+    While([pass,uu1_uu](==)) {
+    {
+      Return;
+    }
+  }
+
+}
+class B{
+  String b1234;
+
+  Bool equals(String a){
+    Bool res;
+    Return;
+    [resClass.print_result(res)];
+    resClass=new A();
+    res=[a,b](==);
+  }
+
+}
+class NoMethod999{
+  Int print_times;
+  Bool result1;
+
+
+}
+
+======= End of JLite Program =======
+

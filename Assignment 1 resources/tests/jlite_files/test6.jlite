@@ -1,0 +1,7 @@
+class MainTest {
+    Void main () {
+        a = "azertyuiopqsdfghjklmwxcvbn";
+        d = 7;
+        return a+d;
+    }
+}

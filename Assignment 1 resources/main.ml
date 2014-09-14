@@ -13,13 +13,14 @@ let parse =
       End_of_file -> exit 0 *)
 
 let parse =
-	let channelf = open_in ("sample.jlite") in
+	let channelf = open_in (Sys.argv.(1)) in
 	let lexbuf = Lexing.from_channel channelf in
 		let a = Parser.program (Lexer.token) lexbuf in
 		close_in channelf;
     print_string (string_of_jlite_program a);
 
 
+(* Only for lexer*)
 
 (* let parse_file filename =
   let l = Lexing.from_channel (open_in filename) in *)

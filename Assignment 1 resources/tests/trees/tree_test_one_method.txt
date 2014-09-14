@@ -1,0 +1,28 @@
+
+======= JLite Program =======
+
+class MainTest{
+  void main(String b,Int a){
+    Return b;
+    println([new Fac().computeFac(a)]);
+  }
+
+} 
+
+class A{
+
+  String screen_result(Bool xxxxesult2){
+    If([dpzoeesult1,dpzoeesult2](!=))
+    {
+      Return false;
+    }
+    else
+    {
+      Return true;
+    }
+  }
+
+}
+
+======= End of JLite Program =======
+

@@ -1,0 +1,16 @@
+
+======= JLite Program =======
+
+class MainTest{
+  void main(){
+    [this.finish()];
+    a=""azertyuiopqsdfghjklmwxcvbn";
+        b = "\""";
+  }
+
+} 
+
+
+
+======= End of JLite Program =======
+

@@ -1,0 +1,22 @@
+
+======= JLite Program =======
+
+class MainTest{
+  void main(){
+    If([[[8,6](>=),[p,9](==)](&&),[[ert,rt.ml](!=),[mlk.lk,zer](==)](||)](||))
+    {
+      [let_s_do_smth()];
+    }
+    else
+    {
+      [let_s_do_smth_else()];
+      m=[opop,87](==);
+    }
+  }
+
+} 
+
+
+
+======= End of JLite Program =======
+

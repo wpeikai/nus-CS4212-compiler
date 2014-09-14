@@ -1,0 +1,27 @@
+
+======= JLite Program =======
+
+class MainTest{
+  void main(){
+    Return;
+  }
+
+} 
+
+class N{
+
+  String screen_result(Int uselessvar,Bool result2){
+    If([result1,result2](&&))
+    {
+      Return false;
+    }
+    else
+    {
+      Return (!)[true];
+    }
+  }
+
+}
+
+======= End of JLite Program =======
+

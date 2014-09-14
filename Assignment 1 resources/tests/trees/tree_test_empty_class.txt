@@ -1,0 +1,17 @@
+
+======= JLite Program =======
+
+class Factorial{
+  void main(){
+    Return;
+  }
+
+} 
+
+class A{
+
+
+}
+
+======= End of JLite Program =======
+

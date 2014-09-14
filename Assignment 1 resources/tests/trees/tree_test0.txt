@@ -1,0 +1,14 @@
+
+======= JLite Program =======
+
+class Factorial{
+  void main(Int a){
+    Return [4,5](+);
+  }
+
+} 
+
+
+
+======= End of JLite Program =======
+

@@ -1,0 +1,16 @@
+class Factorial {
+    Void main (Int a) {
+        println(new Fac().computeFac(a)) ;
+        return ;
+    }
+// azertyuiopsdfhjklmxcvbn,;:%$£é"sdcdqeicfosdfnvfsdv//:/*!z&\ndadz^$^$$
+}
+
+class Dev {
+/* 
+Why not factorial?
+
+€§/§/.§/.^*\////*lmk////****l/\*/
+    String a;
+    Void n789456123;
+}

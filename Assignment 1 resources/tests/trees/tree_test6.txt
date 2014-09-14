@@ -1,0 +1,16 @@
+
+======= JLite Program =======
+
+class MainTest{
+  void main(){
+    Return [a,d](+);
+    d=7;
+    a=""azertyuiopqsdfghjklmwxcvbn"";
+  }
+
+} 
+
+
+
+======= End of JLite Program =======
+

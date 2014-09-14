@@ -1,0 +1,69 @@
+
+======= JLite Program =======
+
+class PaaaaTest{
+  void main(Frezfzefez m,Bool b,String a){
+    Return 0;
+    println([new Fac().computeFac(a)]);
+  }
+
+} 
+
+class C{
+  String i_789456123;
+
+
+}
+class B{
+  A1230123 b1234;
+
+  Bool y123(void a){
+    Return;
+    [resClass.print_result(res)];
+    resClass=new A();
+    res=[a,b](==);
+  }
+
+}
+class Pdzadzad45__________{
+  Int print_times5;
+  Int print_times4;
+  Int print_times3;
+  Int print_times2;
+  Int print_times1;
+  Bool result1;
+
+  Bool azert123456____(Int fdzfezf7_,Bool zaerert45){
+    If(false)
+    {
+      az.mlk=""AQWn\"";
+      q789=p;
+      aze=789;
+    }
+    else
+    {
+      While([a.m,8](==)) {
+      {
+        a.m=7;
+        readln(r);
+      }
+    }
+  }
+
+
+  void print_result(Bool b){
+    Int i;
+    Return;
+    While([i,this.print_times](<=)) {
+    {
+      i=[i,1](+);
+      println(this.result1);
+    }
+    print_screen=[this.screen_result(b)];
+    i=0;
+  }
+
+}
+
+======= End of JLite Program =======
+
