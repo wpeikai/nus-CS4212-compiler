@@ -72,17 +72,17 @@ let rec type_check_var_decl_list
 	let rec helper 
 		(vlst: var_decl list) :jlite_type list =
 		match vlst with
-		| (typ,vid)::lst -> 
+		| (typ,vid)::tail_vlst -> 
 			begin
 			match typ with
 			| ObjectT cname -> 
 	        (* check if the declared class name exists *)
 				if (exists_class_decl p cname) 
-					then helper lst
+					then helper tail_vlst
 					(* return the undefined type *)
-					else typ :: helper lst
+					else typ :: helper tail_vlst
 			(* Primitive type *)
-			| _ -> ( helper lst ) 
+			| _ -> ( helper tail_vlst ) 
 			end
 		| [] -> []
 	in match ( helper vlst) with
@@ -185,8 +185,11 @@ let rec type_check_stmts
 				^ string_of_jlite_stmt s ^ "\n")
 			| _ ->  (None,PrintStmt exprnew)
 			end
-		(* _ -> Handle other Statement types
-		  ---- TODO ---- *)
+		| MdCallStmt i -> (None, MdCallStmt i)
+		| AssignFieldStmt (i, j) -> (None, AssignFieldStmt (i,j))
+		| AssignStmt (i, j) -> (None, AssignStmt (i, j))
+		| WhileStmt (i, j) -> (None, WhileStmt (i, j))
+		| IfStmt (i, j, k) -> (None, IfStmt (i, j, k))
 	  in let (newrettype,newstmt) = ( helper s) in
 	  match newrettype,tail_lst with
 		| Some t, head::tail -> 
