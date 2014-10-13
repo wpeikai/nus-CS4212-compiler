@@ -1,0 +1,21 @@
+class M
+{
+    void main () {
+        Int dummy;
+		String s;
+		C help;
+        s = help.create().m1(dummy);  
+    }
+}
+
+class C
+{
+    Int m1(Int a) {
+		return 1;
+    }
+	
+	C create() {
+		C help;
+		return help;
+    }
+}

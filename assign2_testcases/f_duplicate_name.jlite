@@ -3,12 +3,11 @@ class Main {
 void main(Int i,Int a, Int b,Int d){
  Int t1;
  Int t2;
- Int t3;
+ 
  Compute help;
  help = new Compute();
  t1 = help.addSquares(a,b) + help.square(i);
  t2 = help.square(d);
- t3 = help.chachedValue;
  if(t2>t1){
     println("Square of d larger than sum of squares");
  }
@@ -23,11 +22,12 @@ class Compute {
 
    Bool computedSquares;
    Int chachedValue;
-
+   String chachedValue;  //duplicate name
+   
    Int square(Int a){
      return a*a;
-   }
-   
+   }   
+  
    Int add(Int a, Int b){
     return a+b;
    }

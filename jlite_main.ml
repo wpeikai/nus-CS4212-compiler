@@ -28,7 +28,7 @@ let parse_file file_name =
 
 let process prog = 
 	begin
-		print_string (Jlite_structs.string_of_jlite_program prog);
+		(* print_string (Jlite_structs.string_of_jlite_program prog); *)
 		let typedprog= (Jlite_simple_annotatedtyping.type_check_jlite_program prog) in
 		print_string (Jlite_structs.string_of_jlite_program typedprog);
 	end
