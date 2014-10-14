@@ -4,7 +4,7 @@
 (* ===================================================== *)
 
 open Jlite_simple_annotatedtyping
-
+open Jlite_to_ir3
 open Ir3_structs
 
 let source_files = ref []
@@ -29,8 +29,10 @@ let parse_file file_name =
 let process prog = 
 	begin
 		(* print_string (Jlite_structs.string_of_jlite_program prog); *)
-		let typedprog= (Jlite_simple_annotatedtyping.type_check_jlite_program prog) in
-		print_string (Jlite_structs.string_of_jlite_program typedprog);
+        let typedprog = (Jlite_simple_annotatedtyping.type_check_jlite_program prog) in
+        (* print_string (Jlite_structs.string_of_jlite_program typedprog); *)
+		    let ir3prog = (Jlite_to_ir3.convert_jlite_typed_program typedprog) in
+        print_string (Ir3_structs.string_of_ir3_program ir3prog);
 	end
 let _ = 
  begin
