@@ -120,7 +120,6 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) : (ir3_stmt list) =
 			let stmt1_ir3_list = convert_stmts_list jsmtm1_list in
 			let stmt_ir3_list_else = convert_stmts_list jsmtm_list_else in
 			let returnint = 2 in
-			(* ifstmt :: stmt_ir3_list_else @ GoTo3 returnint :: label1 :: (stmt1_ir3_list @ [Label3 returnint]) *)
 			stmts_list @  ifstmt :: stmt_ir3_list_else @ label1 :: stmt1_ir3_list
 		| WhileStmt (jexp, jstmt_list) ->
 			let _, id3_expr, jexp_stmts = convert_jlite_expr jexp in
@@ -128,13 +127,10 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) : (ir3_stmt list) =
 			let end_loop = 4 in
 			let label_start_loop = Label3 start_loop in
 			let label_end_loop = Label3 end_loop in
-			let if_stmt_start = IfStmt3 (id3_expr, end_loop) in
+			let if_stmt_start = IfStmt3 (id3_expr, start_loop) in
 			let if_stmt_end = IfStmt3 (id3_expr, start_loop) in
 			let stmt_ir3_list = convert_stmts_list jstmt_list in
-
-			if_stmt_start :: ((GoTo3 end_loop) :: (label_start_loop :: (stmt_ir3_list @ (if_stmt_end :: [label_end_loop]))))
-
-
+			jexp_stmts @ if_stmt_start :: ((GoTo3 end_loop) :: (label_start_loop :: (stmt_ir3_list @ (if_stmt_end :: [label_end_loop]))))
 		| ReadStmt vid ->
 			[ReadStmt3 (convert_jlite_var_id vid)]
 		| PrintStmt jexp->
@@ -157,7 +153,7 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) : (ir3_stmt list) =
 			let ir3_type_, ir3_expr_, ir3_stmt_list = convert_jlite_expr jexp in
 			let id3_ = "yy" in
 			let idc3_ = Var3 id3_ in
-			ReturnStmt3 id3_ :: AssignStmt3 (id3_, ir3_expr_) :: ir3_stmt_list 
+			ir3_stmt_list @ AssignStmt3 (id3_, ir3_expr_) :: [ReturnStmt3 id3_]
 		| ReturnVoidStmt -> [ReturnVoidStmt3]
 	in head_stmt_list @ (convert_stmts_list tail)
 	| [] -> []
