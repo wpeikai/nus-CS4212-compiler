@@ -164,7 +164,7 @@ let string_of_ir3_stmt (s:ir3_stmt):string =
 		print_tab() ^ (string_of_ir3_exp id) ^"="
 		^(string_of_ir3_exp e)^";"
 	| AssignDeclStmt3 (t, id, e) -> 
-		print_tab() ^ (string_of_ir3_type t) ^ id ^ "="
+		print_tab() ^ (string_of_ir3_type t) ^ " " ^ id ^ "="
 		^(string_of_ir3_exp e)^";"
 	| MdCallStmt3 (e) ->  
 		print_tab() ^ (string_of_ir3_exp e)^";"
