@@ -1,17 +1,32 @@
 #! /bin/bash
 rm z.exe
 
-ocamlc -c jlite_structs.ml
+ocamlc -c -g jlite_structs.ml
 ocamlyacc jlite_parser.mly
-ocamlc -c jlite_parser.mli
+ocamlc -c -g jlite_parser.mli
 ocamllex jlite_lexer.mll
-ocamlc -c jlite_lexer.ml
-ocamlc -c jlite_parser.ml
-ocamlc -c ir3_structs.ml
-ocamlc -c jlite_simple_annotatedtyping.ml
-ocamlc -c jlite_to_ir3.ml
-ocamlc -c jlite_main.ml
-ocamlc -o z.exe jlite_to_ir3.cmo jlite_structs.cmo jlite_simple_annotatedtyping.cmo jlite_lexer.cmo jlite_parser.cmo ir3_structs.cmo jlite_main.cmo
+ocamlc -c -g jlite_lexer.ml
+ocamlc -c -g jlite_parser.ml
+ocamlc -c -g ir3_structs.ml
+ocamlc -c -g jlite_simple_annotatedtyping.ml
+ocamlc -c -g jlite_to_ir3.ml
+ocamlc -c -g jlite_main.ml
+ocamlc -g -o z.exe jlite_structs.cmo jlite_to_ir3.cmo jlite_simple_annotatedtyping.cmo jlite_lexer.cmo jlite_parser.cmo ir3_structs.cmo jlite_main.cmo
+
+
+# ocamlc -c jlite_structs.ml
+# ocamlyacc jlite_parser.mly
+# ocamlc -c jlite_parser.mli
+# ocamllex jlite_lexer.mll
+# ocamlc -c jlite_lexer.ml
+# ocamlc -c jlite_parser.ml
+# ocamlc -c ir3_structs.ml
+# ocamlc -c jlite_simple_annotatedtyping.ml
+# ocamlc -c jlite_to_ir3.ml
+# ocamlc -c jlite_main.ml
+# ocamlc -o z.exe jlite_structs.cmo jlite_to_ir3.cmo jlite_simple_annotatedtyping.cmo jlite_lexer.cmo jlite_parser.cmo ir3_structs.cmo jlite_main.cmo
+
+
 
 rm *.cmo *.cmi
 rm jlite_parser.mli jlite_parser.ml jlite_lexer.ml
