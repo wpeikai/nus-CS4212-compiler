@@ -34,35 +34,96 @@ let rec convert_var_decl_list (var_decl_list: var_decl list) : (var_decl3 list) 
 	| head :: tail -> (convert_jlite_var_decl head) :: (convert_var_decl_list tail)
 
 
-let rec convert_jlite_expr (j_exp: jlite_exp) : ir3_exp * (ir3_stmt list)=
+let rec convert_jlite_expr (j_exp: jlite_exp) : ir3_type * ir3_exp * (ir3_stmt list)=
+	print_string ((string_of_jlite_expr j_exp) ^ "\n");
 	match j_exp with 
 	| TypedExp (e, jtype) ->
+		let ir3_type_ = convert_jlite_type jtype  in	
 		begin match e with
 			| UnaryExp (jop, jexp) ->
-			let id3_var : id3 = "t1" in
-			let idc3_var : idc3 = Var3 id3_var  in
-			let (expr_ir3:ir3_exp), (ir3_stmt_list : (ir3_stmt list)) = convert_jlite_expr jexp in
-			let stmt = AssignDeclStmt3 ((convert_jlite_type jtype), id3_var, expr_ir3) in
-			UnaryExp3 ((convert_jlite_op jop), idc3_var), stmt :: ir3_stmt_list
-			| _ -> failwith "5"
+				let id3_var : id3 = "t1" in
+				let idc3_var : idc3 = Var3 id3_var  in
+				let ir3_op = convert_jlite_op jop  in
+				let _, (expr_ir3:ir3_exp), (ir3_stmt_list : (ir3_stmt list)) = convert_jlite_expr jexp in
+				let stmt = AssignDeclStmt3 ((convert_jlite_type jtype), id3_var, expr_ir3) in
+				ir3_type_, UnaryExp3 (ir3_op, idc3_var), stmt :: ir3_stmt_list
+			| BinaryExp (jop, jexp1, jexp2) ->
+				let ir3_type1, ir3_expr1, ir3_stmt_list1 = convert_jlite_expr jexp1 in
+				let ir3_type2, ir3_expr2, ir3_stmt_list2 = convert_jlite_expr jexp2 in
+				let id31, id32 = "ee", "ff" in
+				let id31c, id32c = Var3 id31, Var3 id32 in
+				let ass1 = AssignDeclStmt3 (ir3_type1, id31, ir3_expr1) in
+				let ass2 = AssignDeclStmt3 (ir3_type2, id32, ir3_expr2) in
+				(* TODO Boolean short circuiting *)
+				ir3_type_, BinaryExp3 ((convert_jlite_op jop), id31c, id32c), ir3_stmt_list1 @ ir3_stmt_list2 @ (ass1 :: [ass2])
+			| FieldAccess (jexp, vid) ->
+				let ir3_type_exp, id3_expr_, ir3_stmt_list = convert_jlite_expr jexp in
+				let id3_var : id3 = "t1" in
+				ir3_type_, FieldAccess3 (id3_var, convert_jlite_var_id vid), ir3_stmt_list @ [AssignDeclStmt3 (ir3_type_, id3_var, id3_expr_)]
+			| ObjectCreate cname -> ir3_type_, ObjectCreate3 cname, []
+			| MdCall (jexp, jexp_list) ->
+			    begin
+				let ir3_type_, ir3_expr_, ir3_stmt_list = convert_jlite_expr jexp in
+				let id3_var : id3 = "t14" in
+				let ass = AssignDeclStmt3 (ir3_type_, id3_var, ir3_expr_) in
+
+				let handles_expr x =
+					let ir3_type_, id3_expr_, ir3_stmts_list  = convert_jlite_expr x  in
+					let id3_var_temp : id3 = "t1" in
+					let idc3_var_temp : idc3 = Var3 id3_var_temp in
+					idc3_var_temp, AssignDeclStmt3 (ir3_type_, id3_var_temp, id3_expr_) :: ir3_stmts_list
+				in
+				let alllll = List.map handles_expr jexp_list in
+
+				let get_stmt_expr_list x =
+					let _, s = x  in
+					s
+				in
+				let get_idc3_expr_list x =
+					let a,_  = x  in
+					a
+				in
+				let all_stmts_list = List.map get_stmt_expr_list alllll in
+				let rec flatten a = match a with
+  					| [] -> []
+  					| h::tail -> h @ (flatten tail) in
+  				let all_stmts = flatten all_stmts_list in
+				let all_idc3 = List.map get_idc3_expr_list alllll in
+
+				ir3_type_, MdCall3 (id3_var, all_idc3), (ass :: (ir3_stmt_list @ all_stmts))
+				end
+			| BoolLiteral b ->
+				ir3_type_, Idc3Expr (BoolLiteral3 b), []
+			| IntLiteral i ->
+				ir3_type_, Idc3Expr (IntLiteral3 i), []
+			| StringLiteral s ->
+				ir3_type_, Idc3Expr (StringLiteral3 s), []
+			| NullWord -> ir3_type_, Idc3Expr (Var3 "NULL"), []
+
+			| ThisWord -> ir3_type_, Idc3Expr (Var3 "THIS"), []
+			| Var vid -> ir3_type_, Idc3Expr (Var3 (convert_jlite_var_id vid)), []
+			| _ -> failwith ((string_of_jlite_expr e) ^ "\n")
 		end
-	| _ -> failwith "4"
+	| _ -> failwith ("\nFail 511\n" ^ Jlite_structs.string_of_jlite_expr j_exp)
 
 
 let rec convert_stmts_list (stmts_list: jlite_stmt list) : (ir3_stmt list) =
 
-	let convert_stmt (stmt: jlite_stmt) : (ir3_stmt list) = 
-		match stmt with
-		| IfStmt (exp1, jsmtm1_list, jsmtm2_list) -> 
-			let exprir3, stmts_list = convert_jlite_expr exp1 in
+	(* Function begin here *)
+	match stmts_list with
+	| head::tail -> let head_stmt_list = 
+		match head with
+		| IfStmt (exp1, jsmtm1_list, jsmtm_list_else) -> 
+			let _, exprir3, stmts_list = convert_jlite_expr exp1 in
 			let ifstmt = IfStmt3 (exprir3, 1) in
 			let label1  = Label3 1 in
 			let stmt1_ir3_list = convert_stmts_list jsmtm1_list in
-			let stmt2_ir3_list = convert_stmts_list jsmtm2_list in
+			let stmt_ir3_list_else = convert_stmts_list jsmtm_list_else in
 			let returnint = 2 in
-			ifstmt :: stmt2_ir3_list @ GoTo3 returnint :: label1 :: (stmt1_ir3_list @ [Label3 returnint])
+			(* ifstmt :: stmt_ir3_list_else @ GoTo3 returnint :: label1 :: (stmt1_ir3_list @ [Label3 returnint]) *)
+			stmts_list @  ifstmt :: stmt_ir3_list_else @ label1 :: stmt1_ir3_list
 		| WhileStmt (jexp, jstmt_list) ->
-			let id3_expr, jexp_stmts = convert_jlite_expr jexp in
+			let _, id3_expr, jexp_stmts = convert_jlite_expr jexp in
 			let start_loop = 3 in
 			let end_loop = 4 in
 			let label_start_loop = Label3 start_loop in
@@ -76,18 +137,30 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) : (ir3_stmt list) =
 
 		| ReadStmt vid ->
 			[ReadStmt3 (convert_jlite_var_id vid)]
-
-		| _ -> failwith "3"
-	in
-
-	(* Function begin here *)
-	match stmts_list with
-	| head::tail -> (convert_stmt head) @ (convert_stmts_list tail)
+		| PrintStmt jexp->
+			let ir3_type_, ir3_expr_, ir3_stmt_list = convert_jlite_expr jexp in
+			let id3_ = "yy" in
+			let idc3_ = Var3 id3_ in
+			(AssignDeclStmt3 (ir3_type_, id3_, ir3_expr_)) :: [PrintStmt3 idc3_]
+		| AssignStmt (vid, jexp) ->
+			let id3_ = convert_jlite_var_id vid in
+			let ir3_type_, ir3_expr_, ir3_stmt_list = convert_jlite_expr jexp in
+			ir3_stmt_list @ [AssignStmt3 (id3_, ir3_expr_)]
+		| AssignFieldStmt (jexp1, jexp2) ->
+			let _, ir3_expr1, ir3_stmt_list1 = convert_jlite_expr jexp1 in
+			let _, ir3_expr2, ir3_stmt_list2 = convert_jlite_expr jexp2 in
+			ir3_stmt_list1 @ ir3_stmt_list2 @ [AssignFieldStmt3 (ir3_expr1, ir3_expr2)]
+		| MdCallStmt jexp ->
+			let _, ir3_expr_, ir3_stmt_list = convert_jlite_expr jexp in
+			ir3_stmt_list @ [MdCallStmt3 ir3_expr_]
+		| ReturnStmt jexp ->
+			let ir3_type_, ir3_expr_, ir3_stmt_list = convert_jlite_expr jexp in
+			let id3_ = "yy" in
+			let idc3_ = Var3 id3_ in
+			ReturnStmt3 id3_ :: AssignStmt3 (id3_, ir3_expr_) :: ir3_stmt_list 
+		| ReturnVoidStmt -> [ReturnVoidStmt3]
+	in head_stmt_list @ (convert_stmts_list tail)
 	| [] -> []
-
-
-
-
 
 let convert_md_decl (md: md_decl) : md_decl3 = 
 	{ rettype3= convert_jlite_type md.rettype; 
