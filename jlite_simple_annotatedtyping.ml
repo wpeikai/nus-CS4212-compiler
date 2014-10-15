@@ -253,9 +253,7 @@ let rec type_check_md_overloading
 let rec type_check_expr 
 	(p: jlite_program)(env: var_decl list) 
 	(classid: class_name) (exp:jlite_exp) = 
-	let rec helper e 
-	: (jlite_type * jlite_exp) =
-
+	let rec helper e  : (jlite_type * jlite_exp) =
 		match e with
 		| BoolLiteral v -> (BoolT, TypedExp (e, BoolT))
 		| IntLiteral v -> (IntT, TypedExp (e, IntT))
@@ -265,8 +263,7 @@ let rec type_check_expr
 		| NullWord -> 
 			((ObjectT "null") , TypedExp (e,(ObjectT "null")))
 		| Var v -> 
-			let (vtyp,vid) =(find_var_decl_type env v) in
-
+			let (vtyp,vid) = (find_var_decl_type env v) in
 			(vtyp, TypedExp (Var vid,vtyp)) 
 		| ObjectCreate c -> 
 			if (exists_class_decl p c)  
@@ -282,14 +279,14 @@ let rec type_check_expr
 			begin
 			match (op, e_type) with
 			| (UnaryOp operator, BoolT) -> 
-				if operator = "!" then (BoolT, TypedExp (e_expr, BoolT))
+				if operator = "!" then (BoolT, TypedExp (UnaryExp (op, e_expr), BoolT))
 					else failwith 
 						("\nType-check error in " 
 						^ classid 
 						^ ". UnaryExp type checking fails:\n" 
 						^ string_of_jlite_expr exp ^ "\n")
 			| (UnaryOp operator, IntT) -> 
-				if operator = "-" then (IntT, TypedExp (e_expr, IntT))
+				if operator = "-" then (IntT, TypedExp (UnaryExp (op, e_expr), IntT))
 					else failwith 
 						("\nType-check error in " 
 						^ classid 
