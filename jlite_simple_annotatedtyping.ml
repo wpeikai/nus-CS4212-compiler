@@ -224,22 +224,22 @@ let rec type_check_var_decl_list
 let rec type_check_md_overloading 
 	(classid: class_name) (mdlst: md_decl list) =
 	let rec helper 
-		(mdls: md_decl list) (counter: int) :var_id list =
+		(mdls: md_decl list) :var_id list =
 		match mdls with
 		| md::tail_mdlst -> 
 			begin
 				let a = exist_md_decl_in_list tail_mdlst md in
 				let b = match md.jliteid with
-					| SimpleVarId s ->  SimpleVarId (s ^ "_" ^ classid ^ "_" ^ (string_of_int counter))
-					| TypedVarId (s, t, i) -> SimpleVarId (s ^ "_" ^ classid ^ "_" ^ (string_of_int counter))
+					| SimpleVarId s ->  SimpleVarId (s ^ "_" ^ classid)
+					| TypedVarId (s, t, i) -> SimpleVarId (s ^ "_" ^ classid)
 				in
 				md.ir3id <- b;
 				match a with 
-				| true -> md.jliteid :: helper tail_mdlst (counter + 1)
-				| false -> helper tail_mdlst (counter + 1)
+				| true -> md.jliteid :: helper tail_mdlst
+				| false -> helper tail_mdlst
 			end
 		| [] -> []
-	in match (helper mdlst 0) with
+	in match (helper mdlst) with
 		| [] ->  (true,"")
 		| lst -> (false, ("overloaded method names: " 
 				^ (string_of_list lst string_of_var_id ",")))
@@ -378,11 +378,6 @@ let rec type_check_expr
 				method_decl.rettype, TypedExp(FieldAccess (TypedExp (ThisWord, ObjectT classid), 
 											               method_name),
 			                                  ObjectT classid)
-
-				(* (method_type, TypedExp(TypedExp(Var v, idtype),  *)
-									   (* method_type)) *)
-				(* (method_type, TypedExp(Var vid,  *)
-									   (* method_type)) *)
 			| _ -> failwith 
 					("FieldAccess non recognized" ^ string_of_jlite_expr e ^ "\n")
 			in m_type, TypedExp (MdCall (e_expr, e_expr_list), m_type)
