@@ -222,24 +222,26 @@ let rec type_check_var_decl_list
 	---  TODO  ---
 *)  
 let rec type_check_md_overloading 
-	(classid: class_name) (mdlst: md_decl list) =
+	(classid: class_name) (mdlst: md_decl list) (counter_methd: int ref) =
 	let rec helper 
-		(mdls: md_decl list) :var_id list =
+		(mdls: md_decl list) (counter: int ref) :var_id list =
 		match mdls with
 		| md::tail_mdlst -> 
 			begin
+				counter := !counter + 1;
+
 				let a = exist_md_decl_in_list tail_mdlst md in
 				let b = match md.jliteid with
-					| SimpleVarId s ->  SimpleVarId (s ^ "_" ^ classid)
-					| TypedVarId (s, t, i) -> SimpleVarId (s ^ "_" ^ classid)
+					| SimpleVarId s ->  SimpleVarId (s ^ "_" ^ classid ^ "_" ^ (string_of_int (!counter-1)))
+					| TypedVarId (s, t, i) -> SimpleVarId (s ^ "_" ^ classid ^ "_" ^ (string_of_int (!counter-1)))
 				in
 				md.ir3id <- b;
 				match a with 
-				| true -> md.jliteid :: helper tail_mdlst
-				| false -> helper tail_mdlst
+				| true -> md.jliteid :: helper tail_mdlst counter
+				| false -> helper tail_mdlst counter
 			end
 		| [] -> []
-	in match (helper mdlst) with
+	in match (helper mdlst counter_methd) with
 		| [] ->  (true,"")
 		| lst -> (false, ("overloaded method names: " 
 				^ (string_of_list lst string_of_var_id ",")))
@@ -659,17 +661,20 @@ let type_check_mthd_decl p env cname m : md_decl =
 			in { m with stmts=newstmts;
 				}
 
+
 (* TypeCheck a JLite Program. 
    Return a new JLite Program 
    where expressions are annotated with types
 *)
 let type_check_jlite_program  
 	(p:jlite_program) : jlite_program=
+
 	let type_check_class_main 
 		((cname,mmthd):class_main ) =
 		(cname,(type_check_mthd_decl p [] cname mmthd )) in
 	let rec type_check_class_decl 
-		((cname,cvars,cmthds):class_decl) =
+		(counter_methd:int ref)
+		((cname,cvars,cmthds):class_decl)  =
 		(* TypeCheck field declarations *)
 		let (retval, errmsg) = 
 			(type_check_var_decl_list p cvars) in
@@ -679,7 +684,7 @@ let type_check_jlite_program
 			^ " field declarations." ^ errmsg ^ "\n")
 		(* TypeCheck methods overloading *)
 		else let (retval, errmsg) = 
-			(type_check_md_overloading cname cmthds) in
+			(type_check_md_overloading cname cmthds counter_methd) in
 			if (retval==false) then 
 				failwith 
 				("\nType-check error in " ^ cname 
@@ -695,7 +700,8 @@ let type_check_jlite_program
 		let (mainclass, classes) = p in 
 		let newmain = 
 			(type_check_class_main mainclass) in
+	    let counter_methd : int ref = ref 0 in
 		let newclasses=
-			(List.map type_check_class_decl classes) in
+			(List.map (type_check_class_decl counter_methd)  classes ) in
 		(newmain, newclasses)
 	end

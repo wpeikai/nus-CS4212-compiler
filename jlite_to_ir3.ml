@@ -180,46 +180,44 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 	in head_stmt_list @ (convert_stmts_list tail counter_var counter_label)
 	| [] -> []
 
-let convert_md_decl (md: md_decl) (counter_var:int ref) (counter_methd:int ref)(counter_label: int ref) : md_decl3 = 
-	counter_methd := !counter_methd + 1;
+let convert_md_decl (md: md_decl) (counter_var:int ref) (counter_label: int ref) : md_decl3 = 
 	{ rettype3= convert_jlite_type md.rettype; 
-	  id3 = (convert_jlite_var_id md.ir3id) ^ "_" ^ (string_of_int (!counter_methd -1));
+	  id3 = (convert_jlite_var_id md.ir3id);
 	  params3= convert_var_decl_list md.params;				
 	  localvars3 = convert_var_decl_list md.localvars;				
 	  ir3stmts = convert_stmts_list md.stmts counter_var counter_label;}
 
 
-let rec convert_md_decl_list (md_decl_list: md_decl list) (counter_var:int ref) (counter_methd:int ref) (counter_label:int ref): (md_decl3 list) = 
+let rec convert_md_decl_list (md_decl_list: md_decl list) (counter_var:int ref) (counter_label:int ref): (md_decl3 list) = 
 	match md_decl_list with
-	| head::tail -> (convert_md_decl head counter_var counter_methd counter_label) :: (convert_md_decl_list tail counter_var counter_methd counter_label)
+	| head::tail -> (convert_md_decl head counter_var counter_label) :: (convert_md_decl_list tail counter_var counter_label)
 	| [] -> []
 
-let convert_class_decl (class_decl: class_decl) (counter_var:int ref) (counter_methd: int ref) (counter_label:int ref): cdata3 * (md_decl3 list) =
+let convert_class_decl (class_decl: class_decl) (counter_var:int ref) (counter_label:int ref): cdata3 * (md_decl3 list) =
 	let c_name, var_decl_l, md_decl_l = class_decl
 	in let var_decl3_list = convert_var_decl_list var_decl_l
-	in let md_decl3_list = convert_md_decl_list md_decl_l counter_var counter_methd counter_label
+	in let md_decl3_list = convert_md_decl_list md_decl_l counter_var counter_label
 	in ((c_name, var_decl3_list), md_decl3_list)
 
 
 let convert_jlite_typed_program (p: jlite_program) : ir3_program =
     let counter_var : int ref = ref 0 in
-    let counter_methd : int ref = ref 0 in
     let counter_label : int ref = ref 0 in
 
 	let class_main_, class_decl_list = p in
-	let convert_class_main (class_main_:class_main) (counter_var:int ref) (counter_methd:int ref): (cdata3 * md_decl3) =
+	let convert_class_main (class_main_:class_main) (counter_var:int ref) :  (cdata3 * md_decl3) =
 		let c_name, _md_decl_main = class_main_ in
-		((c_name, []), convert_md_decl _md_decl_main counter_var counter_methd counter_label)
-	in let rec convert_class_decl_list (class_decl_list: class_decl list) (counter_var:int ref) (counter_methd:int ref) (counter_label: int ref): ((cdata3 list) * (md_decl3 list)) =
+		((c_name, []), convert_md_decl _md_decl_main counter_var counter_label)
+	in let rec convert_class_decl_list (class_decl_list: class_decl list) (counter_var:int ref) (counter_label: int ref): ((cdata3 list) * (md_decl3 list)) =
 		begin
 			match class_decl_list with 
 			| [] -> [], []
 			| head :: tail -> 
-			let cdata_list, md_decl3_ = convert_class_decl_list tail counter_var counter_methd counter_label in
-			let cdata, md_decl3_list = convert_class_decl head counter_var counter_methd counter_label in
+			let cdata_list, md_decl3_ = convert_class_decl_list tail counter_var counter_label in
+			let cdata, md_decl3_list = convert_class_decl head counter_var counter_label in
 			(cdata:: cdata_list, md_decl3_ @ md_decl3_list)
 		end
 	in
-	let c_main, main_md = convert_class_main class_main_ counter_var counter_methd in
-	let cdata3_list, md_decl3_list = convert_class_decl_list class_decl_list counter_var counter_methd counter_label in
+	let c_main, main_md = convert_class_main class_main_ counter_var in
+	let cdata3_list, md_decl3_list = convert_class_decl_list class_decl_list counter_var counter_label in
 	((c_main :: cdata3_list), main_md, md_decl3_list)
