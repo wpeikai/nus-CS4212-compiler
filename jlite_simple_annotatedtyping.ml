@@ -138,7 +138,7 @@ let find_md_ids_params_in_p (p: jlite_program) (cid:class_name) (md_id: var_id) 
 let rec find_var_decl_type 
 	(vlst: var_decl list) (vid:var_id) =
   match vlst with
-    | [] -> failwith "Var not found"
+    | [] -> failwith ("Var " ^ string_of_var_id vid ^ " not found" )
     | (t,v)::lst -> 
 		if (compare_var_ids v vid) 
 		then (t,v) 
@@ -255,9 +255,9 @@ let rec type_check_expr
 	: (jlite_type * jlite_exp) =
 
 		match e with
-		| BoolLiteral v -> (BoolT, e)
-		| IntLiteral v -> (IntT, e)
-		| StringLiteral v -> (StringT, e)
+		| BoolLiteral v -> (BoolT, TypedExp (e, BoolT))
+		| IntLiteral v -> (IntT, TypedExp (e, IntT))
+		| StringLiteral v -> (StringT, TypedExp (e, StringT))
 		| ThisWord -> 
 			((ObjectT classid), TypedExp (e,(ObjectT classid)))
 		| NullWord -> 
@@ -267,8 +267,8 @@ let rec type_check_expr
 
 			(vtyp, TypedExp (Var vid,vtyp)) 
 		| ObjectCreate c -> 
-			if (exists_class_decl p c) 
-			then ((ObjectT c), TypedExp(e,(ObjectT c)))
+			if (exists_class_decl p c)  
+			then ((ObjectT c), TypedExp (e,(ObjectT c)))
 			else failwith 
 						("\nType-check error in " 
 						^ classid
@@ -340,7 +340,7 @@ let rec type_check_expr
 			match e_type with
 				| ObjectT c ->
 					let (idtype, v) = (find_var_decl_type_class p c vid) in
-					(idtype, TypedExp(e, idtype))
+					(idtype, TypedExp( FieldAccess(e_expr, vid), idtype))
 				| _ -> failwith 
 					("\nType-check error in " 
 					^ classid 
@@ -351,26 +351,41 @@ let rec type_check_expr
 			let get_jlite_type x = 
 				let res, _ = type_check_expr p env classid x in
 				res in
+			let get_jlite_expr x = 
+				let  _, res = type_check_expr p env classid x in
+				res in
+
 			let e_type_list = List.map get_jlite_type e_list in
+			let e_expr_list = List.map get_jlite_expr e_list in
 			begin
-			match e with
-			| FieldAccess (object_name, method_name) -> 
-				let object_name_type, object_name_expr = type_check_expr p env classid object_name in
+			let m_type, e_expr = match e with
+			| FieldAccess (object_name_e, method_name) -> 
+
+				let object_name_type, object_name_expr = type_check_expr p env classid object_name_e in
 				begin
+
 				match object_name_type with
 				| ObjectT c_name -> 
+
 					let method_decl = find_md_ids_params_in_p p c_name method_name e_type_list in
-					let method_type = method_decl.rettype in
-					(method_type, TypedExp(e, method_type))
+					method_decl.rettype, TypedExp( FieldAccess (object_name_expr, method_name), object_name_type)
 				| _ ->  failwith 
 					("Object non recognized\n")
 				end
-			| Var var ->
-				let method_decl = find_md_ids_params_in_p p classid var e_type_list in
-				let method_type = method_decl.rettype in
-				(method_type, TypedExp(e, method_type))
+			| Var method_name ->
+				let method_decl = find_md_ids_params_in_p p classid method_name e_type_list in
+				(* Thisword missing. Return field access with this set to the current class id. *)
+				method_decl.rettype, TypedExp(FieldAccess (TypedExp (ThisWord, ObjectT classid), 
+											               method_name),
+			                                  ObjectT classid)
+
+				(* (method_type, TypedExp(TypedExp(Var v, idtype),  *)
+									   (* method_type)) *)
+				(* (method_type, TypedExp(Var vid,  *)
+									   (* method_type)) *)
 			| _ -> failwith 
 					("FieldAccess non recognized" ^ string_of_jlite_expr e ^ "\n")
+			in m_type, TypedExp (MdCall (e_expr, e_expr_list), m_type)
 			end
 		| _ -> failwith 
 					("\nType-check error in " 
