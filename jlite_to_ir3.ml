@@ -197,7 +197,6 @@ let rec convert_jlite_expr (exp_jlite: jlite_exp) (counter_var:int ref) (counter
 
 			| ThisWord -> type_ir3, Idc3Expr (Var3 "this"), []
 			| Var vid ->
-				print_string ((string_of_var_id vid) ^ "\n");
 				(* If the variable is not in the local variables declarations or in the parameters, it must be in a class attribute *)
 				let all_declared_vars : var_decl list = decl_md.localvars @ decl_md.params in
 				if (exists_var_id all_declared_vars vid)
