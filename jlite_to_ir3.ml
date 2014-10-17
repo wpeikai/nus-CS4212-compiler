@@ -23,6 +23,14 @@ let convert_jlite_var_id (vid: var_id) : id3 =
 	| SimpleVarId v ->  v
 	| TypedVarId (s, jtype, i)->  s
 
+(* Convert var_id to ir3 *)	
+let convert_jlite_typed_var_id (vid: var_id) : id3 * jlite_type =
+	match vid with
+	| TypedVarId (s, jtype, i)->  s, jtype
+	| _ -> failwith "6"
+
+
+
 (* Convert var_decl to var_decl3 *)	
 let convert_jlite_var_decl (vd: var_decl) : var_decl3 =
 	let (jtype, vid) = vd in
@@ -189,14 +197,17 @@ let rec convert_jlite_expr (exp_jlite: jlite_exp) (counter_var:int ref) (counter
 
 			| ThisWord -> type_ir3, Idc3Expr (Var3 "this"), []
 			| Var vid ->
+				print_string ((string_of_var_id vid) ^ "\n");
 				(* If the variable is not in the local variables declarations or in the parameters, it must be in a class attribute *)
 				let all_declared_vars : var_decl list = decl_md.localvars @ decl_md.params in
 				if (exists_var_id all_declared_vars vid)
 				then type_ir3, Idc3Expr (Var3 (convert_jlite_var_id vid)), []
-				else type_ir3, FieldAccess3 ("this", (convert_jlite_var_id vid)), []
-			| _ -> failwith ("Cannot convert " ^ (string_of_jlite_expr exp_jlite))
+				else 
+				type_ir3, FieldAccess3 ("this", (convert_jlite_var_id vid)), []
+				
+			| _ -> failwith ("10:Cannot convert " ^ (string_of_jlite_expr exp_jlite))
 		end
-	| _ -> failwith ("Cannot convert " ^ (string_of_jlite_expr exp_jlite))
+	| _ -> failwith ("11:Cannot convert " ^ (string_of_jlite_expr exp_jlite))
 
 (* Convert a list of statements *)
 let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (counter_label:int ref) (p:jlite_program) (md_decl_:md_decl): (ir3_stmt list) =
@@ -244,11 +255,22 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 				[ReadStmt3 (convert_jlite_var_id var_read)]
 			| PrintStmt exp_print_stmt_jlite->
 				let type_print_stmt, exp_print_stmt_ir3, ir3_stmt_list = convert_jlite_expr exp_print_stmt_jlite counter_var counter_label p md_decl_ in
-				ir3_stmt_list @ [PrintStmt3 idc3_printstmt]
+				begin
+				match exp_print_stmt_ir3 with
+				| Idc3Expr idc3_printstmt -> ir3_stmt_list @ [PrintStmt3 idc3_printstmt]
+				| _ -> 
+				let idc3_create_temp_list, idc3_printstmt = create_temp_idc3 exp_print_stmt_ir3 type_print_stmt counter_var in
+				ir3_stmt_list @ idc3_create_temp_list @ [PrintStmt3 idc3_printstmt]
+			 	end
 			| AssignStmt (var_assig_stmt_jlite, exp_assign_stmt_jlite) ->
-				let var_assig_stmt_ir3 = convert_jlite_var_id var_assig_stmt_jlite in
-				let _, exp_assign_stmt_ir3, stmt_list = convert_jlite_expr exp_assign_stmt_jlite counter_var counter_label p md_decl_ in
-				stmt_list @ [AssignStmt3 (var_assig_stmt_ir3, exp_assign_stmt_ir3)]
+				(* Be careful if the var id is an attribute of the class *)
+				(* let var_assig_stmt_ir3 = convert_jlite_var_id var_assig_stmt_jlite in *)
+				let v, t = convert_jlite_typed_var_id var_assig_stmt_jlite in
+				let var_assign_stmt_ir3_type, var_assign_stmt_ir3, stmt_list_var = convert_jlite_expr (TypedExp(Var var_assig_stmt_jlite, t)) counter_var counter_label p md_decl_ in
+				let id3_create_temp_list, id3_printstmt = create_temp_id3 var_assign_stmt_ir3 var_assign_stmt_ir3_type counter_var in
+
+				let _, exp_assign_stmt_ir3, stmt_list_exp = convert_jlite_expr exp_assign_stmt_jlite counter_var counter_label p md_decl_ in
+				stmt_list_var @ id3_create_temp_list @ stmt_list_exp @ [AssignStmt3 (id3_printstmt, exp_assign_stmt_ir3)]
 			| AssignFieldStmt (var_assig_field_jlite_1, var_assign_field_jlite_2) ->
 				let _, var_assig_field_ir3_1, stmt_list_1 = convert_jlite_expr var_assig_field_jlite_1 counter_var counter_label p md_decl_ in
 				let _, var_assig_field_ir3_2, stmt_list_2 = convert_jlite_expr var_assign_field_jlite_2 counter_var counter_label p md_decl_ in
