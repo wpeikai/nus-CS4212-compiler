@@ -11,7 +11,7 @@ ocamlc -c -g ir3_structs.ml
 ocamlc -c -g jlite_simple_annotatedtyping.ml
 ocamlc -c -g jlite_to_ir3.ml
 ocamlc -c -g jlite_main.ml
-ocamlc -g -o z.exe jlite_structs.cmo jlite_to_ir3.cmo jlite_simple_annotatedtyping.cmo jlite_lexer.cmo jlite_parser.cmo ir3_structs.cmo jlite_main.cmo
+ocamlc -g -o z.exe jlite_structs.cmo jlite_simple_annotatedtyping.cmo jlite_lexer.cmo jlite_parser.cmo jlite_to_ir3.cmo  ir3_structs.cmo jlite_main.cmo
 
 
 # ocamlc -c jlite_structs.ml
@@ -41,12 +41,12 @@ rm jlite_parser.mli jlite_parser.ml jlite_lexer.ml
 # ./z.exe assign2_testcases/f_illegal_undefined_field.jlite
 # ./z.exe assign2_testcases/f_illegal_undefined_md_call.jlite
 # ./z.exe assign2_testcases/f_illegal_untyped_md_call.jlite
-./z.exe assign2_testcases/p_legal_1.jlite
+# ./z.exe assign2_testcases/p_legal_1.jlite
 # ./z.exe assign2_testcases/p_legal_2.jlite
 # ./z.exe assign2_testcases/p_legal_3.jlite
 # ./z.exe assign2_testcases/p_legal_binary.jlite
 # ./z.exe assign2_testcases/p_legal_ex1.jlite
-# ./z.exe assign2_testcases/p_legal_fruitninja.jlite
+./z.exe assign2_testcases/p_legal_fruitninja.jlite
 # ./z.exe assign2_testcases/p_legal_overloading.jlite
 # ./z.exe assign2_testcases/p_legal_shadowing.jlite
 
