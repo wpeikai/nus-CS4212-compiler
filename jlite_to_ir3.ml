@@ -244,8 +244,7 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 				[ReadStmt3 (convert_jlite_var_id var_read)]
 			| PrintStmt exp_print_stmt_jlite->
 				let type_print_stmt, exp_print_stmt_ir3, ir3_stmt_list = convert_jlite_expr exp_print_stmt_jlite counter_var counter_label p md_decl_ in
-				let stmt_list_create_tmp, idc3_var = create_temp_idc3 exp_print_stmt_ir3 type_print_stmt counter_var in
-				ir3_stmt_list @ stmt_list_create_tmp @ [PrintStmt3 idc3_var]
+				ir3_stmt_list @ [PrintStmt3 idc3_printstmt]
 			| AssignStmt (var_assig_stmt_jlite, exp_assign_stmt_jlite) ->
 				let var_assig_stmt_ir3 = convert_jlite_var_id var_assig_stmt_jlite in
 				let _, exp_assign_stmt_ir3, stmt_list = convert_jlite_expr exp_assign_stmt_jlite counter_var counter_label p md_decl_ in
