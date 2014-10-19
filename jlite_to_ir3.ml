@@ -76,7 +76,7 @@ let rec convert_jlite_expr (exp_jlite: jlite_exp) (counter_var:int ref) (counter
 				begin 
 				let expr_ir3_type, expr_ir3, ir3_stmt_list = convert_jlite_expr exp_unary counter_var counter_label p decl_md in
 				let stmt_list, idc3_var = create_temp_idc3 expr_ir3 expr_ir3_type counter_var in
-				type_ir3, UnaryExp3 ((convert_jlite_op operator_jlite), idc3_var), stmt_list @ ir3_stmt_list
+				type_ir3, UnaryExp3 ((convert_jlite_op operator_jlite), idc3_var), ir3_stmt_list @ stmt_list
 				end
 			| BinaryExp (operator_jlite, exp_binary_1, exp_binary_2) ->
 
@@ -251,7 +251,23 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 
 				stmt_list_boolean_exp @  if_stmt_start :: (GoTo3 end_loop) :: label_if_loop :: stmt_ir3_list @ if_stmt_end :: [label_end_loop]
 			| ReadStmt var_read ->
-				[ReadStmt3 (convert_jlite_var_id var_read)]
+				let _, t = convert_jlite_typed_var_id var_read in
+				let type_read_stmt, exp_read_stmt_ir3, ir3_stmt_list = convert_jlite_expr (TypedExp(Var var_read, t)) counter_var counter_label p md_decl_ in
+				begin
+				match exp_read_stmt_ir3 with
+				| Idc3Expr idc3 -> 
+					begin
+					match idc3 with
+					| Var3 id3_readstmt -> ir3_stmt_list @ [ReadStmt3 id3_readstmt]
+					| _ -> 
+						let id3_create_temp_list, id3_readstmt = create_temp_id3 exp_read_stmt_ir3 type_read_stmt counter_var in
+						ir3_stmt_list @ id3_create_temp_list @ [ReadStmt3 id3_readstmt]
+					end
+				| FieldAccess3 (_, _) -> 
+						let id3_create_temp_list, id3_readstmt = create_temp_id3 exp_read_stmt_ir3 type_read_stmt counter_var in
+						ir3_stmt_list @ id3_create_temp_list @ [ReadStmt3 id3_readstmt]
+				| _ -> failwith ("Unrecognized value " ^ (string_of_var_id var_read))
+				end
 			| PrintStmt exp_print_stmt_jlite->
 				let type_print_stmt, exp_print_stmt_ir3, ir3_stmt_list = convert_jlite_expr exp_print_stmt_jlite counter_var counter_label p md_decl_ in
 				begin
@@ -264,7 +280,7 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 			| AssignStmt (var_assig_stmt_jlite, exp_assign_stmt_jlite) ->
 				(* Be careful if the var id is an attribute of the class *)
 				(* let var_assig_stmt_ir3 = convert_jlite_var_id var_assig_stmt_jlite in *)
-				let v, t = convert_jlite_typed_var_id var_assig_stmt_jlite in
+				let _, t = convert_jlite_typed_var_id var_assig_stmt_jlite in
 				let var_assign_stmt_ir3_type, var_assign_stmt_ir3, stmt_list_var = convert_jlite_expr (TypedExp(Var var_assig_stmt_jlite, t)) counter_var counter_label p md_decl_ in
 				let id3_create_temp_list, id3_printstmt = create_temp_id3 var_assign_stmt_ir3 var_assign_stmt_ir3_type counter_var in
 

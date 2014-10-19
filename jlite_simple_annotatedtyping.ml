@@ -197,11 +197,11 @@ let rec type_check_var_decl_list
 			| ObjectT cname -> 
 	        (* check if the declared class name exists *)
 				if (exists_class_decl p cname) 
-					then match (exists_var_id tail_vlst vid) with
-						| true -> vid :: helper tail_vlst
-						| false -> helper tail_vlst
-					(* return the undefined type *)
-					else vid :: helper tail_vlst
+				then match (exists_var_id tail_vlst vid) with
+					| true -> vid :: helper tail_vlst
+					| false -> helper tail_vlst
+				(* return the undefined type *)
+				else vid :: helper tail_vlst
 			(* Primitive type *)
 			| _ -> match (exists_var_id tail_vlst vid) with
 						| true -> vid :: helper tail_vlst
@@ -210,7 +210,7 @@ let rec type_check_var_decl_list
 		| [] -> []
 	in match (helper vlst) with
 		| [] ->  (true,"")
-		| lst -> (false, ("Undefined type Or duplicate variable names: " 
+		| lst -> (false, ("Undefined type or duplicate variable names, or class names: " 
 				^ (string_of_list lst string_of_var_id ",")))
 
  
@@ -222,23 +222,20 @@ let rec type_check_var_decl_list
 	---  TODO  ---
 *)  
 let rec type_check_md_overloading 
-	(classid: class_name) (mdlst: md_decl list) (counter_methd: int ref) =
+	(classid: class_name) (mdlst: md_decl list) (counter_methd: int ref) (p:jlite_program)=
 	let rec helper 
-		(mdls: md_decl list) (counter: int ref) :var_id list =
+		(mdls: md_decl list) (counter: int ref) : var_id list =
 		match mdls with
 		| md::tail_mdlst -> 
 			begin
 				counter := !counter + 1;
-
-				let a = exist_md_decl_in_list tail_mdlst md in
-				let b = match md.jliteid with
+				let a = match md.jliteid with
 					| SimpleVarId s ->  SimpleVarId (s ^ "_" ^ classid ^ "_" ^ (string_of_int (!counter-1)))
-					| TypedVarId (s, t, i) -> SimpleVarId (s ^ "_" ^ classid ^ "_" ^ (string_of_int (!counter-1)))
-				in
-				md.ir3id <- b;
-				match a with 
-				| true -> md.jliteid :: helper tail_mdlst counter
-				| false -> helper tail_mdlst counter
+					| TypedVarId (s, t, i) -> SimpleVarId (s ^ "_" ^ classid ^ "_" ^ (string_of_int (!counter-1))) in
+				md.ir3id <- a;
+				match exist_md_decl_in_list tail_mdlst md with 
+			    | true -> md.jliteid :: helper tail_mdlst counter
+			    | false -> helper tail_mdlst counter
 			end
 		| [] -> []
 	in match (helper mdlst counter_methd) with
@@ -386,7 +383,6 @@ let rec type_check_expr
 					^ classid 
 					^ ". Expression not recognized:\n" 
 					^ string_of_jlite_expr exp ^ "\n")
-
 	  in  
 	  helper exp
 
@@ -658,6 +654,20 @@ let type_check_mthd_decl p env cname m : md_decl =
 			in { m with stmts=newstmts;
 				}
 
+let exists_class_decl_list  (class_decl_list:class_decl list) (cid:class_name) =
+	(List.exists 
+		(fun (cname,cvars,cmtd) ->
+			(String.compare cname cid) == 0)
+	class_decl_list)
+
+(* Check that two classes have distinct names *)
+let rec distinct_class_name (class_decl_list: class_decl list) : bool = 
+	match class_decl_list with
+	| [] -> true
+	| h :: tail -> 
+		let cname, _, _ = h in
+		not (exists_class_decl_list tail cname) && distinct_class_name tail
+
 
 (* TypeCheck a JLite Program. 
    Return a new JLite Program 
@@ -681,7 +691,7 @@ let type_check_jlite_program
 			^ " field declarations." ^ errmsg ^ "\n")
 		(* TypeCheck methods overloading *)
 		else let (retval, errmsg) = 
-			(type_check_md_overloading cname cmthds counter_methd) in
+			(type_check_md_overloading cname cmthds counter_methd p) in
 			if (retval==false) then 
 				failwith 
 				("\nType-check error in " ^ cname 
@@ -693,8 +703,16 @@ let type_check_jlite_program
 				(type_check_mthd_decl p env cname) cmthds
 				)
 	in 
+
+	let check_distinct_class_names classes = 
+		let res = distinct_class_name classes in
+		if (res==true) then true
+		else failwith "Two classes have the same name" in
 	begin
-		let (mainclass, classes) = p in 
+		let (mainclass, classes) = p in
+		let a, b = mainclass in
+		let main_with_var_decl = a, [], [b] in 
+		let _ = check_distinct_class_names (main_with_var_decl :: classes) in 
 		let newmain = 
 			(type_check_class_main mainclass) in
 	    let counter_methd : int ref = ref 0 in

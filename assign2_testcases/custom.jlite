@@ -1,0 +1,14 @@
+class Main {
+  void main() {
+    Int weight;
+    Int gg;
+    weight = 80;
+    if (!(weight>4)) {
+      println("tt");
+    } else {
+      gg = 4 + 9;
+    }
+
+    return;
+  }
+}
