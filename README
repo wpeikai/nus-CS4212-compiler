@@ -41,3 +41,9 @@ So concating the method and the class names is not enough
 With the boolean short-circuiting method, we do not use `&&` or `||` anymore.
 We evaluate the left branch, and depending on the result, we may need to evaluate the second part of the binary expression.
 So we substitute this strategy with a simple if/else statement, by adding a temporary variable.
+
+# To run tests
+
+`./run.sh`
+
+Outputs are in assign2_testcases_output
