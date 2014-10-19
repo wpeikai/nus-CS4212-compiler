@@ -1,0 +1,31 @@
+Parsing...
+assign2_testcases/custom2.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class Main{
+}
+
+=======  CMtd3 ======= 
+
+void main(Main this,Int a){
+  Int weight;
+  Int gg;
+  weight=80;
+  Int _zz0=4;
+  Bool _zz1=[weight,_zz0](>);
+  If((!)[_zz1]) goto 0;
+  Int _zz2=4;
+  Int _zz3=9;
+  gg=[_zz2,_zz3](+);
+  goto 1;
+ Label 0:
+  println("tt");
+ Label 1:
+  Return;
+}
+
+
+======= End of IR3 Program =======
+

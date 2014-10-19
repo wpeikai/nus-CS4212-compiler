@@ -1,0 +1,33 @@
+Parsing...
+assign2_testcases/simple_input.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class MainC{
+}
+
+class Functional{
+  Int a;
+}
+
+=======  CMtd3 ======= 
+
+void main(MainC this){
+  Functional fo;
+  Return;
+}
+
+Int f_Functional_0(Functional this,Int b){
+  readln(b);
+  println(b);
+  Int _zz0=3;
+  Return _zz0;
+}
+
+Int g_Functional_1(Functional this,Int x){
+  Return x;
+}
+
+======= End of IR3 Program =======
+
