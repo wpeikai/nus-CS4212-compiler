@@ -1,5 +1,5 @@
 Parsing...
-assign2_testcases/custom2.jlite
+assign2_testcases/sample2.jlite
 ======= IR3 Program =======
 
 ======= CData3 ======= 
@@ -9,7 +9,7 @@ class Main{
 
 =======  CMtd3 ======= 
 
-void main(Main this,Int a){
+void main(Main this){
   Int weight;
   Int gg;
   weight=80;
