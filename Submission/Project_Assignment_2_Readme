@@ -46,6 +46,4 @@ So we substitute this strategy with a simple if/else statement, by adding a temp
 
 `./run.sh`
 
-Outputs are in assign2_testcases_output.
-
-Mu custom tests are sample1, sample2 and sample3 jlite files in assign2_testcases.
+Outputs are in assign2_testcases_output

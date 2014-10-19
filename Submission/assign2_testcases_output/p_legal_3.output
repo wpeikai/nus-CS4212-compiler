@@ -1,0 +1,278 @@
+Parsing...
+assign2_testcases/p_legal_3.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class P3{
+}
+
+class C1{
+  Bool y;
+  Bool x;
+}
+
+class C2{
+  Int y;
+  Int x;
+}
+
+class C3{
+}
+
+=======  CMtd3 ======= 
+
+void main(P3 this,Int a,Bool b,String c){
+  println("Dummy statement to fulfill at least one statement requirement!");
+}
+
+Bool doSomething1_C3_19(C3 this,Int a,Int b){
+  Bool _zz5=[a,b](>=);
+  Return _zz5;
+}
+
+Bool doSomething2_C3_20(C3 this,Int a,Int b){
+  Bool _zz4=[a,b](>);
+  Return _zz4;
+}
+
+Bool doSomething3_C3_21(C3 this,Int a,Int b){
+  Bool _zz3=[a,b](<=);
+  Return _zz3;
+}
+
+Bool doSomething4_C3_22(C3 this,Int a,Int b){
+  Bool _zz2=[a,b](<);
+  Return _zz2;
+}
+
+Bool doSomething5_C3_23(C3 this,Int a,Int b){
+  Bool _zz1=[a,b](!=);
+  Return _zz1;
+}
+
+Bool doSomething6_C3_24(C3 this,Int a,Int b){
+  Bool _zz0=[a,b](==);
+  Return _zz0;
+}
+
+Int doSomething1_C2_7(C2 this){
+  Int _zz44=this.x;
+  Int _zz45=this.y;
+  Int _zz46=[_zz44,_zz45](+);
+  Return _zz46;
+}
+
+Int doSomething2_C2_8(C2 this){
+  Int _zz41=this.x;
+  Int _zz42=this.y;
+  Int _zz43=[_zz41,_zz42](*);
+  Return _zz43;
+}
+
+Int doSomething3_C2_9(C2 this,Int z){
+  Int _zz37=this.x;
+  Int _zz38=this.y;
+  Int _zz39=[_zz37,_zz38](+);
+  Int _zz40=[_zz39,z](+);
+  Return _zz40;
+}
+
+Int doSomething4_C2_10(C2 this,Int z){
+  Int _zz33=this.x;
+  Int _zz34=this.y;
+  Int _zz35=[_zz33,_zz34](*);
+  Int _zz36=[_zz35,z](*);
+  Return _zz36;
+}
+
+Int doSomething5_C2_11(C2 this,Int z){
+  Int _zz29=this.x;
+  Int _zz30=this.y;
+  Int _zz31=[_zz29,_zz30](*);
+  Int _zz32=[_zz31,z](+);
+  Return _zz32;
+}
+
+Int doSomething6_C2_12(C2 this,Int z){
+  Int _zz25=this.y;
+  Int _zz26=this.x;
+  Int _zz27=[_zz25,z](*);
+  Int _zz28=[_zz26,_zz27](+);
+  Return _zz28;
+}
+
+Int doSomething7_C2_13(C2 this,Int z){
+  Int _zz21=this.y;
+  Int _zz22=this.x;
+  Int _zz23=[_zz21,z](*);
+  Int _zz24=[_zz22,_zz23](+);
+  Return _zz24;
+}
+
+Int doSomething8_C2_14(C2 this,Int z){
+  Int _zz17=this.x;
+  Int _zz18=this.y;
+  Int _zz19=[_zz17,_zz18](+);
+  Int _zz20=[_zz19,z](*);
+  Return _zz20;
+}
+
+Int doSomething9_C2_15(C2 this,Int z){
+  Int _zz13=this.y;
+  Int _zz14=this.x;
+  Int _zz15=[_zz13,z](*);
+  Int _zz16=[_zz14,_zz15](+);
+  Return _zz16;
+}
+
+Int doSomething10_C2_16(C2 this,Int z){
+  Int _zz12=(-)[z];
+  Return _zz12;
+}
+
+Int doSomething11_C2_17(C2 this,Int z){
+  Int _zz10=(-)[z];
+  Int _zz11=(-)[_zz10];
+  Return _zz11;
+}
+
+Int doSomething12_C2_18(C2 this,Int z){
+  Int _zz6=(-)[z];
+  Int _zz7=(-)[_zz6];
+  Int _zz8=(-)[_zz7];
+  Int _zz9=(-)[_zz8];
+  Return _zz9;
+}
+
+void doSomething_C1_0(C1 this){
+  println("May I put some' \\ complicated \" string here please?\\");
+}
+
+Bool doSomething1_C1_1(C1 this){
+  If(this.x) goto 26;
+  Bool _zz77=true;
+  goto 27;
+ Label 26:
+  Bool _zz77=this.y;
+ Label 27:
+  Return _zz77;
+}
+
+Bool doSomething2_C1_2(C1 this){
+  If(this.x) goto 24;
+  Bool _zz76=false;
+  goto 25;
+ Label 24:
+  Bool _zz76=this.y;
+ Label 25:
+  Return _zz76;
+}
+
+Bool doSomething3_C1_3(C1 this,Bool z,Bool zz){
+  If(this.x) goto 18;
+  Bool _zz73=true;
+  goto 19;
+ Label 18:
+  Bool _zz73=this.y;
+ Label 19:
+  If(_zz73) goto 20;
+  Bool _zz74=true;
+  goto 21;
+ Label 20:
+  Bool _zz74=z;
+ Label 21:
+  If(_zz74) goto 22;
+  Bool _zz75=true;
+  goto 23;
+ Label 22:
+  Bool _zz75=zz;
+ Label 23:
+  Return _zz75;
+}
+
+Bool doSomething4_C1_4(C1 this,Bool z,Bool zz){
+  If(this.x) goto 12;
+  Bool _zz70=false;
+  goto 13;
+ Label 12:
+  Bool _zz70=this.y;
+ Label 13:
+  If(_zz70) goto 14;
+  Bool _zz71=false;
+  goto 15;
+ Label 14:
+  Bool _zz71=z;
+ Label 15:
+  If(_zz71) goto 16;
+  Bool _zz72=false;
+  goto 17;
+ Label 16:
+  Bool _zz72=zz;
+ Label 17:
+  Return _zz72;
+}
+
+Bool doSomething5_C1_5(C1 this){
+  Bool _zz58=this.x;
+  Bool _zz59=this.x;
+  Bool _zz60=(!)[_zz59];
+  If(this.y) goto 6;
+  Bool _zz61=false;
+  goto 7;
+ Label 6:
+  Bool _zz61=(!)[_zz60];
+ Label 7:
+  If((!)[_zz58]) goto 8;
+  Bool _zz62=true;
+  goto 9;
+ Label 8:
+  Bool _zz62=_zz61;
+ Label 9:
+  Bool _zz63=this.x;
+  Bool _zz64=(!)[_zz63];
+  Bool _zz65=(!)[_zz64];
+  Bool _zz66=(!)[_zz65];
+  Bool _zz67=(!)[_zz66];
+  Bool _zz68=(!)[_zz67];
+  If(_zz62) goto 10;
+  Bool _zz69=true;
+  goto 11;
+ Label 10:
+  Bool _zz69=(!)[_zz68];
+ Label 11:
+  Return _zz69;
+}
+
+Bool doSomething6_C1_6(C1 this){
+  Bool _zz47=this.x;
+  Bool _zz48=this.x;
+  Bool _zz49=(!)[_zz48];
+  Bool _zz50=(!)[_zz49];
+  Bool _zz51=(!)[_zz50];
+  Bool _zz52=(!)[_zz51];
+  Bool _zz53=(!)[_zz52];
+  If(this.x) goto 0;
+  Bool _zz54=true;
+  goto 1;
+ Label 0:
+  Bool _zz54=(!)[_zz53];
+ Label 1:
+  Bool _zz55=(!)[_zz54];
+  If(this.y) goto 2;
+  Bool _zz56=false;
+  goto 3;
+ Label 2:
+  Bool _zz56=(!)[_zz55];
+ Label 3:
+  If((!)[_zz47]) goto 4;
+  Bool _zz57=true;
+  goto 5;
+ Label 4:
+  Bool _zz57=_zz56;
+ Label 5:
+  Return _zz57;
+}
+
+======= End of IR3 Program =======
+

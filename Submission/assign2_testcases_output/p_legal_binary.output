@@ -1,0 +1,62 @@
+Parsing...
+assign2_testcases/p_legal_binary.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class M{
+}
+
+=======  CMtd3 ======= 
+
+void main(M this){
+  Int x;
+  Int y;
+  Bool a;
+  Bool b;
+  If(a) goto 0;
+  Bool _zz0=false;
+  goto 1;
+ Label 0:
+  Bool _zz0=b;
+ Label 1:
+  If(_zz0) goto 2;
+  Bool _zz1=true;
+  goto 3;
+ Label 2:
+  Bool _zz1=(!)[b];
+ Label 3:
+  If(a) goto 4;
+  Bool _zz2=true;
+  goto 5;
+ Label 4:
+  Bool _zz2=true;
+ Label 5:
+  If(_zz2) goto 6;
+  Bool _zz3=false;
+  goto 7;
+ Label 6:
+  Bool _zz3=false;
+ Label 7:
+  If(_zz1) goto 8;
+  Bool _zz4=true;
+  goto 9;
+ Label 8:
+  Bool _zz4=_zz3;
+ Label 9:
+  Bool _zz5=true;
+  a=[_zz4,_zz5](==);
+  Int _zz6=3;
+  Int _zz7=[y,_zz6](/);
+  Int _zz8=7;
+  Int _zz9=[_zz7,_zz8](*);
+  Int _zz10=[x,_zz9](+);
+  Int _zz11=[y,x](+);
+  Int _zz12=[_zz10,_zz11](+);
+  Int _zz13=(-)[x];
+  x=[_zz12,_zz13](-);
+}
+
+
+======= End of IR3 Program =======
+

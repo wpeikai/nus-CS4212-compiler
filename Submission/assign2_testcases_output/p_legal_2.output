@@ -1,0 +1,98 @@
+Parsing...
+assign2_testcases/p_legal_2.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class P2{
+}
+
+class C1{
+}
+
+class C2{
+  C3 c3;
+  String a;
+}
+
+class C3{
+  C2 c2;
+}
+
+=======  CMtd3 ======= 
+
+void main(P2 this){
+  Int dummy1;
+  Int dummy2;
+  Int dummy3;
+  String s1;
+  String s2;
+  C1 c1;
+  C2 c2;
+  C3 c3;
+  dummy1=2;
+  dummy2=3;
+  dummy3=10;
+  [m1_C1_0(c1)];
+  Int _zz0=[dummy1,dummy2](+);
+  dummy2=[m2_C1_1(c1,_zz0)];
+  Int _zz1=[dummy1,dummy2](+);
+  [m3_C1_2(c1,_zz1,dummy3)];
+  c2=new C2();
+  c3=new C3();
+  c2.c3=c3;
+  c3.c2=c2;
+  C3 _zz2=c2.c3;
+  C2 _zz3=_zz2.c2;
+  C3 _zz4=_zz3.c3;
+  C2 _zz5=_zz4.c2;
+  dummy3=[m1_C2_3(_zz5)];
+  println(s1);
+}
+
+Int m1_C2_3(C2 this){
+  Int _zz9=10;
+  Int _zz10=[m2_C2_4(this,_zz9)];
+  Return _zz10;
+}
+
+Int m2_C2_4(C2 this,Int x){
+  Return x;
+}
+
+C3 m3_C2_5(C2 this){
+  C3 _zz8=new C3();
+  Return _zz8;
+}
+
+C3 m3_C2_6(C2 this,Int a){
+  C3 _zz7=[m3_C2_5(this)];
+  Return _zz7;
+}
+
+C3 m3_C2_7(C2 this,Bool a){
+  Return null;
+}
+
+String m4_C2_8(C2 this){
+  String _zz6=this.a;
+  Return _zz6;
+}
+
+void m1_C1_0(C1 this){
+  println("Hello");
+  Return;
+}
+
+Int m2_C1_1(C1 this,Int a){
+  println("Hello");
+  Int _zz11=0;
+  Return _zz11;
+}
+
+void m3_C1_2(C1 this,Int a,Int b){
+  println("Hello");
+}
+
+======= End of IR3 Program =======
+
