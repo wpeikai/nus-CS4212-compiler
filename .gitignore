@@ -1,0 +1,6 @@
+Assignment 3 Resources/*
+*.cmo
+*.cmi
+jlite_parser.mli
+jlite_parser.ml
+jlite_lexer.ml

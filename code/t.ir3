@@ -1,0 +1,60 @@
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class BoolOpsMain{
+}
+
+class BoolOps{
+  Int a;
+}
+
+=======  CMtd3 ======= 
+
+void main(BoolOpsMain this){
+  Int a;
+  Int b;
+  Bool b1;
+  Bool b2;
+  Bool b3;
+  Bool _t1;
+  Bool _t2;
+  Bool _t3;
+  Bool _t4;
+  Bool _t5;
+  Bool _t6;
+  Bool _t7;
+  a=4;
+  b=5;
+  b1=true;
+  b2=false;
+  _t1=[b1,b2](&&);
+  _t2=[_t1,b2](||);
+  _t3=[b1,b2](||);
+  b3=[_t2,_t3](||);
+  _t4=[a,b](<);
+  _t5=[_t4,b3](&&);
+  If([_t5,false](==)) goto 1;
+  println("true");
+  goto 2;
+ Label 1:
+  println("false");
+ Label 2:
+  _t6=[a,b](>);
+  _t7=[b3,_t6](||);
+  If([_t7,false](==)) goto 3;
+  println("true");
+  goto 4;
+ Label 3:
+  println("false");
+ Label 4:
+}
+
+Int BoolOps_0(BoolOps this,Int x){
+  Int _t8;
+  _t8=[6,x](+);
+  Return _t8;
+}
+
+======= End of IR3 Program =======
+
