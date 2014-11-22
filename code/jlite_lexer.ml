@@ -1869,8 +1869,7 @@ let
          ( EOF )
 # 1871 "jlite_lexer.ml"
 
-  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
-      __ocaml_lex_token_rec file_name lexbuf __ocaml_lex_state
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_token_rec file_name lexbuf __ocaml_lex_state
 
 and multi_comment file_name lexbuf =
     __ocaml_lex_multi_comment_rec file_name lexbuf 115
@@ -1879,15 +1878,14 @@ and __ocaml_lex_multi_comment_rec file_name lexbuf __ocaml_lex_state =
       | 0 ->
 # 84 "jlite_lexer.mll"
           ( token file_name lexbuf )
-# 1883 "jlite_lexer.ml"
+# 1882 "jlite_lexer.ml"
 
   | 1 ->
 # 85 "jlite_lexer.mll"
         ( multi_comment file_name lexbuf)
-# 1888 "jlite_lexer.ml"
+# 1887 "jlite_lexer.ml"
 
-  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
-      __ocaml_lex_multi_comment_rec file_name lexbuf __ocaml_lex_state
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_multi_comment_rec file_name lexbuf __ocaml_lex_state
 
 and single_comment file_name lexbuf =
     __ocaml_lex_single_comment_rec file_name lexbuf 119
@@ -1896,15 +1894,14 @@ and __ocaml_lex_single_comment_rec file_name lexbuf __ocaml_lex_state =
       | 0 ->
 # 88 "jlite_lexer.mll"
             ( token file_name lexbuf )
-# 1900 "jlite_lexer.ml"
+# 1898 "jlite_lexer.ml"
 
   | 1 ->
 # 89 "jlite_lexer.mll"
         ( single_comment file_name lexbuf)
-# 1905 "jlite_lexer.ml"
+# 1903 "jlite_lexer.ml"
 
-  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
-      __ocaml_lex_single_comment_rec file_name lexbuf __ocaml_lex_state
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_single_comment_rec file_name lexbuf __ocaml_lex_state
 
 ;;
 

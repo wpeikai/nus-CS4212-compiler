@@ -1,6 +1,6 @@
 	.data
 L1:
-	.asciz "Hello World"
+	.asciz "Hello World\n"
 
 	.text
 	.global main
