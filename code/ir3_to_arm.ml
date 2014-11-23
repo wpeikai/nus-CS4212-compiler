@@ -85,7 +85,10 @@ let convert_ir3_md_decl (md:md_decl3): arm_program =
 	ADD ("", true, "fp", "sp", ImmedOp "#24") ::
 	(* allocate local variables*)
 	SUB ("", true, "sp", "fp", ImmedOp ("#" ^ (string_of_int (get_stack_space md)))) ::
-	helper(md.ir3stmts) @  []
+	helper(md.ir3stmts) @ 
+	(* Maybe we should put a L#exit label here *)
+	[SUB ("", true, "sp", "fp", ImmedOp "#24")] @
+	[LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: [])]
 
 (* 	
 let iR3Expr_get_idc3 (exp:ir3_exp) =
