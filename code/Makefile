@@ -7,7 +7,7 @@ OBJS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo jlite_toir3.cmo ir3_st
 OCAML_OBJECTS = $(OBJS) jlite_main.cmo
 OCAML_OBJECTS_IR3 = $(OBJS) jlite_main_ir3.cmo
 
-all: $(patsubst %.jlite, %.sim, $(wildcard *.jlite))  
+all: $(patsubst %.jlite, %.sim, $(wildcard *.jlite)) $(patsubst %.jlite, %.s, $(wildcard *.jlite))  
 
 %.sim: %.exe
 	./adb push $^ /data/local/tmp; \
@@ -16,7 +16,6 @@ all: $(patsubst %.jlite, %.sim, $(wildcard *.jlite))
 %.exe: %.s
 	./g++ $< -o $@
 	
-
 %.s: %.jlite z.exe 
 	./z.exe $< > $@
 

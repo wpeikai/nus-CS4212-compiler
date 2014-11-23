@@ -4,8 +4,6 @@ class Test00 {
 		Int a;
 		Int b;
 		Int c;
-		a = 1;
-		b = a;
-		c = a + b;
+		c = 1 + 1;
 	}
 }
