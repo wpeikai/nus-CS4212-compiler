@@ -100,7 +100,10 @@ let ir3_program_to_arm ((_, main, mds):ir3_program):arm_program =
 			(convert_ir3_md_decl head) @ (helper tail)
 		| [] ->
 			[]
-	in helper(main::mds)
+	in 
+		PseudoInstr (".text") ::
+		PseudoInstr (".global main") ::
+	   	helper(main::mds)
 
 (* 	
 let iR3Expr_get_idc3 (exp:ir3_exp) =
