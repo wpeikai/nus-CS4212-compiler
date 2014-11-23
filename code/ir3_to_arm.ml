@@ -68,7 +68,7 @@ let convert_ir3_stmt (md:md_decl3) (stmt:ir3_stmt): arm_program =
 	match stmt with
 	| AssignStmt3 (id3_1, ir3_exp_1) ->
 		(* Maybe It should be RegPreIndexed*)
-		(convert_ir3_expr ir3_exp_1 md) @ [STR ("", "", "v1", (RegPostIndexed ("fp", get_offset md id3_1)))]
+		(convert_ir3_expr ir3_exp_1 md) @ [STR ("", "", "v1", (RegPreIndexed ("fp", - get_offset md id3_1, false)))]
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
