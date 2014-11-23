@@ -38,42 +38,100 @@ let get_offset (var:id3) (md:md_decl3): int =
 (* Only works on simple types at the moment *)
 let get_stack_space (md:md_decl3): int =	
 	24 + 4 * List.length(md.localvars3)
-			
-let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
-	let all_instructions = [] in
 
+(* Convert an integer i to #i *)
+let number_op (i:int): operand2_type=
+	ImmedOp ("#" ^ (string_of_int i))
+
+(* From a idc3 and the register, it gives all the instructions *)
+let convert_idc3 (var:idc3) (register:reg) (md:md_decl3) : arm_program =
+	match var with
+	| IntLiteral3 i -> 
+		[MOV ("", false, register, (number_op i))]
+	| Var3 var_id3 -> 
+		[LDR ("", "", register, (RegPreIndexed ("fp", - get_offset var_id3 md , false)))]
+	| BoolLiteral3 bool_id3 -> 
+		begin
+			match bool_id3 with
+			(* true = 1 *)
+			| true -> [MOV ("", false, register, (number_op 1))]
+			(* false = 0 *)
+			| false -> [MOV ("", false, register, (number_op 0))]
+		end
+	| _ -> failwith "#55"
+
+(* Convert an ir3 expr to arm instructions *)
+let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 	match exp with
 	| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
+		let instructions1 = convert_idc3 idc3_1 "a1" md
+		in let instructions2 = convert_idc3 idc3_2 "a2" md
+		in 
 		begin
-		match ir3_op_1 with 
-		| AritmeticOp _ ->
-			let instructions1 = 
-				begin
-				match idc3_1 with
-				| IntLiteral3 i -> 
-					[MOV ("", false, "a1", (ImmedOp ("#" ^ (string_of_int i))))]
-				| _ -> failwith "#55"
-				end
-			in
-			let instructions2 = 
-				begin
-				match idc3_2 with
-				| IntLiteral3 i ->
-					[MOV ("", false, "a2", (ImmedOp ("#" ^ (string_of_int i))))]
-				| _ -> failwith "#55"
-			end
-			in
-			all_instructions @ instructions1 @ instructions2 @ [ADD ("", false, "v1", "a1", (RegOp "a2"))]
-		| _ -> failwith "#54: Unknown binary operator"
+			match ir3_op_1 with 
+			| AritmeticOp op ->
+				let arm_op_instructions =
+					begin
+						match op with
+						| "+" -> [ADD ("", false, "v1", "a1", (RegOp "a2"))]
+						| "-" -> [SUB ("", false, "v1", "a1", (RegOp "a2"))]
+						| "*" -> [MUL ("", false, "v1", "a1", "a2")] 	(* Improve multiplication *)
+						| _ -> failwith "#57"
+					end
+				in instructions1 @ instructions2 @ arm_op_instructions
+			| RelationalOp op -> 
+				let comparative_inst = [CMP ("", "a1", (RegOp "a2"))]
+				in let arm_op_instructions =
+					begin
+						match op with
+						| "==" -> MOV ("eq", false, "v1", (number_op 1)) :: MOV ("ne", false, "v1", (number_op 0)) :: []
+						| "!=" -> MOV ("eq", false, "v1", (number_op 0)) :: MOV ("ne", false, "v1", (number_op 1)) :: []
+						| ">" -> MOV ("gt", false, "v1", (number_op 1)) :: MOV ("lt", false, "v1", (number_op 0)) :: []
+						| ">=" -> MOV ("ge", false, "v1", (number_op 1)) :: MOV ("le", false, "v1", (number_op 0)) :: []
+						| "<" -> MOV ("gt", false, "v1", (number_op 0)) :: MOV ("lt", false, "v1", (number_op 1)) :: []
+						| "<=" -> MOV ("ge", false, "v1", (number_op 0)) :: MOV ("le", false, "v1", (number_op 1)) :: []
+						| _ -> failwith "#59"
+					end
+				in instructions1 @ instructions2 @ comparative_inst @ arm_op_instructions
+			| BooleanOp op -> 
+				let arm_op_instructions =
+					begin
+						match op with
+						| "&&" -> [AND ("", false, "v1", "a1", (RegOp "a2"))]
+						| "||" -> [ORR ("", false, "v1", "a1", (RegOp "a2"))]
+						| _ -> failwith "#61"
+					end
+				in let comparative_inst = CMP ("", "v1", (number_op 0)) :: MOV ("eq", false, "v1", (number_op 0)) :: MOV ("ne", false, "v1", (number_op 1)) :: []
+				in instructions1 @ instructions2 @ arm_op_instructions @ comparative_inst
+			| _ -> failwith "#54: Unknown binary operator"
 		end
+	| UnaryExp3 (ir3_op_1, idc3_0) ->
+		let instructions1 = convert_idc3 idc3_0 "a1" md
+		in 
+		begin
+			match ir3_op_1 with 
+			| UnaryOp op ->
+				let arm_op_instructions =
+					begin
+						match op with
+						| "-" -> MOV ("", false, "a2", (number_op 0)) :: SUB ("", false, "v1", "a2", (RegOp "a1")) :: []
+						| "!" -> CMP ("", "a1", (number_op 1)) :: MOV ("eq", false, "v1", (number_op 0)) :: MOV ("ne", false, "v1", (number_op 1)) :: []
+						| _ -> failwith "#67"
+					end
+				in instructions1 @ arm_op_instructions
+			| _ -> failwith "#544: Unknown unary operator"
+		end
+	| Idc3Expr idc3_0 ->
+		let instructions1 = convert_idc3 idc3_0 "a1" md
+		in instructions1
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
+(* Convert an ir3 statement to arm instructions *)
 let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3): arm_program = 
 	match stmt with
-	| AssignStmt3 (id3_1, ir3_exp_1) ->
-		(* Maybe It should be RegPreIndexed*)
-		(convert_ir3_expr ir3_exp_1 md) @ [STR ("", "", "v1", (RegPreIndexed ("fp", - get_offset id3_1 md, false)))]
+	| AssignStmt3 (id3_0, ir3_exp_0) ->
+		(convert_ir3_expr ir3_exp_0 md) @ [STR ("", "", "v1", (RegPreIndexed ("fp", - get_offset id3_0 md, false)))]
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
@@ -97,7 +155,6 @@ let convert_ir3_md_decl (md:md_decl3): arm_program =
 	SUB ("", false, "sp", "fp", ImmedOp "#24") ::
 	LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
 	[]
-
 
 (* Convert a list of md_decl3 *)
 let rec convert_md_decl3_list (mds:md_decl3 list):arm_program = 
