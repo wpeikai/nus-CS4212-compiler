@@ -35,6 +35,23 @@ let ir3_program_to_arm (p:ir3_program):arm_program=
 	SUB ("", true, "sp", "fp", ImmedOp "#24") ::
 	LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) :: []
 
+let convert_ir3_md_decl (md:md_decl3) =
+	[]
+
+
+let convert_ir3_stmt (stmt:ir3_stmt) = 
+	match stmt with
+	| AssignStmt3 (id3_1, ir3_exp_1) ->
+		[]
+	| _ ->
+		failwith "#51: Statement not yet implemented"
+
+let convert_ir3_expr (exp:ir3_exp) =
+	match exp with
+	| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
+		[]	
+	| _ ->
+		failwith "#50: Expression not yet implemented"
 
 (* 	
 let iR3Expr_get_idc3 (exp:ir3_exp) =
