@@ -8,9 +8,9 @@ OCAML_OBJECTS_IR3 = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo jlite_toi
 JLITE_INPUT=input.jlite
 
 all: arm.s
-	../../ndkandroid/bin/arm-linux-androideabi-g++ $< -o out; \
-	../../sdk/adt-bundle-linux-x86_64-20140702/sdk/platform-tools/adb push out /data/local/tmp; \
-	../../sdk/adt-bundle-linux-x86_64-20140702/sdk/platform-tools/adb shell ./data/local/tmp/out  # Run the executable in adb and exit
+	./g++ $< -o out; \
+	./adb push out /data/local/tmp; \
+	./adb shell ./data/local/tmp/out  # Run the executable in adb and exit
 
 arm.s: z.exe 
 	./z.exe $(JLITE_INPUT) > $@; \
