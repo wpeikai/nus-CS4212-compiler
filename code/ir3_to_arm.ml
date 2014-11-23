@@ -6,6 +6,7 @@
 
 open Arm_structs
 open Ir3_structs
+open Jlite_structs
 
 let labelcount = ref 0 
 let fresh_label () = 
@@ -49,10 +50,33 @@ let get_offset (md:md_decl3)  (var:id3): int =
 			failwith "#52 This should not happen"
 	in -24 - 4 * (helper 0 md.localvars3 var)
 			
-let convert_ir3_expr (exp:ir3_exp): arm_program=
+let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
+	let all_instructions = [] in
+
 	match exp with
 	| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
-		[]	
+		begin
+		match ir3_op_1 with 
+		| AritmeticOp _ ->
+			let instructions1 = 
+				begin
+				match idc3_1 with
+				| IntLiteral3 i -> 
+					[MOV ("", false, "a0", (ImmedOp ("#" ^ (string_of_int i))))]
+				| _ -> failwith "#55"
+				end
+			in
+			let instructions2 = 
+				begin
+				match idc3_2 with
+				| IntLiteral3 i ->
+					[MOV ("", false, "a1", (ImmedOp ("#" ^ (string_of_int i))))]
+				| _ -> failwith "#55"
+			end
+			in
+			all_instructions @ instructions1 @ instructions2 @ [ADD ("", false, "v1", "a0", (RegOp "a1"))]
+		| _ -> failwith "#54: Unknown binary operator"
+		end
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
@@ -60,8 +84,7 @@ let convert_ir3_stmt (md:md_decl3) (stmt:ir3_stmt): arm_program =
 	match stmt with
 	| AssignStmt3 (id3_1, ir3_exp_1) ->
 		(* Maybe It should be RegPreIndexed*)
-		(convert_ir3_expr ir3_exp_1) @
-		[STR ("", "", "v1", (RegPostIndexed ("fp", get_offset md id3_1)))]
+		(convert_ir3_expr ir3_exp_1 md) @ [STR ("", "", "v1", (RegPostIndexed ("fp", get_offset md id3_1)))]
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
