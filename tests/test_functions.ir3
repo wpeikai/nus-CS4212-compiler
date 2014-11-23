@@ -1,0 +1,77 @@
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class Main{
+}
+
+class Compute{
+  Bool computedSquares;
+  Int chachedValue;
+}
+
+=======  CMtd3 ======= 
+
+void main(Main this){
+  Int a;
+  Int b;
+  Int i;
+  Int d;
+  Int t1;
+  Int t2;
+  Compute help;
+  Int _t1;
+  Int _t2;
+  Bool _t3;
+  a=1;
+  b=2;
+  i=3;
+  d=4;
+  help=new Compute();
+  _t1=[Compute_2(help,a,b)];
+  _t2=[Compute_0(help,i)];
+  t1=[_t1,_t2](+);
+  t2=[Compute_0(help,d)];
+  _t3=[t2,t1](>);
+  If([_t3,false](==)) goto 1;
+  println("Square of d larger than sum of squares");
+  goto 2;
+ Label 1:
+  println("Square of d smaller than sum of squares");
+ Label 2:
+}
+
+Int Compute_0(Compute this,Int a){
+  Int _t10;
+  _t10=[a,a](*);
+  Return _t10;
+}
+
+Int Compute_1(Compute this,Int a,Int b){
+  Int _t9;
+  _t9=[a,b](+);
+  Return _t9;
+}
+
+Int Compute_2(Compute this,Int a,Int b){
+  Bool _t4;
+  Int _t5;
+  Int _t6;
+  Int _t7;
+  Int _t8;
+  _t4=this.computedSquares;
+  If([_t4,false](==)) goto 3;
+  _t5=this.chachedValue;
+  Return _t5;
+  goto 4;
+ Label 3:
+  this.computedSquares=true;
+  _t6=[Compute_0(this,a)];
+  _t7=[Compute_0(this,b)];
+  _t8=[Compute_1(this,_t6,_t7)];
+  Return _t8;
+ Label 4:
+}
+
+======= End of IR3 Program =======
+

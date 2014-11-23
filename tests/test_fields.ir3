@@ -1,0 +1,37 @@
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class FieldAccessMain{
+}
+
+class FieldAccess{
+  Int a;
+}
+
+=======  CMtd3 ======= 
+
+void main(FieldAccessMain this){
+  Int a;
+  Int b;
+  Int temp;
+  FieldAccess f;
+  Int _t1;
+  Int _t2;
+  f=new FieldAccess();
+  b=[FieldAccess_0(f,5)];
+  f.a=7;
+  _t1=f.a;
+  _t2=[_t1,b](+);
+  temp=[_t2,2](*);
+  println(temp);
+}
+
+Int FieldAccess_0(FieldAccess this,Int x){
+  Int _t3;
+  _t3=[6,x](+);
+  Return _t3;
+}
+
+======= End of IR3 Program =======
+

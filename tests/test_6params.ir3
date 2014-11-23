@@ -1,0 +1,68 @@
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class Main{
+}
+
+class Compute{
+  Int x;
+  Int y;
+  Int z;
+}
+
+=======  CMtd3 ======= 
+
+void main(Main this){
+  Int a;
+  Compute help;
+  Bool b;
+  Bool _t1;
+  Bool _t2;
+  Compute _t3;
+  Bool _t4;
+  Int _t5;
+  b=false;
+  _t1=(!)[b];
+  _t2=[_t1,false](||);
+  b=[_t2,b](&&);
+  _t3=[Compute_1(help)];
+  _t4=[_t3,0](==);
+  If([_t4,false](==)) goto 1;
+  println("NULL return");
+  goto 2;
+ Label 1:
+  println("Not NULL return");
+ Label 2:
+  help=new Compute();
+  a=[Compute_0(help,1,2,3,4,5)];
+  println("\nSum of 5 numbers:");
+  println(a);
+  _t5=(-)[5];
+  a=[Compute_0(help,_t5,6,7,8,9)];
+  println("\nSum of other 5 numbers:");
+  println(a);
+}
+
+Int Compute_0(Compute this,Int a,Int b,Int c,Int d,Int e){
+  Int _t7;
+  Int _t8;
+  Int _t9;
+  Int _t10;
+  Int _t11;
+  _t7=[a,b](+);
+  _t8=[_t7,c](+);
+  _t9=[_t8,d](+);
+  _t10=(-)[e];
+  _t11=[_t9,_t10](-);
+  Return _t11;
+}
+
+Compute Compute_1(Compute this){
+  null _t6;
+  _t6=0;
+  Return _t6;
+}
+
+======= End of IR3 Program =======
+
