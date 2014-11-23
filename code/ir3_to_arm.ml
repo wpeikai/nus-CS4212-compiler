@@ -32,7 +32,7 @@ let get_offset (md:md_decl3)  (var:id3): int =
 	
 	(* Only works on simple types at the moment *)
 let get_stack_space (md:md_decl3): int =	
-	24 + List.length(md.localvars3)
+	24 + 4 * List.length(md.localvars3)
 			
 let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 	let all_instructions = [] in
