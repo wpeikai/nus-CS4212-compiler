@@ -49,14 +49,6 @@ let get_offset (md:md_decl3)  (var:id3): int =
 			failwith "#52 This should not happen"
 	in -24 - 4 * (helper 0 md.localvars3 var)
 			
-
-let convert_ir3_stmt (stmt:ir3_stmt): arm_program = 
-	match stmt with
-	| AssignStmt3 (id3_1, ir3_exp_1) ->
-		[]
-	| _ ->
-		failwith "#51: Statement not yet implemented"
-
 let convert_ir3_expr (exp:ir3_exp): arm_program=
 	match exp with
 	| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
@@ -64,11 +56,20 @@ let convert_ir3_expr (exp:ir3_exp): arm_program=
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
+let convert_ir3_stmt (md:md_decl3) (stmt:ir3_stmt): arm_program = 
+	match stmt with
+	| AssignStmt3 (id3_1, ir3_exp_1) ->
+		(* Maybe It should be RegPreIndexed*)
+		(convert_ir3_expr ir3_exp_1) @
+		[STR ("", "", "v1", (RegPostIndexed ("fp", get_offset md id3_1)))]
+	| _ ->
+		failwith "#51: Statement not yet implemented"
+
 let convert_ir3_md_decl (md:md_decl3): arm_program =
 	let rec helper (stmts: ir3_stmt list): arm_program =
 		match stmts with
 		| head::tail -> 
-			convert_ir3_stmt(head) @ helper(tail)
+			(convert_ir3_stmt md head) @ helper(tail)
 		| [] ->
 			[]
 	in PseudoInstr ("." ^ md.id3) ::
