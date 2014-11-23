@@ -103,6 +103,8 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 				in instructions1 @ instructions2 @ arm_op_instructions @ comparative_inst
 			| _ -> failwith "#54: Unknown binary operator"
 		end
+	| UnaryExp3 (ir3_op_1, idc3_0) ->
+			| _ -> failwith "#567: Unary shoudl not exist in ARM"
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
