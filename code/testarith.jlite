@@ -11,6 +11,9 @@ class Test00 {
 		b = c * 2;
 		b = c - 2;
 		b = c + 2;
+		b = c;
+		d = true;
+		d = false;
 		d = c == 2; // d = True
 		d = c == a; // d = False
 		e = (!d);  // e = True

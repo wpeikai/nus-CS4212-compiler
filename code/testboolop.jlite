@@ -12,5 +12,6 @@ class TestBoolOp {
 		b = a >= c;
 		b = a < c;
 		b = a <= c;
+		b = !false;
 	}
 }
