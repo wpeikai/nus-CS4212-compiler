@@ -4,6 +4,7 @@ OLEX = ocamllex
 OYACC = ocamlyacc
 
 OCAML_OBJECTS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo jlite_toir3.cmo ir3_structs.cmo jlite_annotatedtyping.cmo ir3_to_arm.cmo arm_structs.cmo jlite_main.cmo
+OCAML_OBJECTS_IR3 = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo jlite_toir3.cmo ir3_structs.cmo jlite_annotatedtyping.cmo ir3_to_arm.cmo arm_structs.cmo jlite_main_ir3.cmo
 JLITE_INPUT=input.jlite
 
 all: arm.s
@@ -15,7 +16,13 @@ arm.s: z.exe
 	./z.exe $(JLITE_INPUT) > $@; \
 	# cp hello_world.s arm.s # To remove
 
+ir3: zir3.exe
+	./zir3.exe $(JLITE_INPUT) > input.ir3
+	
 z.exe: $(OCAML_OBJECTS)
+	$(OO) $@ $+
+
+zir3.exe: $(OCAML_OBJECTS_IR3)
 	$(OO) $@ $+
 
 jlite_lexer.cmo: jlite_lexer.ml jlite_parser.cmo
@@ -48,6 +55,9 @@ ir3_structs.cmo: ir3_structs.ml jlite_structs.cmo
 	$(OC) $<
 
 jlite_main.cmo: jlite_main.ml ir3_to_arm.cmo jlite_toir3.cmo
+	$(OC) $<
+
+jlite_main_ir3.cmo: jlite_main_ir3.ml ir3_to_arm.cmo jlite_toir3.cmo
 	$(OC) $<
 
 clean:
