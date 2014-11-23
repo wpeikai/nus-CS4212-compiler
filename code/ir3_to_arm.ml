@@ -19,18 +19,23 @@ let fresh_var () =
 let compare_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
 
-let get_offset (md:md_decl3)  (var:id3): int =
-	let rec helper(i:int) (var_list:var_decl3 list) (var:id3): int = 
+(* Find the index of the variable in a list of variable *)
+let index_id3_in_var_decl3_list (var:id3) (var_list:var_decl3 list): int=
+	let rec helper(i:int) (var:id3) (var_list:var_decl3 list): int = 
 		match var_list with
-		| (_,head_id3)::tail ->
+		| (_, head_id3)::tail ->
 			if (compare_id3 head_id3 var)
 			then i
-			else helper (i+1)  tail var
-		| _ ->
-			failwith "#52 This should not happen"
-	in 24 + 4 * (helper 0 md.localvars3 var)
+			else helper (i+1) var tail
+		| _ -> failwith "#47"
+	in helper 0 var var_list
+
+(* Return the offset between fp and the local variables based on the variable declarations listz *)
+let get_offset (var:id3) (md:md_decl3): int =
+	let index_var = index_id3_in_var_decl3_list var md.localvars3
+	in 24 + 4 * index_var
 	
-	(* Only works on simple types at the moment *)
+(* Only works on simple types at the moment *)
 let get_stack_space (md:md_decl3): int =	
 	24 + 4 * List.length(md.localvars3)
 			
@@ -64,46 +69,53 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
-let convert_ir3_stmt (md:md_decl3) (stmt:ir3_stmt): arm_program = 
+let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3): arm_program = 
 	match stmt with
 	| AssignStmt3 (id3_1, ir3_exp_1) ->
 		(* Maybe It should be RegPreIndexed*)
-		(convert_ir3_expr ir3_exp_1 md) @ [STR ("", "", "v1", (RegPreIndexed ("fp", - get_offset md id3_1, false)))]
+		(convert_ir3_expr ir3_exp_1 md) @ [STR ("", "", "v1", (RegPreIndexed ("fp", - get_offset id3_1 md, false)))]
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
-let convert_ir3_md_decl (md:md_decl3): arm_program =
-	let rec helper (stmts: ir3_stmt list): arm_program =
+let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3): arm_program =
 		match stmts with
 		| head::tail -> 
-			(convert_ir3_stmt md head) @ helper(tail)
-		| [] ->
-			[]
-	in 
+			(convert_ir3_stmt head md) @ (convert_ir3_stmt_list tail md)
+		| [] -> []
+
+let convert_ir3_md_decl (md:md_decl3): arm_program =
 	(*Label with function name*)
 	PseudoInstr (md.id3 ^ ":") ::
 	(*Store registers on the stack*)
 	STMFD ("fp" :: "lr" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
 	(* sp = fp - 24 *)
-	ADD ("", true, "fp", "sp", ImmedOp "#24") ::
+	ADD ("", false, "fp", "sp", ImmedOp "#24") ::
 	(* allocate local variables*)
-	SUB ("", true, "sp", "fp", ImmedOp ("#" ^ (string_of_int (get_stack_space md)))) ::
-	helper(md.ir3stmts) @ 
+	SUB ("", false, "sp", "fp", ImmedOp ("#" ^ (string_of_int (get_stack_space md)))) ::
+	convert_ir3_stmt_list md.ir3stmts md @
 	(* Maybe we should put a L#exit label here *)
-	[SUB ("", true, "sp", "fp", ImmedOp "#24")] @
-	[LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: [])]
+	SUB ("", false, "sp", "fp", ImmedOp "#24") ::
+	LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
+	[]
 
-let ir3_program_to_arm ((_, main, mds):ir3_program):arm_program =
-	let rec helper(mds:md_decl3 list):arm_program =
-		match mds with
+
+(* Convert a list of md_decl3 *)
+let rec convert_md_decl3_list (mds:md_decl3 list):arm_program = 
+	match mds with
 		| head::tail -> 
-			(convert_ir3_md_decl head) @ (helper tail)
-		| [] ->
-			[]
-	in 
-		PseudoInstr (".text") ::
-		PseudoInstr (".global main") ::
-	   	helper(main::mds)
+			(convert_ir3_md_decl head) @ (convert_md_decl3_list tail)
+		| [] -> []
+
+(* Convert a ir3 program to arm program *)
+let ir3_program_to_arm ((_, main, mds):ir3_program):arm_program =
+	PseudoInstr (".data") ::
+	PseudoInstr ("") ::
+	PseudoInstr (".text") ::
+	PseudoInstr ("") ::
+	PseudoInstr (".global main") ::
+   	convert_md_decl3_list(main::mds) @
+	PseudoInstr ("\n") :: (* Add a newline at the end *)
+	[]
 
 (* 	
 let iR3Expr_get_idc3 (exp:ir3_exp) =
