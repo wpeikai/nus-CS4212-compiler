@@ -32,7 +32,7 @@ let get_offset (md:md_decl3)  (var:id3): int =
 	
 	(* Only works on simple types at the moment *)
 let get_stack_space (md:md_decl3): int =	
-	24 + List.length(md.localvars3)
+	24 + 4 * List.length(md.localvars3)
 			
 let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 	let all_instructions = [] in
@@ -81,7 +81,7 @@ let convert_ir3_md_decl (md:md_decl3): arm_program =
 			[]
 	in 
 	(*Label with function name*)
-	PseudoInstr ("." ^ md.id3) ::
+	PseudoInstr (md.id3 ^ ":") ::
 	(*Store registers on the stack*)
 	STMFD ("fp" :: "lr" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
 	(* sp = fp - 24 *)
@@ -100,7 +100,10 @@ let ir3_program_to_arm ((_, main, mds):ir3_program):arm_program =
 			(convert_ir3_md_decl head) @ (helper tail)
 		| [] ->
 			[]
-	in helper(main::mds)
+	in 
+		PseudoInstr (".text") ::
+		PseudoInstr (".global main") ::
+	   	helper(main::mds)
 
 (* 	
 let iR3Expr_get_idc3 (exp:ir3_exp) =
