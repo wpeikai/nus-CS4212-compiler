@@ -46,7 +46,7 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 				begin
 				match idc3_1 with
 				| IntLiteral3 i -> 
-					[MOV ("", false, "a0", (ImmedOp ("#" ^ (string_of_int i))))]
+					[MOV ("", false, "a1", (ImmedOp ("#" ^ (string_of_int i))))]
 				| _ -> failwith "#55"
 				end
 			in
@@ -54,11 +54,11 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 				begin
 				match idc3_2 with
 				| IntLiteral3 i ->
-					[MOV ("", false, "a1", (ImmedOp ("#" ^ (string_of_int i))))]
+					[MOV ("", false, "a2", (ImmedOp ("#" ^ (string_of_int i))))]
 				| _ -> failwith "#55"
 			end
 			in
-			all_instructions @ instructions1 @ instructions2 @ [ADD ("", false, "v1", "a0", (RegOp "a1"))]
+			all_instructions @ instructions1 @ instructions2 @ [ADD ("", false, "v1", "a1", (RegOp "a2"))]
 		| _ -> failwith "#54: Unknown binary operator"
 		end
 	| _ ->
