@@ -17,5 +17,9 @@ class Test00 {
 		d = c == 2; // d = True
 		d = c == a; // d = False
 		e = (!d);  // e = True
+		println("QQQQQQ");
+		println(a);
+		println(c);
+		println(23);
 	}
 }
