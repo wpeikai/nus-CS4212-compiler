@@ -15,26 +15,6 @@ let varcount = ref 0
 let fresh_var () = 
 	(varcount:=!varcount+1; (string_of_int !varcount))
 
-let ir3_program_to_arm (p:ir3_program):arm_program=
-	PseudoInstr ".data" :: 
-	Label "L1" ::
-	PseudoInstr ".asciz \"Hellokjljdkjbkbbkb World\"" ::
-	PseudoInstr ".text" ::
-	PseudoInstr ".global main" ::
-	PseudoInstr ".type main, %function" ::
-	Label "main" ::
-	STMFD ("fp" :: "lr" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
-	ADD ("", true, "fp", "sp", ImmedOp "#24") ::
-	SUB ("", true, "sp", "fp", ImmedOp "#32") ::
-	LDR ("", "", "a1", (Reg "=L1")) ::
-	BL ("", "printf(PLT)") ::
-
-	Label "L1exit" ::
-	MOV ("", true, "a4", (ImmedOp "#0")) ::
-	MOV ("", true, "a1", (RegOp "r3")) ::
-	SUB ("", true, "sp", "fp", ImmedOp "#24") ::
-	LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) :: []
-
 let compare_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
 
@@ -89,6 +69,15 @@ let convert_ir3_md_decl (md:md_decl3): arm_program =
 	(* Maybe we should put a L#exit label here *)
 	[SUB ("", true, "sp", "fp", ImmedOp "#24")] @
 	[LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: [])]
+
+let ir3_program_to_arm ((_, main, mds):ir3_program):arm_program =
+	let rec helper(mds:md_decl3 list):arm_program =
+		match mds with
+		| head::tail -> 
+			(convert_ir3_md_decl head) @ (helper tail)
+		| [] ->
+			[]
+	in helper(main::mds)
 
 (* 	
 let iR3Expr_get_idc3 (exp:ir3_exp) =
