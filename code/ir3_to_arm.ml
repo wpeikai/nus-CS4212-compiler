@@ -81,7 +81,7 @@ let convert_ir3_md_decl (md:md_decl3): arm_program =
 			[]
 	in 
 	(*Label with function name*)
-	PseudoInstr (md.id3) ::
+	PseudoInstr (md.id3 ^ ":") ::
 	(*Store registers on the stack*)
 	STMFD ("fp" :: "lr" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
 	(* sp = fp - 24 *)
