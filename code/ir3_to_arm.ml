@@ -47,7 +47,11 @@ let get_offset (md:md_decl3)  (var:id3): int =
 			else helper (i+1)  tail var
 		| _ ->
 			failwith "#52 This should not happen"
-	in -24 - 4 * (helper 0 md.localvars3 var)
+	in 24 + 4 * (helper 0 md.localvars3 var)
+	
+	(* Only works on simple types at the moment *)
+let get_stack_space (md:md_decl3): int =	
+	24 + List.length(md.localvars3)
 			
 let convert_ir3_expr (exp:ir3_exp): arm_program=
 	match exp with
@@ -72,7 +76,15 @@ let convert_ir3_md_decl (md:md_decl3): arm_program =
 			(convert_ir3_stmt md head) @ helper(tail)
 		| [] ->
 			[]
-	in PseudoInstr ("." ^ md.id3) ::
+	in 
+	(*Label with function name*)
+	PseudoInstr ("." ^ md.id3) ::
+	(*Store registers on the stack*)
+	STMFD ("fp" :: "lr" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
+	(* sp = fp - 24 *)
+	ADD ("", true, "fp", "sp", ImmedOp "#24") ::
+	(* allocate local variables*)
+	SUB ("", true, "sp", "fp", ImmedOp ("#" ^ (string_of_int (get_stack_space md)))) ::
 	helper(md.ir3stmts) @  []
 
 (* 	
