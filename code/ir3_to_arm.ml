@@ -35,23 +35,44 @@ let ir3_program_to_arm (p:ir3_program):arm_program=
 	SUB ("", true, "sp", "fp", ImmedOp "#24") ::
 	LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) :: []
 
-let convert_ir3_md_decl (md:md_decl3) =
-	[]
+let compare_id3 (i1:id3) (i2:id3): bool =
+	((String.compare i1 i2) == 0)
 
+let get_offset (md:md_decl3)  (var:id3): int =
+	let rec helper(i:int) (var_list:var_decl3 list) (var:id3): int = 
+		match var_list with
+		| (_,head_id3)::tail ->
+			if (compare_id3 head_id3 var)
+			then i
+			else helper (i+1)  tail var
+		| _ ->
+			failwith "#52 This should not happen"
+	in -24 - 4 * (helper 0 md.localvars3 var)
+			
 
-let convert_ir3_stmt (stmt:ir3_stmt) = 
+let convert_ir3_stmt (stmt:ir3_stmt): arm_program = 
 	match stmt with
 	| AssignStmt3 (id3_1, ir3_exp_1) ->
 		[]
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
-let convert_ir3_expr (exp:ir3_exp) =
+let convert_ir3_expr (exp:ir3_exp): arm_program=
 	match exp with
 	| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
 		[]	
 	| _ ->
 		failwith "#50: Expression not yet implemented"
+
+let convert_ir3_md_decl (md:md_decl3): arm_program =
+	let rec helper (stmts: ir3_stmt list): arm_program =
+		match stmts with
+		| head::tail -> 
+			convert_ir3_stmt(head) @ helper(tail)
+		| [] ->
+			[]
+	in PseudoInstr ("." ^ md.id3) ::
+	helper(md.ir3stmts) @  []
 
 (* 	
 let iR3Expr_get_idc3 (exp:ir3_exp) =
