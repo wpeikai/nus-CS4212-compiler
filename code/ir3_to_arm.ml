@@ -43,27 +43,28 @@ let get_stack_space (md:md_decl3): int =
 let number_op (i:int): operand2_type=
 	ImmedOp ("#" ^ (string_of_int i))
 
+(* From a idc3 and the register, it gives all the instructions *)
+let idc3_to_arm (var:idc3) (register:reg) (md:md_decl3) : arm_program =
+	match var with
+	| IntLiteral3 i -> 
+		[MOV ("", false, register, (number_op i))]
+	| Var3 var_id3 -> 
+		[LDR ("", "", register, (RegPreIndexed ("fp", - get_offset var_id3 md , false)))]
+	| BoolLiteral3 bool_id3 -> 
+		begin
+			match bool_id3 with
+			(* true = 1 *)
+			| true -> [MOV ("", false, register, (number_op 1))]
+			(* false = 0 *)
+			| false -> [MOV ("", false, register, (number_op 0))]
+		end
+	| _ -> failwith "#55"
+
 let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 	match exp with
 	| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
-		let instructions1 = 
-			begin
-				match idc3_1 with
-				| IntLiteral3 i -> 
-					[MOV ("", false, "a1", (number_op i))]
-				| Var3 var_id3 -> 
-					[LDR ("", "", "a1", (RegPreIndexed ("fp", - get_offset md var_id3, false)))]
-				| _ -> failwith "#55"
-			end
-		in let instructions2 = 
-			begin
-				match idc3_2 with
-				| IntLiteral3 i ->
-					[MOV ("", false, "a2", (number_op i))]
-				| Var3 var_id3 -> 
-					[LDR ("", "", "a2", (RegPreIndexed ("fp", - get_offset md var_id3, false)))]
-				| _ -> failwith "#55"
-			end
+		let instructions1 = idc3_to_arm idc3_1 "a1" md
+		in let instructions2 = idc3_to_arm idc3_2 "a2" md
 		in 
 		begin
 			match ir3_op_1 with 
@@ -104,7 +105,21 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 			| _ -> failwith "#54: Unknown binary operator"
 		end
 	| UnaryExp3 (ir3_op_1, idc3_0) ->
-			| _ -> failwith "#567: Unary shoudl not exist in ARM"
+		let instructions1 = idc3_to_arm idc3_0 "a1" md
+		in 
+		begin
+			match ir3_op_1 with 
+			| UnaryOp op ->
+				let arm_op_instructions =
+					begin
+						match op with
+						| "-" -> MOV ("", false, "a2", (number_op 0)) :: SUB ("", false, "v1", "a2", (RegOp "a1")) :: []
+						| "!" -> CMP ("", "a1", (number_op 1)) :: MOV ("eq", false, "v1", (number_op 0)) :: MOV ("ne", false, "v1", (number_op 1)) :: []
+						| _ -> failwith "#67"
+					end
+				in instructions1  @ arm_op_instructions
+			| _ -> failwith "#544: Unknown unary operator"
+		end
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 

@@ -4,10 +4,15 @@ class Test00 {
 		Int a;
 		Int b;
 		Int c;
+		Bool d;
+		Bool e;
 		c = 1 + 1;
 		a = c + 2;
 		b = c * 2;
 		b = c - 2;
 		b = c + 2;
+		d = c == 2; // d = True
+		d = c == a; // d = False
+		e = (!d);  // e = True
 	}
 }
