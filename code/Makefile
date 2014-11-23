@@ -2,35 +2,53 @@ OC = ocamlc -c
 OO = ocamlc -o
 OLEX = ocamllex
 OYACC = ocamlyacc
-OBJS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo jlite_toir3.cmo ir3_structs.cmo \
-	jlite_annotatedtyping.cmo jlite_main.cmo
 
+OCAML_OBJECTS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo jlite_toir3.cmo ir3_structs.cmo jlite_annotatedtyping.cmo ir3_to_arm.cmo arm_structs.cmo jlite_main.cmo
+JLITE_INPUT=input.jlite
 
-all : z.exe
+all: arm.s
+	../../ndkandroid/bin/arm-linux-androideabi-g++ $< -o out; \
+	../../sdk/adt-bundle-linux-x86_64-20140702/sdk/platform-tools/adb push out /data/local/tmp; \
+	../../sdk/adt-bundle-linux-x86_64-20140702/sdk/platform-tools/adb shell ./data/local/tmp/out  # Run the executable in adb and exit
 
-z.exe: $(OBJS)
-	$(OO) $@ $^
+arm.s: z.exe 
+	./z.exe $(JLITE_INPUT) > $@; \
+	# cp hello_world.s arm.s # To remove
 
-jlite_lexer.cmo : jlite_lexer.ml jlite_parser.cmo
-	$(OC) jlite_lexer.ml
+z.exe: $(OCAML_OBJECTS)
+	$(OO) $@ $+
 
-jlite_lexer.ml : jlite_lexer.mll  jlite_parser.cmo
-	$(OLEX) jlite_lexer.mll
+jlite_lexer.cmo: jlite_lexer.ml jlite_parser.cmo
+	$(OC) $<
 
-jlite_parser.ml : jlite_parser.mli jlite_structs.cmo
-	$(OC) jlite_parser.mli
+jlite_lexer.ml: jlite_lexer.mll  jlite_parser.cmo
+	$(OLEX) $<
 
-jlite_parser.mli : jlite_parser.mly
-	$(OYACC) jlite_parser.mly
+ir3_to_arm.cmo: ir3_to_arm.ml ir3_structs.cmo arm_structs.cmo
+	$(OC) $<
 
-jlite_toir3.cmo : jlite_toir3.ml jlite_structs.cmo ir3_structs.cmo
-	$(OC) jlite_toir3.ml
+arm_structs.cmo: arm_structs.ml
+	$(OC) $<
 
-ir3_structs.cmo : ir3_structs.ml jlite_structs.cmo
-	$(OC) ir3_structs.ml
+jlite_parser.cmo: jlite_parser.mly jlite_structs.cmo
+	$(OYACC) $<; \
+	$(OC) jlite_parser.mli; \
+	$(OC) jlite_parser.ml
 
-%.cmo : %.ml
-	$(OC) $^
+jlite_structs.cmo: jlite_structs.ml
+	$(OC) $<
 
-clean :
-	rm -f *.cmo *.cmi jlite_parser.mli jlite_parser.ml jlite_lexer.ml
+jlite_toir3.cmo: jlite_toir3.ml jlite_structs.cmo ir3_structs.cmo
+	$(OC) $<
+
+jlite_annotatedtyping.cmo: jlite_annotatedtyping.ml
+	$(OC) $<
+
+ir3_structs.cmo: ir3_structs.ml jlite_structs.cmo
+	$(OC) $<
+
+jlite_main.cmo: jlite_main.ml ir3_to_arm.cmo jlite_toir3.cmo
+	$(OC) $<
+
+clean:
+	-@rm *.cmo *.cmi jlite_parser.ml jlite_lexer.ml arm.s jlite_parser.mli out z.exe 2> /dev/null || true 
