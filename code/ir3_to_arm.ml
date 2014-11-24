@@ -20,6 +20,10 @@ let argcount = ref 0
 let fresh_arg () = 
 	(argcount:=!argcount+1; (string_of_int !argcount))
 
+let ifcount = ref 0 
+let fresh_if () = 
+	(ifcount:=!ifcount+1; (string_of_int !ifcount))
+
 let compare_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
 
@@ -246,7 +250,6 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 				LDR ("", "", "a3", (RegPreIndexed ("fp", - get_offset var_id3 md , false))) ::
 				MOV ("", false, "a2", (RegOp "a3")) :: 
 				[BL ("", "printf(PLT)")]
-
 			| _ -> failwith "#69"
 		end
 	| AssignFieldStmt3 (ir3_exp_1, ir3_exp_2) ->
@@ -275,6 +278,15 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 		LDR ("", "", "v1", (RegPreIndexed ("fp", -var_offset_r , false))) ::
 		LDR ("", "", "v2", (RegPreIndexed ("fp", -var_offset_l , false))) ::
 		STR ("", "", "v1", (RegPreIndexed ("v2", field_offset, false))) :: []	
+	| IfStmt3 (ir3_expr_0, label_0) -> 
+		[],
+		convert_ir3_expr ir3_expr_0 md program_ir3 @
+		CMP ("", "v1", (number_op 1)) ::
+		[B ("eq", "." ^ (string_of_int label_0))]
+	| Label3 label_0 -> 
+		[], [PseudoInstr ("\n." ^ (string_of_int label_0) ^ ":")]
+	| GoTo3 label_0 -> 
+		[], [B ("", "." ^ (string_of_int label_0))]
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
