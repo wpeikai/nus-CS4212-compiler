@@ -190,14 +190,14 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3):arm_program * arm_program =
 let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3): arm_program * arm_program =
 		match stmts with
 		| head::tail -> 
-			let first_ins_list, normal_inst_list = convert_ir3_stmt head md in
-			let first_ins_tail_list, normal_inst_tail_list = convert_ir3_stmt_list tail md in
-			first_ins_list @ first_ins_tail_list, normal_inst_list @ normal_inst_tail_list
+			let data_instr_list, text_instr_list = convert_ir3_stmt head md in
+			let data_instr_tail_list, text_instr_tail_list = convert_ir3_stmt_list tail md in
+			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
 		| [] -> [], []
 
 let convert_ir3_md_decl (md:md_decl3): arm_program * arm_program=
-	let first_ins_list, normal_inst_list = convert_ir3_stmt_list md.ir3stmts md in
-	first_ins_list,
+	let data_instr_list, text_instr_list = convert_ir3_stmt_list md.ir3stmts md in
+	data_instr_list,
 	(*Label with function name*)
 	PseudoInstr ("\n" ^ md.id3 ^ ":") ::
 	(*Store registers on the stack*)
@@ -206,7 +206,7 @@ let convert_ir3_md_decl (md:md_decl3): arm_program * arm_program=
 	ADD ("", false, "fp", "sp", ImmedOp "#24") ::
 	(* allocate local variables*)
 	SUB ("", false, "sp", "fp", ImmedOp ("#" ^ (string_of_int (get_stack_space md)))) ::
-	normal_inst_list @
+	text_instr_list @
 	(* Maybe we should put a L#exit label here *)
 	SUB ("", false, "sp", "fp", ImmedOp "#24") ::
 	[LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: [])]
@@ -215,21 +215,21 @@ let convert_ir3_md_decl (md:md_decl3): arm_program * arm_program=
 let rec convert_md_decl3_list (mds:md_decl3 list):arm_program *arm_program = 
 	match mds with
 		| head::tail -> 
-			let first_ins_list, normal_inst_list = convert_ir3_md_decl head in
-			let first_ins_tail_list, normal_inst_tail_list = convert_md_decl3_list tail in
-			first_ins_list @ first_ins_tail_list, normal_inst_list @ normal_inst_tail_list
+			let data_instr_list, text_instr_list = convert_ir3_md_decl head in
+			let data_instr_tail_list, text_instr_tail_list = convert_md_decl3_list tail in
+			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
 		| [] -> [], []
 
 (* Convert a ir3 program to arm program *)
 let ir3_program_to_arm ((cdata3_list, main_md_decl3, md_decl3_list):ir3_program):arm_program =
-	let first_ins_list, normal_inst_list = convert_md_decl3_list(main_md_decl3 :: md_decl3_list) in
+	let data_instr_list, text_instr_list = convert_md_decl3_list(main_md_decl3 :: md_decl3_list) in
 
 	PseudoInstr (".data") ::
 	PseudoInstr ("") ::
-	first_ins_list @
+	data_instr_list @
 	PseudoInstr ("\n.text") ::
 	PseudoInstr ("\n.global main") ::
-   	normal_inst_list @
+   	text_instr_list @
 	[PseudoInstr ("\n")] (* Add a newline at the end *)
 
 (* 	
