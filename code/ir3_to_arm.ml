@@ -286,6 +286,10 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 		[], [PseudoInstr ("\n." ^ (string_of_int label_0) ^ ":")]
 	| GoTo3 label_0 -> 
 		[], [B ("", "." ^ (string_of_int label_0))]
+	| ReturnStmt3 id3_1 ->
+		let var_offset = (get_offset id3_1 md)
+		in [],
+		LDR ("", "", "v1", (RegPreIndexed ("fp", -var_offset , false))) :: []
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
