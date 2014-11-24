@@ -73,9 +73,13 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 				let arm_op_instructions =
 					begin
 						match op with
-						| "+" -> [ADD ("", false, "v1", "a1", (RegOp "a2"))]
-						| "-" -> [SUB ("", false, "v1", "a1", (RegOp "a2"))]
-						| "*" -> [MUL ("", false, "v1", "a1", "a2")] 	(* Improve multiplication *)
+						| "+" -> 
+							[ADD ("", false, "v1", "a1", (RegOp "a2"))]
+						| "-" ->
+							[SUB ("", false, "v1", "a1", (RegOp "a2"))]
+						| "*" -> 	
+							(* Improve multiplication *)
+							[MUL ("", false, "v1", "a1", "a2")] 						
 						| _ -> failwith "#57"
 					end
 				in instructions1 @ instructions2 @ arm_op_instructions
@@ -84,12 +88,24 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 				in let arm_op_instructions =
 					begin
 						match op with
-						| "==" -> MOV ("eq", false, "v1", (number_op 1)) :: MOV ("ne", false, "v1", (number_op 0)) :: []
-						| "!=" -> MOV ("eq", false, "v1", (number_op 0)) :: MOV ("ne", false, "v1", (number_op 1)) :: []
-						| ">" -> MOV ("gt", false, "v1", (number_op 1)) :: MOV ("lt", false, "v1", (number_op 0)) :: []
-						| ">=" -> MOV ("ge", false, "v1", (number_op 1)) :: MOV ("le", false, "v1", (number_op 0)) :: []
-						| "<" -> MOV ("gt", false, "v1", (number_op 0)) :: MOV ("lt", false, "v1", (number_op 1)) :: []
-						| "<=" -> MOV ("ge", false, "v1", (number_op 0)) :: MOV ("le", false, "v1", (number_op 1)) :: []
+						| "==" -> 	
+							MOV ("eq", false, "v1", (number_op 1)) :: 
+							MOV ("ne", false, "v1", (number_op 0)) :: []
+						| "!=" -> 	
+							MOV ("eq", false, "v1", (number_op 0)) :: 
+							MOV ("ne", false, "v1", (number_op 1)) :: []
+						| ">" -> 	
+							MOV ("gt", false, "v1", (number_op 1)) :: 
+							MOV ("lt", false, "v1", (number_op 0)) :: []
+						| ">=" -> 
+							MOV ("ge", false, "v1", (number_op 1)) :: 
+							MOV ("le", false, "v1", (number_op 0)) :: []
+						| "<" -> 
+							MOV ("gt", false, "v1", (number_op 0)) :: 
+							MOV ("lt", false, "v1", (number_op 1)) :: []
+						| "<=" -> 
+							MOV ("ge", false, "v1", (number_op 0)) :: 
+							MOV ("le", false, "v1", (number_op 1)) :: []
 						| _ -> failwith "#59"
 					end
 				in instructions1 @ instructions2 @ comparative_inst @ arm_op_instructions
@@ -97,8 +113,10 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 				let arm_op_instructions =
 					begin
 						match op with
-						| "&&" -> [AND ("", false, "v1", "a1", (RegOp "a2"))]
-						| "||" -> [ORR ("", false, "v1", "a1", (RegOp "a2"))]
+						| "&&" -> 
+							[AND ("", false, "v1", "a1", (RegOp "a2"))]
+						| "||" -> 
+							[ORR ("", false, "v1", "a1", (RegOp "a2"))]
 						| _ -> failwith "#61"
 					end
 				in let comparative_inst = CMP ("", "v1", (number_op 0)) :: MOV ("eq", false, "v1", (number_op 0)) :: MOV ("ne", false, "v1", (number_op 1)) :: []
