@@ -193,8 +193,7 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_
 		in let alloc_size = 4 * List.length var_list
 		in MOV ("", false, "a1", (number_op alloc_size)) ::
 		BL ("", "_Znwj(PLT)") ::
-		MOV ("", false, "v1", (RegOp "a1")) :: []
-		
+		MOV ("", false, "v1", (RegOp "a1")) :: []	
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
