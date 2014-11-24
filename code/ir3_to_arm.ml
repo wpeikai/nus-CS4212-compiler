@@ -185,8 +185,8 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_
 		let instructions1 = convert_idc3 idc3_0 "a1" md
 		in instructions1
 	| FieldAccess3 (id3_1, id3_2) ->
-		LDR ("", "", "v1", (RegPreIndexed ("fp", - get_offset id3_1 md, false))) ::
-		LDR ("", "", "a1", (RegPreIndexed ("v1", get_field_offset id3_1 id3_2 md program_ir3,false))) :: 
+		LDR ("", "", "v2", (RegPreIndexed ("fp", - get_offset id3_1 md, false))) ::
+		LDR ("", "", "v1", (RegPreIndexed ("v2", get_field_offset id3_1 id3_2 md program_ir3,false))) :: 
 		[]
 	| ObjectCreate3 class_name ->
 		let var_list = class_var_list (ObjectT class_name) program_ir3
