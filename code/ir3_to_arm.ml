@@ -19,6 +19,36 @@ let fresh_var () =
 let compare_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
 
+(* Returns the type of a variable given its name *)
+let rec var_type (var:id3) (var_list: var_decl3 list): ir3_type =
+	match var_list with
+	| (head_type,head_id3)::tail ->
+		if (compare_id3 head_id3 var)
+		then head_type
+		else var_type var tail
+	| _ -> 
+		failwith "#259 Unknown variable type"
+
+(* returns the variables of a class given the class type *)
+let rec class_var_list (class_type:ir3_type) ((class_list,_,_):ir3_program):var_decl3 list =
+	let rec helper (class_list:cdata3 list) (class_type:ir3_type) =
+		match class_type with
+		| ObjectT cn ->
+			begin
+			match class_list with
+			| (cname_head, var_list_head)::tail -> 
+				if ((String.compare cname_head cn) == 0)
+				then var_list_head
+				else helper tail class_type
+			| [] ->
+				failwith "#260 Unknown class"
+			end
+		| _ ->
+			failwith "#261 Looks like it's trying to access the field of NOT a class"
+	in helper class_list class_type
+				
+	
+
 (* Find the index of the variable in a list of variable *)
 let index_id3_in_var_decl3_list (var:id3) (var_list:var_decl3 list): int=
 	let rec helper(i:int) (var:id3) (var_list:var_decl3 list): int = 
@@ -34,7 +64,14 @@ let index_id3_in_var_decl3_list (var:id3) (var_list:var_decl3 list): int=
 let get_offset (var:id3) (md:md_decl3): int =
 	let index_var = index_id3_in_var_decl3_list var md.localvars3
 	in 24 + 4 * index_var
+
+(* Returns offset of variable within a class structure *)
+let get_field_offset (class_id3:id3) (field_id3:id3) (md:md_decl3) (program_ir3:ir3_program):int=
+	let vtype = var_type class_id3 md.localvars3 in
+		let var_list = class_var_list vtype program_ir3 in
+			4 * (index_id3_in_var_decl3_list field_id3 var_list)
 	
+
 (* Only works on simple types at the moment *)
 let get_stack_space (md:md_decl3): int =	
 	24 + 4 * List.length(md.localvars3)
@@ -147,6 +184,8 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 	| Idc3Expr idc3_0 ->
 		let instructions1 = convert_idc3 idc3_0 "a1" md
 		in instructions1
+	| FieldAccess3 (id3_1, id3_2) ->
+		[]
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
