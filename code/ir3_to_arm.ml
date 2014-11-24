@@ -132,8 +132,13 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 				let arm_op_instructions =
 					begin
 						match op with
-						| "-" -> MOV ("", false, "a2", (number_op 0)) :: SUB ("", false, "v1", "a2", (RegOp "a1")) :: []
-						| "!" -> CMP ("", "a1", (number_op 1)) :: MOV ("eq", false, "v1", (number_op 0)) :: MOV ("ne", false, "v1", (number_op 1)) :: []
+						| "-" -> 
+							MOV ("", false, "a2", (number_op 0)) ::
+							SUB ("", false, "v1", "a2", (RegOp "a1")) :: []
+						| "!" -> 
+							CMP ("", "a1", (number_op 1)) :: 
+							MOV ("eq", false, "v1", (number_op 0)) :: 
+							MOV ("ne", false, "v1", (number_op 1)) :: []
 						| _ -> failwith "#67"
 					end
 				in instructions1 @ arm_op_instructions
