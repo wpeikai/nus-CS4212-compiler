@@ -81,7 +81,7 @@ let number_op (i:int): operand2_type=
 	ImmedOp ("#" ^ (string_of_int i))
 
 (* From a idc3 and the register, it gives all the instructions *)
-let convert_idc3 (var:idc3) (register:reg) (md:md_decl3) : arm_program =
+let convert_idc3 (var:idc3) (register:reg) (md:md_decl3): arm_program =
 	match var with
 	| IntLiteral3 i -> 
 		[MOV ("", false, register, (number_op i))]
@@ -98,7 +98,7 @@ let convert_idc3 (var:idc3) (register:reg) (md:md_decl3) : arm_program =
 	| _ -> failwith "#55"
 
 (* Convert an ir3 expr to arm instructions *)
-let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
+let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_program=
 	match exp with
 	| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
 		let instructions1 = convert_idc3 idc3_1 "a1" md
@@ -185,15 +185,17 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 		let instructions1 = convert_idc3 idc3_0 "a1" md
 		in instructions1
 	| FieldAccess3 (id3_1, id3_2) ->
+		LDR ("", "", "v1", (RegPreIndexed ("fp", - get_offset id3_1 md, false))) ::
+		LDR ("", "", "a1", (RegPreIndexed ("v1", get_field_offset id3_1 id3_2 md program_ir3,false))) :: 
 		[]
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
 (* Convert an ir3 statement to arm instructions *)
-let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3):arm_program * arm_program = 
+let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm_program * arm_program = 
 	match stmt with
 	| AssignStmt3 (id3_0, ir3_exp_0) ->
-		[], (convert_ir3_expr ir3_exp_0 md) @ [STR ("", "", "v1", (RegPreIndexed ("fp", - get_offset id3_0 md, false)))]
+		[], (convert_ir3_expr ir3_exp_0 md program_ir3) @ [STR ("", "", "v1", (RegPreIndexed ("fp", - get_offset id3_0 md, false)))]
 	| PrintStmt3 idc3_0 ->
 		begin
 			(* Label fresh gives a new label *)
@@ -226,9 +228,10 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3):arm_program * arm_program =
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
-let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3): arm_program * arm_program =
+let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3) (program_ir3:ir3_program): arm_program * arm_program =
 		match stmts with
 		| head::tail -> 
+<<<<<<< HEAD
 			let data_instr_list, text_instr_list = convert_ir3_stmt head md in
 			let data_instr_tail_list, text_instr_tail_list = convert_ir3_stmt_list tail md in
 			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
@@ -237,6 +240,16 @@ let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3): arm_program 
 let convert_ir3_md_decl (md:md_decl3): arm_program * arm_program=
 	let data_instr_list, text_instr_list = convert_ir3_stmt_list md.ir3stmts md in
 	data_instr_list,
+=======
+			let first_ins_list, normal_inst_list = convert_ir3_stmt head md program_ir3 in
+			let first_ins_tail_list, normal_inst_tail_list = convert_ir3_stmt_list tail md program_ir3 in
+			first_ins_list @ first_ins_tail_list, normal_inst_list @ normal_inst_tail_list
+		| [] -> [], []
+
+let convert_ir3_md_decl (md:md_decl3) (program_ir3: ir3_program): arm_program * arm_program=
+	let first_ins_list, normal_inst_list = convert_ir3_stmt_list md.ir3stmts md program_ir3 in
+	first_ins_list,
+>>>>>>> Now generates the code to access the field, needs to be tested
 	(*Label with function name*)
 	PseudoInstr ("\n" ^ md.id3 ^ ":") ::
 	(*Store registers on the stack*)
@@ -251,7 +264,7 @@ let convert_ir3_md_decl (md:md_decl3): arm_program * arm_program=
 	[LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: [])]
 
 (* Convert a list of md_decl3 *)
-let rec convert_md_decl3_list (mds:md_decl3 list):arm_program *arm_program = 
+let rec convert_md_decl3_list (mds:md_decl3 list) (program_ir3:ir3_program):arm_program *arm_program = 
 	match mds with
 		| head::tail -> 
 			let data_instr_list, text_instr_list = convert_ir3_md_decl head in
@@ -260,7 +273,8 @@ let rec convert_md_decl3_list (mds:md_decl3 list):arm_program *arm_program =
 		| [] -> [], []
 
 (* Convert a ir3 program to arm program *)
-let ir3_program_to_arm ((cdata3_list, main_md_decl3, md_decl3_list):ir3_program):arm_program =
+let ir3_program_to_arm (program_ir3:ir3_program):arm_program =
+	let (cdata3_list, main_md_decl3, md_decl3_list) = program_ir3 in
 	let data_instr_list, text_instr_list = convert_md_decl3_list(main_md_decl3 :: md_decl3_list) in
 
 	PseudoInstr (".data") ::
