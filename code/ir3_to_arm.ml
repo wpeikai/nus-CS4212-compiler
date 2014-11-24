@@ -112,25 +112,6 @@ let convert_idc3 (var:idc3) (register:reg) (md:md_decl3): arm_program =
 		end
 	| _ -> failwith "#55"
 
-(* 
-(* Return the n first elements of l *)
-let rec filter_first_n (n:int) (l: idc3 list) : idc3 list=
-	match l with
-	| head::tail ->	
-		if n > 0
-		then head :: filter_first_n (n-1) tail
-		else []
-	| [] -> []
-
-Return all elements execpt the n first elements of l
-(* Return empty list if less than n *)
-let rec filter_last_n (n:int) (l: idc3 list) : idc3 list=
-	if n == 0
-	then l
-	else match l with
-		| head::tail ->	
-			filter_last_n (n-1) tail
-		| [] -> [] *)
 	
 (* Push all idc3 variables on idc3_list in the stack in the registers a1, a2, a3, a4 *)
 let rec push_arguments_on_stack (n:int) (idc3_list: idc3 list) (md:md_decl3) : arm_program=
