@@ -19,6 +19,7 @@ class Test00 {
 		e = (!d);  // e = True
 		println("QQQQQQ");
 		println(a);
+		println(b);
 		println(c);
 		println(23);
 		if(a == 1){
@@ -26,6 +27,18 @@ class Test00 {
 		}
 		else{
 			println("Not NULL return"); 
+		}
+		if((a == 4) && (b == 2)){
+			println("a = 4"); 
+		}
+		else{
+			if (c == 4){
+				println("c = 4"); 
+			}
+			else{
+				println("c != 4"); 
+			}
+			println("a != 4"); 
 		}
 	}
 }

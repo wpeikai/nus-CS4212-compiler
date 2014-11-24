@@ -200,8 +200,7 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_
 			| _ -> failwith "#544: Unknown unary operator"
 		end
 	| Idc3Expr idc3_0 ->
-		let instructions1 = convert_idc3 idc3_0 "a1" md
-		in instructions1
+		convert_idc3 idc3_0 "v1" md
 	| FieldAccess3 (id3_1, id3_2) ->
 		LDR ("", "", "v2", (RegPreIndexed ("fp", - get_offset id3_1 md, false))) ::
 		LDR ("", "", "v1", (RegPreIndexed ("v2", get_field_offset id3_1 id3_2 md program_ir3,false))) :: 
