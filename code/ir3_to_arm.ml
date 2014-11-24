@@ -227,8 +227,8 @@ let ir3_program_to_arm ((cdata3_list, main_md_decl3, md_decl3_list):ir3_program)
 	PseudoInstr (".data") ::
 	PseudoInstr ("") ::
 	first_ins_list @
-	PseudoInstr (".text") ::
-	PseudoInstr (".global main") ::
+	PseudoInstr ("\n.text") ::
+	PseudoInstr ("\n.global main") ::
    	normal_inst_list @
 	[PseudoInstr ("\n")] (* Add a newline at the end *)
 
