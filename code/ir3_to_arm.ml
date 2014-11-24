@@ -289,7 +289,9 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 	| ReturnStmt3 id3_1 ->
 		let var_offset = (get_offset id3_1 md)
 		in [],
-		LDR ("", "", "v1", (RegPreIndexed ("fp", -var_offset , false))) :: []
+		LDR ("", "", "a1", (RegPreIndexed ("fp", -var_offset , false))) :: []
+	| ReturnVoidStmt3 ->
+		[], MOV ("", false, "a1", number_op 0) :: []
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
