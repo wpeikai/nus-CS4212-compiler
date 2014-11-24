@@ -225,6 +225,32 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 
 			| _ -> failwith "#69"
 		end
+	| AssignFieldStmt3 (ir3_exp_1, ir3_exp_2) ->
+		let (id3_1, id3_2) = begin match ir3_exp_1 with
+			| FieldAccess3 (a, b) ->
+				(a, b)
+			| _ -> 
+				failwith "Left Hand Side should be a field access"
+			end
+		in let idc3_1 = begin match ir3_exp_2 with
+			| Idc3Expr a ->
+				begin
+				match a with
+				| Var3 b ->
+					b
+				| _ ->
+					failwith "#270"
+				end
+			| _ -> 
+				failwith "Right hand side should be a variable"
+			end
+		in let var_offset_r = (get_offset idc3_1 md)
+		in let var_offset_l = (get_offset id3_1 md)
+		in let field_offset = (get_field_offset id3_1 id3_2 md program_ir3)
+		in [],
+		LDR ("", "", "v1", (RegPreIndexed ("fp", -var_offset_r , false))) ::
+		LDR ("", "", "v2", (RegPreIndexed ("fp", -var_offset_l , false))) ::
+		STR ("", "", "v1", (RegPreIndexed ("v2", field_offset, false))) :: []	
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
