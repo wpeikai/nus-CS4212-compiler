@@ -55,7 +55,7 @@ jlite_main_ir3.cmo: jlite_main_ir3.ml ir3_to_arm.cmo jlite_toir3.cmo
 	$(OC) $<
 
 clean:
-	rm -f *.cmo *.cmi jlite_parser.ml jlite_lexer.ml *.s *.exe jlite_parser.mli
+	rm -f *.cmo *.cmi jlite_parser.ml jlite_lexer.ml *.s *.exe jlite_parser.mli *.ir3
 
 %.cmo : %.ml
 	$(OC) $<
