@@ -162,18 +162,25 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3):arm_program * arm_program =
 			match idc3_0 with 
 			| StringLiteral3 str ->
 				(* Add a newline at the end of the string *)
-				Label label_string :: [PseudoInstr (".asciz \"" ^ str ^ "\\n\"")],
-					LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) :: [BL ("", "printf(PLT)")]
+				Label label_string :: 
+				[PseudoInstr (".asciz \"" ^ str ^ "\\n\"")],
+				LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) :: 
+				[BL ("", "printf(PLT)")]
 			| IntLiteral3 i -> 
 				(* Add a newline at the end of the string *)
-				Label label_string :: [PseudoInstr (".asciz \"%i\\n\"")],
-					LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) :: MOV ("", false, "a2", (number_op i)) :: [BL ("", "printf(PLT)")]
+				Label label_string :: 
+				[PseudoInstr (".asciz \"%i\\n\"")],
+				LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) :: 
+				MOV ("", false, "a2", (number_op i)) :: 
+				[BL ("", "printf(PLT)")]
 			| Var3 var_id3 -> 
 				(* Add a newline at the end of the string *)
-				Label label_string :: [PseudoInstr (".asciz \"%i\\n\"")],
-					LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) ::
-					LDR ("", "", "a3", (RegPreIndexed ("fp", - get_offset var_id3 md , false))) ::
-					MOV ("", false, "a2", (RegOp "a3")) :: [BL ("", "printf(PLT)")]
+				Label label_string :: 
+				[PseudoInstr (".asciz \"%i\\n\"")],
+				LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) ::
+				LDR ("", "", "a3", (RegPreIndexed ("fp", - get_offset var_id3 md , false))) ::
+				MOV ("", false, "a2", (RegOp "a3")) :: 
+				[BL ("", "printf(PLT)")]
 
 			| _ -> failwith "#69"
 		end
