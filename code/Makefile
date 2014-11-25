@@ -3,7 +3,7 @@ OO = ocamlc -o
 OLEX = ocamllex
 OYACC = ocamlyacc
 
-OBJS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo jlite_toir3.cmo ir3_structs.cmo jlite_annotatedtyping.cmo ir3_to_arm.cmo arm_structs.cmo
+OBJS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo jlite_toir3.cmo ir3_to_arm.cmo arm_structs.cmo
 OCAML_OBJECTS = $(OBJS) jlite_main.cmo
 OCAML_OBJECTS_IR3 = $(OBJS) jlite_main_ir3.cmo
 
@@ -42,7 +42,7 @@ jlite_parser.cmo: jlite_parser.mly jlite_structs.cmo
 	$(OC) jlite_parser.mli; \
 	$(OC) jlite_parser.ml
 
-jlite_toir3.cmo: jlite_toir3.ml jlite_structs.cmo ir3_structs.cmo
+jlite_toir3.cmo: jlite_toir3.ml jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo
 	$(OC) $<
 
 ir3_structs.cmo: ir3_structs.ml jlite_structs.cmo
