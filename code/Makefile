@@ -13,6 +13,7 @@ all:  $(patsubst %.jlite, %.s, $(wildcard $(TEST_DIR)*.jlite)) $(patsubst %.jlit
 %.sim: %.exe
 	./adb push $^ /data/local/tmp; \
 	./adb shell ./data/local/tmp/$^  # Run the executable in adb and exit
+	touch $@
 	
 %.exe: %.s
 	./g++ $< -o $@
@@ -56,7 +57,7 @@ jlite_main_ir3.cmo: jlite_main_ir3.ml ir3_to_arm.cmo jlite_toir3.cmo
 	$(OC) $<
 
 clean:
-	rm -f *.cmo *.cmi jlite_parser.ml jlite_lexer.ml *.s *.exe jlite_parser.mli *.ir3
+	rm -f *.cmo *.cmi jlite_parser.ml jlite_lexer.ml *.s *.exe jlite_parser.mli *.ir3 *.sim
 
 %.cmo : %.ml
 	$(OC) $<
