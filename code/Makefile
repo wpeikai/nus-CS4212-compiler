@@ -2,6 +2,7 @@ OC = ocamlc -c
 OO = ocamlc -o
 OLEX = ocamllex
 OYACC = ocamlyacc
+CXXFLAGS = -g
 
 OBJS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo jlite_toir3.cmo ir3_to_arm.cmo arm_structs.cmo
 OCAML_OBJECTS = $(OBJS) jlite_main.cmo
@@ -16,7 +17,7 @@ all:  $(patsubst %.jlite, %.s, $(wildcard $(TEST_DIR)*.jlite)) $(patsubst %.jlit
 	touch $@
 	
 %.exe: %.s
-	./g++ $< -o $@
+	./g++ $(CXXFLAGS) $< -o $@
 	
 %.s: %.jlite z.exe 
 	./z.exe $< > $@
