@@ -6,8 +6,9 @@ OYACC = ocamlyacc
 OBJS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo jlite_toir3.cmo ir3_to_arm.cmo arm_structs.cmo
 OCAML_OBJECTS = $(OBJS) jlite_main.cmo
 OCAML_OBJECTS_IR3 = $(OBJS) jlite_main_ir3.cmo
+TEST_DIR = test/
 
-all: $(patsubst %.jlite, %.sim, $(wildcard *.jlite)) $(patsubst %.jlite, %.s, $(wildcard *.jlite))  $(patsubst %.jlite, %.ir3, $(wildcard *.jlite))  
+all:  $(patsubst %.jlite, %.s, $(wildcard $(TEST_DIR)*.jlite)) $(patsubst %.jlite, %.ir3, $(wildcard $(TEST_DIR)*.jlite)) $(patsubst %.jlite, %.sim, $(wildcard $(TEST_DIR)*.jlite))  
 
 %.sim: %.exe
 	./adb push $^ /data/local/tmp; \
