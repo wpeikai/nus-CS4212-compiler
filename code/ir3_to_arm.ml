@@ -47,7 +47,7 @@ let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list =
 	match stmt_list with
 	| head::tail ->
 		{
-			id = fresh_stmt; 
+			id = fresh_stmt(); 
 			stmt = head;
 			pred = [];
 			succ = [];
@@ -64,15 +64,16 @@ let rec create_stmt_list ((_,main,mds):ir3_program): stmt_node list =
 			(number_statement_list head.ir3stmts)@(helper tail)
 		| [] ->
 			[]
-	in (helper main::mds) 
+	in (helper (main::mds)) 
 
-let create_stmt_table (p:ir3_program): Hashtbl.t = 
-	let rec helper (table:Hashtbl.t) (nodes: stmt_node list): Hashtbl.t =
+let create_stmt_table (p:ir3_program): (stmt_key, stmt_node) Hashtbl.t = 
+	let rec helper (table:(stmt_key, stmt_node) Hashtbl.t) (nodes: stmt_node list):(stmt_key, stmt_node) Hashtbl.t =
 		match nodes with
 		| head::tail -> 
-			(Hashtbl.add table head.id head)
+			(Hashtbl.add table head.id head);
+			(helper table tail)
 		| [] ->
-			[]
+			table
 	in let nodes = (create_stmt_list p) 
 	in let table = Hashtbl.create 1000
 	in (helper table nodes)
