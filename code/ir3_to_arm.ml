@@ -24,6 +24,59 @@ let ifcount = ref 0
 let fresh_if () = 
 	(ifcount:=!ifcount+1; (string_of_int !ifcount))
 
+let stmtcount = ref 0
+let fresh_stmt () = 
+	(stmtcount := !stmtcount+1; (string_of_int !stmtcount))
+
+(* Key for a stmt in the stmt table *)
+type stmt_key = string
+(* Key for a variable in the var table *)
+type var_key = string
+
+type stmt_node = 
+	{
+		id: stmt_key;
+		stmt: ir3_stmt;
+		pred: (stmt_key list);
+		succ: (stmt_key list);
+		live_in: (var_key list);
+		live_out: (var_key list);
+	}
+
+let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list = 
+	match stmt_list with
+	| head::tail ->
+		{
+			id = fresh_stmt; 
+			stmt = head;
+			pred = [];
+			succ = [];
+			live_in = []; 
+			live_out = [];
+		}::(number_statement_list tail)
+	| [] ->
+		[]
+
+let rec create_stmt_list ((_,main,mds):ir3_program): stmt_node list =
+	let rec helper (mds:md_decl3 list): stmt_node list =
+		match mds with
+		| head::tail ->
+			(number_statement_list head.ir3stmts)@(helper tail)
+		| [] ->
+			[]
+	in (helper main::mds) 
+
+let create_stmt_table (p:ir3_program): Hashtbl.t = 
+	let rec helper (table:Hashtbl.t) (nodes: stmt_node list): Hashtbl.t =
+		match nodes with
+		| head::tail -> 
+			(Hashtbl.add table head.id head)
+		| [] ->
+			[]
+	in let nodes = (create_stmt_list p) 
+	in let table = Hashtbl.create 1000
+	in (helper table nodes)
+
 let compare_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
 
