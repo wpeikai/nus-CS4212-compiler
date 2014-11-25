@@ -1,0 +1,44 @@
+class Test00 {
+	void main()
+	{
+		Int a;
+		Int b;
+		Int c;
+		Bool d;
+		Bool e;
+		c = 1 + 1;
+		a = c + 2;
+		b = c * 2;
+		b = c - 2;
+		b = c + 2;
+		b = c;
+		d = true;
+		d = false;
+		d = c == 2; // d = True
+		d = c == a; // d = False
+		e = (!d);  // e = True
+		println("QQQQQQ");
+		println(a);
+		println(b);
+		println(c);
+		println(23);
+		if(a == 1){
+			println("NULL return"); 
+		}
+		else{
+			println("Not NULL return"); 
+		}
+		if((a == 4) && (b == 2)){
+			println("a = 4"); 
+		}
+		else{
+			if (c == 4){
+				println("c = 4"); 
+			}
+			else{
+				println("c != 4"); 
+			}
+			println("a != 4"); 
+		}
+	}
+}
