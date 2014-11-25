@@ -37,13 +37,15 @@ type var_key = string
 type stmt_node = 
 	{
 		id: stmt_key;
+		mark: bool;
 		stmt: ir3_stmt;
+		md: md_decl3;
 		pred: (stmt_key list);
 		succ: (stmt_key list);
-		def: (stmt_key list);
-		use: (stmt_key list);
-		live_in: (var_key list);
-		live_out: (var_key list);
+		def: (id3 list);
+		use: (id3 list);
+		live_in: (id3 list);
+		live_out: (id3 list);
 	}
 
 (* Find the stmt id of the label stmt which corresponds to the given label *)
@@ -148,19 +150,21 @@ let used_vars (stmt:ir3_stmt): id3 list =
 		[]
 
 (*gives a unique id to each statement node *)
-let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list = 
+let rec number_statement_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_node list = 
 	match stmt_list with
 	| head::tail ->
 		{
 			id = fresh_stmt(); 
+			mark = false;
 			stmt = head;
+			md = mthd; 
 			pred = [];
 			succ = [];
-			def = [];
+			def = (def_vars head);
 			use = [];
 			live_in = []; 
 			live_out = [];
-		}::(number_statement_list tail)
+		}::(number_statement_list tail mthd)
 	| [] ->
 		[]
 
@@ -170,7 +174,7 @@ let rec create_stmt_list ((_,main,mds):ir3_program): stmt_node list =
 	let rec helper (mds:md_decl3 list): stmt_node list =
 		match mds with
 		| head::tail ->
-			(find_all_successors (number_statement_list head.ir3stmts))@(helper tail)
+			(find_all_successors (number_statement_list head.ir3stmts head))@(helper tail)
 		| [] ->
 			[]
 	in (helper (main::mds)) 
