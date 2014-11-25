@@ -203,8 +203,7 @@ let rec convert_jlite_expr (exp_jlite: jlite_exp) (counter_var:int ref) (counter
 				type_ir3, Idc3Expr (IntLiteral3 i), [], []
 			| StringLiteral s ->
 				type_ir3, Idc3Expr (StringLiteral3 s), [], []
-			| NullWord -> type_ir3, Idc3Expr (Var3 "null"), [], []
-
+			| NullWord -> type_ir3, Idc3Expr (IntLiteral3 0), [], []
 			| ThisWord -> type_ir3, Idc3Expr (Var3 "this"), [], []
 			| Var vid ->
 				(* If the variable is not in the local variables declarations or in the parameters, it must be in a class attribute *)
