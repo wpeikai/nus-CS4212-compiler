@@ -16,6 +16,10 @@ let varcount = ref 0
 let fresh_var () = 
 	(varcount:=!varcount+1; (string_of_int !varcount))
 
+let argcount = ref 0 
+let fresh_arg () = 
+	(argcount:=!argcount+1; (string_of_int !argcount))
+
 let compare_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
 
@@ -48,7 +52,6 @@ let rec class_var_list (class_type:ir3_type) ((class_list,_,_):ir3_program):var_
 	in helper class_list class_type
 				
 	
-
 (* Find the index of the variable in a list of variable *)
 let index_id3_in_var_decl3_list (var:id3) (var_list:var_decl3 list): int=
 	let rec helper(i:int) (var:id3) (var_list:var_decl3 list): int = 
@@ -96,6 +99,17 @@ let convert_idc3 (var:idc3) (register:reg) (md:md_decl3): arm_program =
 			| false -> [MOV ("", false, register, (number_op 0))]
 		end
 	| _ -> failwith "#55"
+
+
+(* Push all idc3 variables on idc3_list in the stack in the registers a1, a2, a3, a4 *)
+let rec push_arguments_on_stack (idc3_list: idc3 list) (md:md_decl3) : arm_program=
+	(* 4 arguments only *)
+	let argcount = ref 0 in
+	let fresh_arg (): string = (argcount:=!argcount+1; "a" ^ (string_of_int !argcount))
+	in match idc3_list with 
+	| head :: tail -> 
+		convert_idc3 head (fresh_arg()) md @ push_arguments_on_stack tail md
+	| [] -> []
 
 (* Convert an ir3 expr to arm instructions *)
 let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_program=
@@ -194,6 +208,10 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_
 		in MOV ("", false, "a1", (number_op alloc_size)) ::
 		BL ("", "_Znwj(PLT)") ::
 		MOV ("", false, "v1", (RegOp "a1")) :: []	
+	| MdCall3 (id3_0, idc3_list) -> 
+		push_arguments_on_stack idc3_list md @ 
+		BL ("", id3_0 ^ "(PLT)") ::
+		[MOV ("", false, "v1", (RegOp "a1"))]
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
