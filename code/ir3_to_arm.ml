@@ -168,8 +168,9 @@ let rec number_statement_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_n
 	| [] ->
 		[]
 
+
+
 (*creates a list of statement nodes, with correct successors given the program *)
-(*TODO List of predecessors for later maybe *)
 let rec create_stmt_list ((_,main,mds):ir3_program): stmt_node list =
 	let rec helper (mds:md_decl3 list): stmt_node list =
 		match mds with
