@@ -263,25 +263,14 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3) (program_ir3:ir3_program): arm_program * arm_program =
 		match stmts with
 		| head::tail -> 
-<<<<<<< HEAD
-			let data_instr_list, text_instr_list = convert_ir3_stmt head md in
-			let data_instr_tail_list, text_instr_tail_list = convert_ir3_stmt_list tail md in
+			let data_instr_list, text_instr_list = convert_ir3_stmt head md program_ir3 in
+			let data_instr_tail_list, text_instr_tail_list = convert_ir3_stmt_list tail md program_ir3 in
 			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
 		| [] -> [], []
 
-let convert_ir3_md_decl (md:md_decl3): arm_program * arm_program=
-	let data_instr_list, text_instr_list = convert_ir3_stmt_list md.ir3stmts md in
+let convert_ir3_md_decl (md:md_decl3) (program_ir3:ir3_program): arm_program * arm_program=
+	let data_instr_list, text_instr_list = convert_ir3_stmt_list md.ir3stmts md program_ir3 in
 	data_instr_list,
-=======
-			let first_ins_list, normal_inst_list = convert_ir3_stmt head md program_ir3 in
-			let first_ins_tail_list, normal_inst_tail_list = convert_ir3_stmt_list tail md program_ir3 in
-			first_ins_list @ first_ins_tail_list, normal_inst_list @ normal_inst_tail_list
-		| [] -> [], []
-
-let convert_ir3_md_decl (md:md_decl3) (program_ir3: ir3_program): arm_program * arm_program=
-	let first_ins_list, normal_inst_list = convert_ir3_stmt_list md.ir3stmts md program_ir3 in
-	first_ins_list,
->>>>>>> Now generates the code to access the field, needs to be tested
 	(*Label with function name*)
 	PseudoInstr ("\n" ^ md.id3 ^ ":") ::
 	(*Store registers on the stack*)
@@ -299,15 +288,15 @@ let convert_ir3_md_decl (md:md_decl3) (program_ir3: ir3_program): arm_program * 
 let rec convert_md_decl3_list (mds:md_decl3 list) (program_ir3:ir3_program):arm_program *arm_program = 
 	match mds with
 		| head::tail -> 
-			let data_instr_list, text_instr_list = convert_ir3_md_decl head in
-			let data_instr_tail_list, text_instr_tail_list = convert_md_decl3_list tail in
+			let data_instr_list, text_instr_list = convert_ir3_md_decl head program_ir3 in
+			let data_instr_tail_list, text_instr_tail_list = convert_md_decl3_list tail program_ir3 in
 			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
 		| [] -> [], []
 
 (* Convert a ir3 program to arm program *)
 let ir3_program_to_arm (program_ir3:ir3_program):arm_program =
 	let (cdata3_list, main_md_decl3, md_decl3_list) = program_ir3 in
-	let data_instr_list, text_instr_list = convert_md_decl3_list(main_md_decl3 :: md_decl3_list) in
+	let data_instr_list, text_instr_list = convert_md_decl3_list (main_md_decl3 :: md_decl3_list) program_ir3 in
 
 	PseudoInstr (".data") ::
 	PseudoInstr ("") ::
