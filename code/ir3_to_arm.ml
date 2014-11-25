@@ -74,6 +74,15 @@ let find_successors (node:stmt_node) (node_list: stmt_node list): stmt_node =
 		List.append node.succ [node.id + 1];
 		node
 
+let find_all_successors (node_list: stmt_node list): stmt_node list = 
+	let rec helper (partial_list: stmt_node list) (complete_list: stmt_node list): stmt_node list =
+		match partial_list with
+		| head::tail ->
+			(find_successors head complete_list)::(helper tail complete_list)
+		| [] ->
+			[]
+	in (helper node_list node_list)
+
 let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list = 
 	match stmt_list with
 	| head::tail ->
@@ -92,13 +101,15 @@ let rec create_stmt_list ((_,main,mds):ir3_program): stmt_node list =
 	let rec helper (mds:md_decl3 list): stmt_node list =
 		match mds with
 		| head::tail ->
-			(number_statement_list head.ir3stmts)@(helper tail)
+			(find_all_successors (number_statement_list head.ir3stmts))@(helper tail)
 		| [] ->
 			[]
 	in (helper (main::mds)) 
 
 let create_stmt_table (p:ir3_program): (stmt_key, stmt_node) Hashtbl.t = 
-	let rec helper (table:(stmt_key, stmt_node) Hashtbl.t) (nodes: stmt_node list):(stmt_key, stmt_node) Hashtbl.t =
+	let rec helper (table:(stmt_key, stmt_node) Hashtbl.t) 
+                   (nodes: stmt_node list)
+                   :(stmt_key, stmt_node) Hashtbl.t =
 		match nodes with
 		| head::tail -> 
 			(Hashtbl.add table head.id head);
