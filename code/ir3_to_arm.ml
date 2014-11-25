@@ -33,6 +33,7 @@ type stmt_key = int
 (* Key for a variable in the var table *)
 type var_key = string
 
+(*Structure of a node in the Hashtable *)
 type stmt_node = 
 	{
 		id: stmt_key;
@@ -43,6 +44,7 @@ type stmt_node =
 		live_out: (var_key list);
 	}
 
+(* Find the stmt id of the label stmt which corresponds to the given label *)
 let rec find_label (node_list: stmt_node list) (label:label3): stmt_key =
 	match node_list with
 	| head::tail ->
@@ -58,6 +60,7 @@ let rec find_label (node_list: stmt_node list) (label:label3): stmt_key =
 	| [] ->
 		failwith ("#The Label " ^ string_of_int label ^ " was not found here, this should not happen")
 
+(*find the successors of a statement*)
 let find_successors (node:stmt_node) (node_list: stmt_node list): stmt_node = 
 	match node.stmt with
 	| GoTo3 label ->
@@ -73,7 +76,8 @@ let find_successors (node:stmt_node) (node_list: stmt_node list): stmt_node =
 	| _ -> (* Simple case*)
 		List.append node.succ [node.id + 1];
 		node
-
+(*find the successors for every statement in a list of statement *)
+(*we search the successors within the given list *)
 let find_all_successors (node_list: stmt_node list): stmt_node list = 
 	let rec helper (partial_list: stmt_node list) (complete_list: stmt_node list): stmt_node list =
 		match partial_list with
@@ -83,6 +87,7 @@ let find_all_successors (node_list: stmt_node list): stmt_node list =
 			[]
 	in (helper node_list node_list)
 
+(*gives a unique id to each statement node *)
 let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list = 
 	match stmt_list with
 	| head::tail ->
@@ -97,6 +102,8 @@ let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list =
 	| [] ->
 		[]
 
+(*creates a list of statement nodes, with correct successors given the program *)
+(*TODO List of predecessors for later maybe *)
 let rec create_stmt_list ((_,main,mds):ir3_program): stmt_node list =
 	let rec helper (mds:md_decl3 list): stmt_node list =
 		match mds with
@@ -106,6 +113,7 @@ let rec create_stmt_list ((_,main,mds):ir3_program): stmt_node list =
 			[]
 	in (helper (main::mds)) 
 
+(* create a hash table of statement where the unique id of a statement is the key *)
 let create_stmt_table (p:ir3_program): (stmt_key, stmt_node) Hashtbl.t = 
 	let rec helper (table:(stmt_key, stmt_node) Hashtbl.t) 
                    (nodes: stmt_node list)
