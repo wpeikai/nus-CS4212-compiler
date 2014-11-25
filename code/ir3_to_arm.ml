@@ -26,10 +26,10 @@ let fresh_if () =
 
 let stmtcount = ref 0
 let fresh_stmt () = 
-	(stmtcount := !stmtcount+1; (string_of_int !stmtcount))
+	(stmtcount := !stmtcount+1; !stmtcount)
 
 (* Key for a stmt in the stmt table *)
-type stmt_key = string
+type stmt_key = int
 (* Key for a variable in the var table *)
 type var_key = string
 
@@ -55,22 +55,23 @@ let rec find_label (node_list: stmt_node list) (label:label3): stmt_key =
 		| _ ->
 			find_label tail label
 		end
-	| _ ->
-		failwith "#The Label " ^ string_of_int label ^ " was not found here, this should not happen"
+	| [] ->
+		failwith ("#The Label " ^ string_of_int label ^ " was not found here, this should not happen")
 
 let find_successors (node:stmt_node) (node_list: stmt_node list): stmt_node = 
 	match node.stmt with
 	| GoTo3 label ->
-		(List.append node.succ (find_label node_list label));
+		List.append node.succ ([(find_label node_list label)] @ [ node.id + 1]);
 		node
 	| IfStmt3 (_,label) ->
-		(List.append node.succ (find_label node_list label));
+		List.append node.succ ([(find_label node_list label)] @ [ node.id + 1]);
 		node
 	| ReturnStmt3 _ -> (*No successor *)
 		node
 	| ReturnVoidStmt3 -> (*No successor *)
 		node
 	| _ -> (* Simple case*)
+		List.append node.succ [node.id + 1];
 		node
 
 let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list = 
