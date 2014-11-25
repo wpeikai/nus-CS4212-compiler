@@ -166,7 +166,7 @@ let rec convert_jlite_expr (exp_jlite: jlite_exp) (counter_var:int ref) (counter
 				let convert_param_list param =
 					let type_param, exp_param, stmt_list, localvars_2  = convert_jlite_expr param counter_var counter_label p decl_md in
 					let stmt_list_temp, idc3_temp, localvars_3 = create_temp_idc3 exp_param type_param counter_var in
-					idc3_temp, stmt_list_temp @ stmt_list, localvars_2 @ localvars_3
+					idc3_temp, stmt_list @ stmt_list_temp, localvars_2 @ localvars_3
 				in
 				let param_list_converted = List.map convert_param_list exp_list_mdcall in
 

@@ -12,7 +12,7 @@ TEST_DIR = test/
 all:  $(patsubst %.jlite, %.s, $(wildcard $(TEST_DIR)*.jlite)) $(patsubst %.jlite, %.ir3, $(wildcard $(TEST_DIR)*.jlite)) $(patsubst %.jlite, %.sim, $(wildcard $(TEST_DIR)*.jlite))  
 
 %.sim: %.exe
-	./adb push $^ /data/local/tmp; \
+	./adb push $^ /data/local/tmp/$(TEST_DIR); \
 	./adb shell ./data/local/tmp/$^  # Run the executable in adb and exit
 	touch $@
 	

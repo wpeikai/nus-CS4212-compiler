@@ -152,7 +152,8 @@ let rec push_arguments_on_stack (n:int) (idc3_list: idc3 list) (md:md_decl3) : a
 		| head :: tail -> 
 			sub_sp_instr @
 			convert_idc3 head "v1" md @
-			[STR ("", "", "v1", (RegPreIndexed ("sp", (4 * (n-4)), false)))]
+			STR ("", "", "v1", (RegPreIndexed ("sp", (4 * (n-4)), false))) :: 
+			push_arguments_on_stack (n+1) tail md
 		| [] -> []
 	
 
@@ -254,7 +255,7 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_
 		MOV ("", false, "v1", (RegOp "a1")) :: []	
 	| MdCall3 (id3_0, idc3_list) -> 
 		let idc3_list_length = (List.length idc3_list) in
-		push_arguments_on_stack idc3_list_length idc3_list md @ 
+		push_arguments_on_stack 0 idc3_list md @ 
 		BL ("", id3_0 ^ "(PLT)") ::
 		if idc3_list_length > 4
 		then [ADD ("", false, "sp", "sp", number_op ((idc3_list_length-4)*4))] @ [MOV ("", false, "v1", (RegOp "a1"))]
@@ -349,21 +350,22 @@ let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3) (program_ir3:
 			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
 		| [] -> [], []
 
+(* Store all parameters in the stack when a function is called *)
 let rec store_params_instr (n:int) (params_list: var_decl3 list) (md:md_decl3) : arm_program=
 	let stack_local_var_size = get_stack_local_vars_space md 
 	in if n < 4
 	(* 4 arguments only *)
 	then match params_list with 
 		| head :: tail -> 
-			STR ("", "", "a" ^ (string_of_int (n+1)), (RegPreIndexed ("fp", stack_local_var_size + 4 * n, false))) ::
+			STR ("", "", "a" ^ (string_of_int (n+1)), (RegPreIndexed ("fp", -(stack_local_var_size + 4 * n), false))) ::
 			store_params_instr (n+1) tail md
 		| [] -> []
 	else 
 	(* If there are more than 4 arguments *)
 	match params_list with 
 		| head :: tail -> 
-			LDR ("", "", "v1", (RegPreIndexed ("fp", (4 * (n-4)), false))) ::
-			STR ("", "", "v1", (RegPreIndexed ("fp", stack_local_var_size + 4 * n, false))) ::
+			LDR ("", "", "v1", (RegPreIndexed ("fp", (4 * (n-3)), false))) ::
+			STR ("", "", "v1", (RegPreIndexed ("fp", -(stack_local_var_size + 4 * n), false))) ::
 			store_params_instr (n+1) tail md
 		| [] -> []
 
