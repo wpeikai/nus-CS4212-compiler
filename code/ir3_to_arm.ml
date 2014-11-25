@@ -19,6 +19,36 @@ let fresh_var () =
 let compare_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
 
+(* Returns the type of a variable given its name *)
+let rec var_type (var:id3) (var_list: var_decl3 list): ir3_type =
+	match var_list with
+	| (head_type,head_id3)::tail ->
+		if (compare_id3 head_id3 var)
+		then head_type
+		else var_type var tail
+	| _ -> 
+		failwith "#259 Unknown variable type"
+
+(* returns the variables of a class given the class type *)
+let rec class_var_list (class_type:ir3_type) ((class_list,_,_):ir3_program):var_decl3 list =
+	let rec helper (class_list:cdata3 list) (class_type:ir3_type) =
+		match class_type with
+		| ObjectT cn ->
+			begin
+			match class_list with
+			| (cname_head, var_list_head)::tail -> 
+				if ((String.compare cname_head cn) == 0)
+				then var_list_head
+				else helper tail class_type
+			| [] ->
+				failwith "#260 Unknown class"
+			end
+		| _ ->
+			failwith "#261 Looks like it's trying to access the field of NOT a class"
+	in helper class_list class_type
+				
+	
+
 (* Find the index of the variable in a list of variable *)
 let index_id3_in_var_decl3_list (var:id3) (var_list:var_decl3 list): int=
 	let rec helper(i:int) (var:id3) (var_list:var_decl3 list): int = 
@@ -34,7 +64,14 @@ let index_id3_in_var_decl3_list (var:id3) (var_list:var_decl3 list): int=
 let get_offset (var:id3) (md:md_decl3): int =
 	let index_var = index_id3_in_var_decl3_list var md.localvars3
 	in 24 + 4 * index_var
+
+(* Returns offset of variable within a class structure *)
+let get_field_offset (class_id3:id3) (field_id3:id3) (md:md_decl3) (program_ir3:ir3_program):int=
+	let vtype = var_type class_id3 md.localvars3 in
+		let var_list = class_var_list vtype program_ir3 in
+			4 * (index_id3_in_var_decl3_list field_id3 var_list)
 	
+
 (* Only works on simple types at the moment *)
 let get_stack_space (md:md_decl3): int =	
 	24 + 4 * List.length(md.localvars3)
@@ -44,7 +81,7 @@ let number_op (i:int): operand2_type=
 	ImmedOp ("#" ^ (string_of_int i))
 
 (* From a idc3 and the register, it gives all the instructions *)
-let convert_idc3 (var:idc3) (register:reg) (md:md_decl3) : arm_program =
+let convert_idc3 (var:idc3) (register:reg) (md:md_decl3): arm_program =
 	match var with
 	| IntLiteral3 i -> 
 		[MOV ("", false, register, (number_op i))]
@@ -61,7 +98,7 @@ let convert_idc3 (var:idc3) (register:reg) (md:md_decl3) : arm_program =
 	| _ -> failwith "#55"
 
 (* Convert an ir3 expr to arm instructions *)
-let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
+let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_program=
 	match exp with
 	| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
 		let instructions1 = convert_idc3 idc3_1 "a1" md
@@ -147,14 +184,24 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) : arm_program=
 	| Idc3Expr idc3_0 ->
 		let instructions1 = convert_idc3 idc3_0 "a1" md
 		in instructions1
+	| FieldAccess3 (id3_1, id3_2) ->
+		LDR ("", "", "v2", (RegPreIndexed ("fp", - get_offset id3_1 md, false))) ::
+		LDR ("", "", "v1", (RegPreIndexed ("v2", get_field_offset id3_1 id3_2 md program_ir3,false))) :: 
+		[]
+	| ObjectCreate3 class_name ->
+		let var_list = class_var_list (ObjectT class_name) program_ir3
+		in let alloc_size = 4 * List.length var_list
+		in MOV ("", false, "a1", (number_op alloc_size)) ::
+		BL ("", "_Znwj(PLT)") ::
+		MOV ("", false, "v1", (RegOp "a1")) :: []	
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
 (* Convert an ir3 statement to arm instructions *)
-let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3):arm_program * arm_program = 
+let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm_program * arm_program = 
 	match stmt with
 	| AssignStmt3 (id3_0, ir3_exp_0) ->
-		[], (convert_ir3_expr ir3_exp_0 md) @ [STR ("", "", "v1", (RegPreIndexed ("fp", - get_offset id3_0 md, false)))]
+		[], (convert_ir3_expr ir3_exp_0 md program_ir3) @ [STR ("", "", "v1", (RegPreIndexed ("fp", - get_offset id3_0 md, false)))]
 	| PrintStmt3 idc3_0 ->
 		begin
 			(* Label fresh gives a new label *)
@@ -184,19 +231,45 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3):arm_program * arm_program =
 
 			| _ -> failwith "#69"
 		end
+	| AssignFieldStmt3 (ir3_exp_1, ir3_exp_2) ->
+		let (id3_1, id3_2) = begin match ir3_exp_1 with
+			| FieldAccess3 (a, b) ->
+				(a, b)
+			| _ -> 
+				failwith "Left Hand Side should be a field access"
+			end
+		in let idc3_1 = begin match ir3_exp_2 with
+			| Idc3Expr a ->
+				begin
+				match a with
+				| Var3 b ->
+					b
+				| _ ->
+					failwith "#270"
+				end
+			| _ -> 
+				failwith "Right hand side should be a variable"
+			end
+		in let var_offset_r = (get_offset idc3_1 md)
+		in let var_offset_l = (get_offset id3_1 md)
+		in let field_offset = (get_field_offset id3_1 id3_2 md program_ir3)
+		in [],
+		LDR ("", "", "v1", (RegPreIndexed ("fp", -var_offset_r , false))) ::
+		LDR ("", "", "v2", (RegPreIndexed ("fp", -var_offset_l , false))) ::
+		STR ("", "", "v1", (RegPreIndexed ("v2", field_offset, false))) :: []	
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
-let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3): arm_program * arm_program =
+let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3) (program_ir3:ir3_program): arm_program * arm_program =
 		match stmts with
 		| head::tail -> 
-			let data_instr_list, text_instr_list = convert_ir3_stmt head md in
-			let data_instr_tail_list, text_instr_tail_list = convert_ir3_stmt_list tail md in
+			let data_instr_list, text_instr_list = convert_ir3_stmt head md program_ir3 in
+			let data_instr_tail_list, text_instr_tail_list = convert_ir3_stmt_list tail md program_ir3 in
 			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
 		| [] -> [], []
 
-let convert_ir3_md_decl (md:md_decl3): arm_program * arm_program=
-	let data_instr_list, text_instr_list = convert_ir3_stmt_list md.ir3stmts md in
+let convert_ir3_md_decl (md:md_decl3) (program_ir3:ir3_program): arm_program * arm_program=
+	let data_instr_list, text_instr_list = convert_ir3_stmt_list md.ir3stmts md program_ir3 in
 	data_instr_list,
 	(*Label with function name*)
 	PseudoInstr ("\n" ^ md.id3 ^ ":") ::
@@ -212,17 +285,18 @@ let convert_ir3_md_decl (md:md_decl3): arm_program * arm_program=
 	[LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: [])]
 
 (* Convert a list of md_decl3 *)
-let rec convert_md_decl3_list (mds:md_decl3 list):arm_program *arm_program = 
+let rec convert_md_decl3_list (mds:md_decl3 list) (program_ir3:ir3_program):arm_program *arm_program = 
 	match mds with
 		| head::tail -> 
-			let data_instr_list, text_instr_list = convert_ir3_md_decl head in
-			let data_instr_tail_list, text_instr_tail_list = convert_md_decl3_list tail in
+			let data_instr_list, text_instr_list = convert_ir3_md_decl head program_ir3 in
+			let data_instr_tail_list, text_instr_tail_list = convert_md_decl3_list tail program_ir3 in
 			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
 		| [] -> [], []
 
 (* Convert a ir3 program to arm program *)
-let ir3_program_to_arm ((cdata3_list, main_md_decl3, md_decl3_list):ir3_program):arm_program =
-	let data_instr_list, text_instr_list = convert_md_decl3_list(main_md_decl3 :: md_decl3_list) in
+let ir3_program_to_arm (program_ir3:ir3_program):arm_program =
+	let (cdata3_list, main_md_decl3, md_decl3_list) = program_ir3 in
+	let data_instr_list, text_instr_list = convert_md_decl3_list (main_md_decl3 :: md_decl3_list) program_ir3 in
 
 	PseudoInstr (".data") ::
 	PseudoInstr ("") ::
