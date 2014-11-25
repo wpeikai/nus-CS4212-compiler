@@ -40,6 +40,8 @@ type stmt_node =
 		stmt: ir3_stmt;
 		pred: (stmt_key list);
 		succ: (stmt_key list);
+		def: (stmt_key list);
+		use: (stmt_key list);
 		live_in: (var_key list);
 		live_out: (var_key list);
 	}
@@ -87,6 +89,15 @@ let find_all_successors (node_list: stmt_node list): stmt_node list =
 			[]
 	in (helper node_list node_list)
 
+(* Determines the used variables in a statement *)
+(* I consider we dont have AssignDeclStmt3 *)
+ let def_vars (stmt:ir3_stmt): id3 list =
+	match stmt with
+	| AssignStmt3 (var, _)->
+		[var]
+	| _ ->
+		[]
+
 (*gives a unique id to each statement node *)
 let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list = 
 	match stmt_list with
@@ -96,6 +107,8 @@ let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list =
 			stmt = head;
 			pred = [];
 			succ = [];
+			def = [];
+			use = [];
 			live_in = []; 
 			live_out = [];
 		}::(number_statement_list tail)
