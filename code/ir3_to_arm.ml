@@ -43,6 +43,36 @@ type stmt_node =
 		live_out: (var_key list);
 	}
 
+let rec find_label (node_list: stmt_node list) (label:label3): stmt_key =
+	match node_list with
+	| head::tail ->
+		begin
+		match head.stmt with
+		| Label3 l ->
+			if label == l
+			then head.id
+			else find_label tail label
+		| _ ->
+			find_label tail label
+		end
+	| _ ->
+		failwith "#The Label " ^ string_of_int label ^ " was not found here, this should not happen"
+
+let find_successors (node:stmt_node) (node_list: stmt_node list): stmt_node = 
+	match node.stmt with
+	| GoTo3 label ->
+		(List.append node.succ (find_label node_list label));
+		node
+	| IfStmt3 (_,label) ->
+		(List.append node.succ (find_label node_list label));
+		node
+	| ReturnStmt3 _ -> (*No successor *)
+		node
+	| ReturnVoidStmt3 -> (*No successor *)
+		node
+	| _ -> (* Simple case*)
+		node
+
 let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list = 
 	match stmt_list with
 	| head::tail ->
