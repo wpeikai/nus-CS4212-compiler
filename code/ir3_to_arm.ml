@@ -98,6 +98,55 @@ let find_all_successors (node_list: stmt_node list): stmt_node list =
 	| _ ->
 		[]
 
+(* returns the variables used in an idc3 *)	
+let used_vars_in_idc3 (varid: idc3): id3 list =
+	match varid with
+	| Var3 v ->
+		[v]
+	| _ ->
+		[]
+let rec used_vars_in_idc3_list (varid_list: idc3 list): id3 list =
+	match varid_list with
+	| head::tail -> 
+		(used_vars_in_idc3 head) @ (used_vars_in_idc3_list tail)
+	| [] ->
+		[]
+
+(* returns the variables used in an ir3 expression *)
+let rec used_vars_in_expr (expr:ir3_exp): id3 list =
+	match expr with
+	| BinaryExp3 (_, a, b) ->
+		(used_vars_in_idc3 a) @ (used_vars_in_idc3 b)
+	| UnaryExp3 (_, a) ->
+		(used_vars_in_idc3 a)
+	| FieldAccess3 (obj, _) ->
+		[obj]
+	| Idc3Expr a ->
+		(used_vars_in_idc3 a)
+	| MdCall3 (_, var_list) ->
+		(used_vars_in_idc3_list var_list)
+	| ObjectCreate3 _ ->
+		[]
+
+
+(* returns the list of the variables used in a statement *)
+let used_vars (stmt:ir3_stmt): id3 list =
+	match stmt with
+	| IfStmt3 (expr, _) ->
+		used_vars_in_expr expr
+	| PrintStmt3 varid ->
+		used_vars_in_idc3 varid
+	| AssignStmt3 (_, expr) ->
+		used_vars_in_expr expr
+	| AssignFieldStmt3 (expr1, expr2) ->
+		(used_vars_in_expr expr1) @ (used_vars_in_expr expr2)
+	| MdCallStmt3 expr ->
+		used_vars_in_expr expr
+	| ReturnStmt3 var ->
+		[var]
+	| _ ->
+		[]
+
 (*gives a unique id to each statement node *)
 let rec number_statement_list (stmt_list: ir3_stmt list): stmt_node list = 
 	match stmt_list with
