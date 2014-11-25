@@ -250,8 +250,7 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 				Label label_string :: 
 				[PseudoInstr (".asciz \"%i\\n\"")],
 				LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) ::
-				LDR ("", "", "a3", (RegPreIndexed ("fp", - get_offset var_id3 md , false))) ::
-				MOV ("", false, "a2", (RegOp "a3")) :: 
+				LDR ("", "", "a2", (RegPreIndexed ("fp", - get_offset var_id3 md , false))) ::
 				[BL ("", "printf(PLT)")]
 			| _ -> failwith "#69"
 		end
