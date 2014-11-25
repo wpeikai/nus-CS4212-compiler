@@ -57,7 +57,7 @@ jlite_main_ir3.cmo: jlite_main_ir3.ml ir3_to_arm.cmo jlite_toir3.cmo
 	$(OC) $<
 
 clean:
-	rm -f *.cmo *.cmi jlite_parser.ml jlite_lexer.ml *.s *.exe jlite_parser.mli *.ir3 *.sim
+	rm -f $(TEST_DIR)/*.cmo $(TEST_DIR)/*.cmi $(TEST_DIR)/jlite_parser.ml $(TEST_DIR)/jlite_lexer.ml $(TEST_DIR)/*.s $(TEST_DIR)/*.exe jlite_parser.mli $(TEST_DIR)/*.ir3 $(TEST_DIR)/*.sim
 
 %.cmo : %.ml
 	$(OC) $<

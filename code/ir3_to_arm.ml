@@ -27,6 +27,10 @@ let fresh_if () =
 let compare_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
 
+(* Label exist of a metthod *)
+let label_exit_methd (md:md_decl3): string=
+	"." ^ md.id3 ^ "Exit"
+
 (* Returns the type of a variable given its name *)
 let rec var_type (var:id3) (var_list: var_decl3 list): ir3_type =
 	match var_list with
@@ -289,9 +293,11 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 	| ReturnStmt3 id3_1 ->
 		let var_offset = (get_offset id3_1 md)
 		in [],
-		LDR ("", "", "a1", (RegPreIndexed ("fp", -var_offset , false))) :: []
+		LDR ("", "", "a1", (RegPreIndexed ("fp", -var_offset , false))) :: 
+		[B ("", label_exit_methd md)]
 	| ReturnVoidStmt3 ->
-		[], MOV ("", false, "a1", number_op 0) :: []
+		[], MOV ("", false, "a1", number_op 0) :: 
+		[B ("", label_exit_methd md)]
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
@@ -306,18 +312,19 @@ let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3) (program_ir3:
 let convert_ir3_md_decl (md:md_decl3) (program_ir3:ir3_program): arm_program * arm_program=
 	let data_instr_list, text_instr_list = convert_ir3_stmt_list md.ir3stmts md program_ir3 in
 	data_instr_list,
-	(*Label with function name*)
-	PseudoInstr ("\n" ^ md.id3 ^ ":") ::
-	(*Store registers on the stack*)
-	STMFD ("fp" :: "lr" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
-	(* sp = fp - 24 *)
-	ADD ("", false, "fp", "sp", ImmedOp "#24") ::
-	(* allocate local variables*)
-	SUB ("", false, "sp", "fp", ImmedOp ("#" ^ (string_of_int (get_stack_space md)))) ::
-	text_instr_list @
-	(* Maybe we should put a L#exit label here *)
-	SUB ("", false, "sp", "fp", ImmedOp "#24") ::
-	[LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: [])]
+		(*Label with function name*)
+		PseudoInstr ("\n" ^ md.id3 ^ ":") ::
+		(*Store registers on the stack*)
+		STMFD ("fp" :: "lr" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
+		(* sp = fp - 24 *)
+		ADD ("", false, "fp", "sp", ImmedOp "#24") ::
+		(* allocate local variables*)
+		SUB ("", false, "sp", "fp", ImmedOp ("#" ^ (string_of_int (get_stack_space md)))) ::
+		text_instr_list @
+		(* Put a L#exit label here *)
+		PseudoInstr ("\n" ^ label_exit_methd md ^ ":") ::
+		SUB ("", false, "sp", "fp", ImmedOp "#24") ::
+		[LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: [])]
 
 (* Convert a list of md_decl3 *)
 let rec convert_md_decl3_list (mds:md_decl3 list) (program_ir3:ir3_program):arm_program *arm_program = 
