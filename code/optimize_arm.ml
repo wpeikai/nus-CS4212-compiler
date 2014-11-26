@@ -191,7 +191,7 @@ let rec get_basic_blocks
       List.append blks next_blks
   | _ -> failwith "#23: get basic blocks error"
 
-(* Add in/out links *)
+(* TO DO >>>>> Add in/out links *)
 
 
 
@@ -222,16 +222,36 @@ let remove_redundant_ldr_str blk =
           | Reg r1, Reg r2 ->
             if (rd1 = r2) && (rd2 = r1) then
               List.append [i] (helper (List.tl is))
-            else i :: helper is 
+            else i :: helper is
           | _ -> i :: helper is
           end
-        | (ld1, STR (_,_,rd1,addr_type1)), (ld2, LDR (_,_,rd2,addr_type2)) ->
+        | (ld1, STR (cond,_,rd1,addr_type1)), (ld2, LDR (_,_,rd2,addr_type2)) ->
           begin
           match addr_type1, addr_type2 with
           | Reg r1, Reg r2 ->
             if (rd1 = r2) && (rd2 = r1) then
               List.append [i] (helper (List.tl is))
-            else i :: helper is 
+            else i :: helper is
+          | RegPreIndexed (r1,off1,flag1), RegPreIndexed (r2,off2,flag2) ->
+            begin
+            if (rd1 = rd2) && (r1 = r2) && (off1 == off2) then
+              helper (List.tl is)
+            else
+              if (r1 = r2) && (off1 == off2) then
+                List.append [(ld1, MOV (cond, flag1, rd2, RegOp rd1))] (helper (List.tl is))
+              else
+                i :: helper is 
+            end
+          | RegPostIndexed (r1,off1), RegPostIndexed (r2,off2) ->
+            begin
+            if (rd1 = rd2) && (r1 = r2) && (off1 == off2) then
+              helper (List.tl is)
+            else
+              if (r1 = r2) && (off1 == off2) then
+                List.append [(ld1, MOV (cond, false, rd2, RegOp rd1))] (helper (List.tl is))
+              else
+                i :: helper is 
+            end
           | _ -> i :: helper is
           end
         | (ld1, LDR (_,_,rd1,addr_type1)), (ld2, LDR (_,_,rd2,addr_type2)) ->
@@ -282,10 +302,14 @@ let test_instrs2 = Label "hello"
   :: ADD ("", false, "a1", "a0", RegOp ("v1"))
   :: LDR ("", "", "v1", Reg ("a1"))
   :: STR ("", "", "a1", Reg ("v1"))
+  :: STR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
+  :: LDR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
   (* :: PseudoInstr "\n.L1exit:" *)
   :: SUB ("", false, "a1", "a0", ImmedOp "#0")
   :: SUB ("", false, "a1", "a0", ImmedOp "#0")
   :: AND ("", false, "a1", "a0", RegOp ("v1"))
+  :: STR ("", "", "v1", (RegPreIndexed ("fp", -5 , false)))
+  :: LDR ("", "", "v2", (RegPreIndexed ("fp", -5 , false)))
   :: ORR ("", false, "a1", "a0", RegOp ("v1"))
   :: BL ("", "printf(PLT)") (* only storing last instr *)
   :: Label "bye"
@@ -315,7 +339,7 @@ print_string ("\n\n~~~~~~ Test instrs set 2 ~~~~~~~");;
 (* print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs2) ^ "\n");; *)
 print_string ("\nNum of blocks: " ^ (string_of_int (List.length (test_blocks2))));; (* flush std_out;; *)
 print_all_block_instrs (test_blocks2);;
-print_string ("     *******"); 
+print_string ("     *******");;
 (* print_len_block_instrs_head (test_blocks2);; *)
 (* print_block_instrs (List.hd (test_blocks2));; *)
 print_string ("\n\nPeephole: rm redundant load/store (on block1)\n");;
