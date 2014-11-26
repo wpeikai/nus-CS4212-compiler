@@ -46,7 +46,7 @@ let contains_substring s1 s2 =
 
 (* Print one block's instructions *)
 let print_block_instrs blk =
-  let blk_id = "\nBlock " ^ (string_of_int blk.id) ^ " instructions:\n" in
+  let blk_id = "\nBlock " ^ (string_of_int blk.id) ^ " instructions:" in
   let rec helper blk_i =
     match blk_i with
     | [] -> []
@@ -69,6 +69,10 @@ let print_block_instrs_head blks =
     | [] -> []
     | (line_id, i)::is -> i :: (helper is)
   in print_string ("**head block insts \n"^ (string_of_arm_prog (helper (blk.instrs))) ^ "\n\n");;
+
+let print_all_block_instrs blks = 
+  List.map print_block_instrs blks
+
 
 (* --> Get all prilimary basic blocks *)
 let rec get_basic_blocks 
@@ -129,9 +133,6 @@ let rec get_basic_blocks
                 instrs_in = []; 
                 instrs_out = []
               } in 
-              (* its a label eg .2, .Compute_0, .L1exit *)
-              (* create a new block and add this instruction to it *)
-              (* print_string ("\nLABELLLLL " ^ label); *)
               (List.append blocks [current_blk], new_blk)
               end
             else 
@@ -205,7 +206,7 @@ let rec get_basic_blocks
 let remove_redundant_ldr_str blk =
   let instrs = blk.instrs in
   if (List.length instrs) == 0 then
-    blk
+    blk (* DEFINITION SHOULD BE REMOVING THIS BLOCK :D *)
   else
     let rec helper instrs =
       let len = List.length instrs in
@@ -246,6 +247,29 @@ let remove_redundant_ldr_str blk =
       | _ -> failwith "#30: len and instrs mismatch"
     in blk.instrs <- helper instrs; blk
 
+(* Algebraic Simplification *)
+let algebraic_simplification blk =
+  let instrs = blk.instrs in
+  if (List.length instrs) == 0 then
+    blk (* DEFINITION SHOULD BE REMOVING THIS BLOCK :D *)
+  else
+    let rec helper instrs = 
+      match instrs with
+      | [] -> []
+      | (id, ADD (cond, s, rd, rn, ImmedOp op))::is->
+        if op = "#0" then
+          helper is (* remove instruction *)
+        else
+          List.append [(id, ADD (cond, s, rd, rn, ImmedOp op))] (helper is)
+      | (id, SUB (cond, s, rd, rn, ImmedOp op))::is->
+        if op = "#0" then
+          helper is (* remove instruction *)
+        else
+          List.append [(id, SUB (cond, s, rd, rn, ImmedOp op))] (helper is)
+      | i::is -> List.append [i] (helper is)
+    in blk.instrs <- helper instrs; blk
+
+
 
 
 
@@ -258,8 +282,9 @@ let test_instrs2 = Label "hello"
   :: ADD ("", false, "a1", "a0", RegOp ("v1"))
   :: LDR ("", "", "v1", Reg ("a1"))
   :: STR ("", "", "a1", Reg ("v1"))
-  :: PseudoInstr "\n.L1exit:"
-  :: SUB ("", false, "a1", "a0", RegOp ("v1"))
+  (* :: PseudoInstr "\n.L1exit:" *)
+  :: SUB ("", false, "a1", "a0", ImmedOp "#0")
+  :: SUB ("", false, "a1", "a0", ImmedOp "#0")
   :: AND ("", false, "a1", "a0", RegOp ("v1"))
   :: ORR ("", false, "a1", "a0", RegOp ("v1"))
   :: BL ("", "printf(PLT)") (* only storing last instr *)
@@ -289,12 +314,17 @@ print_block_instrs (List.hd (test_blocks1));;
 print_string ("\n\n~~~~~~ Test instrs set 2 ~~~~~~~");;
 (* print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs2) ^ "\n");; *)
 print_string ("\nNum of blocks: " ^ (string_of_int (List.length (test_blocks2))));; (* flush std_out;; *)
-print_len_block_instrs_head (test_blocks2);;
-print_block_instrs (List.hd (test_blocks2));;
-
-(* print_string ("\n\nPeephole: rm redundant load/store (on block1)");;
+print_all_block_instrs (test_blocks2);;
+print_string ("     *******"); 
+(* print_len_block_instrs_head (test_blocks2);; *)
+(* print_block_instrs (List.hd (test_blocks2));; *)
+print_string ("\n\nPeephole: rm redundant load/store (on block1)\n");;
+print_string ("\t~~ 1 - LD/STR ~~");;
 let peephole1_block = remove_redundant_ldr_str (List.hd test_blocks2);;
-print_block_instrs peephole1_block;; *)
+print_block_instrs peephole1_block;;
+print_string ("\t~~ 2 - ALGEBRAIC ~~");;
+let peephole2_block = algebraic_simplification (List.hd test_blocks2);;
+print_block_instrs peephole1_block;;
 
 
 
@@ -318,10 +348,10 @@ let rec peephole_opt (instrs: arm_program) : arm_program =
 (* Peephole: Unreachable code elimination *)
 
 
-(*
-let optimize_arm (instructions : arm_program) : arm_program =
-  let opt1 = peephole_opt instructions 
-  in opt1 
-*)
+
+let optimize_arm (instructions : arm_program) =
+  let blks = get_basic_blocks instructions [] None in
+  print_all_block_instrs blks
+
 
 (* EOF *)
