@@ -18,7 +18,7 @@ type block =
     mutable instrs_out: (block_instr * int * label) list
   }
 
-(* -------- Optimization of ARM program --------- *)
+(* -------- Build Basic Blocks of ARM program --------- *)
 
 let linecount = ref 0
 let fresh_line () = (linecount:=!linecount+1; !linecount)
@@ -34,13 +34,33 @@ let rec last ls =
   | l::ls -> last ls
   | _ -> failwith " last isn't working right"
 
+(* Print one block's instructions *)
 let print_block_instrs blk =
+  let blk_id = "\nBlock " ^ (string_of_int blk.id) ^ " instructions:\n" in
   let rec helper blk_i =
     match blk_i with
     | [] -> []
     | (line_id, suffix, i)::is -> i :: (helper is)
-  in print_string ("\n* Current block instr" ^ (string_of_arm_prog (helper (blk.instrs))) ^ "\n\n");;
+  in print_string (blk_id ^ (string_of_arm_prog (helper (blk.instrs))) ^ "\n\n");;
 
+(* print length of one block's instructions *)
+let get_block_instrs_len blk = List.length (blk.instrs)
+
+(* Print first block's instructions length *)
+let print_len_block_instrs_head blks =
+  let len = get_block_instrs_len (List.hd blks) in
+  print_string ("\nhead instrs len:" ^ string_of_int len ^ "\n");;
+
+(* Print first block's instructions in block list *)
+let print_block_instrs_head blks =
+  let blk = List.hd blks in
+  let rec helper blk_i =
+    match blk_i with
+    | [] -> []
+    | (line_id, suffix, i)::is -> i :: (helper is)
+  in print_string ("**head block insts \n"^ (string_of_arm_prog (helper (blk.instrs))) ^ "\n\n");;
+
+(* Make all basic blocks *)
 let rec get_basic_blocks 
   (instrs: arm_program)
   (blocks: block list)
@@ -61,7 +81,6 @@ let rec get_basic_blocks
         let new_instr = (new_instruction, curr_blk.id, curr_blk.label) in
           curr_blk.instrs <- List.append curr_blk.instrs [new_instruction];
           curr_blk.instrs_out <- List.append curr_blk.instrs_out [new_instr];
-          (* print_block_instrs curr_blk; *)
           (blocks, curr_blk)
         | None -> failwith "#11: instrction block current block doesn't exist." 
     in
@@ -157,80 +176,6 @@ let rec get_basic_blocks
                 in (helper blocks b_label, current_blk) 
           | None -> failwith "#4: Branch - current block doesn't exist"
         end 
-(*      | LDMFD reg_list ->
-        let line_id = fresh_line () in
-        let ldmfd_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk -> 
-            current_blk.instrs <- List.append current_blk.instrs [ldmfd_instruction];
-            let ldmfd_instr = (ldmfd_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [ldmfd_instr];
-              (blocks, current_blk)
-          | None -> failwith "#17: ldmfd instrction block current block doesn't exist." 
-        end
-      | STMFD reg_list ->
-        let line_id = fresh_line () in
-        let stmfd_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk -> 
-            current_blk.instrs <- List.append current_blk.instrs [stmfd_instruction];
-            let stmfd_instr = (stmfd_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [stmfd_instr];
-              (blocks, current_blk)
-          | None -> failwith "#17: ldmfd instrction block current block doesn't exist." 
-        end
-      | LDR (cond, wordtype, rd, address_type) -> 
-        let line_id = fresh_line () in
-        let ldr_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk ->
-            current_blk.instrs <- List.append current_blk.instrs [ldr_instruction];
-            let ldr_instr = (ldr_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [ldr_instr];
-              (blocks, current_blk)
-          | None -> failwith "#15: LDR instrction block current block doesn't exist." 
-        end
-      | STR (cond, wordtype, rd, address_type) -> 
-        let line_id = fresh_line () in
-        let str_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk ->
-            current_blk.instrs <- List.append current_blk.instrs [str_instruction];
-            let str_instr = (str_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [str_instr];
-              (blocks, current_blk)
-          | None -> failwith "#16: STR instrction block current block doesn't exist." 
-        end
-      | MOV (cond, suffix, rd, operand_type) -> (* not fully implemented *)
-        let line_id = fresh_line () in
-        let mov_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk -> 
-            current_blk.instrs <- List.append current_blk.instrs [mov_instruction];
-            let mov_instr = (mov_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [mov_instr];
-              (blocks, current_blk)
-          | None -> failwith "#14: MOV instrction block current block doesn't exist." 
-        end
-      | CMP (cond, rd, operand_type) -> (* not fully implemented *)
-        let line_id = fresh_line () in
-        let cmp_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk -> 
-            current_blk.instrs <- List.append current_blk.instrs [cmp_instruction];
-            let cmp_instr = (cmp_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [cmp_instr];
-              (blocks, current_blk)
-          | None -> failwith "#13: CMP instrction block current block doesn't exist." 
-        end
-       *)
-      (* | ADD (cond, suffix, rd, rn, operand_type) -> *)
       | LDMFD _ | STMFD _ 
       | MOV _ | CMP _
       | LDR _ | STR _  
@@ -242,76 +187,44 @@ let rec get_basic_blocks
   in
   match instrs, blocks, current_blk with
   | [], blks, None -> failwith "#22: no instrs were given thus no blocks"
-  (* | [], [], None -> failwith "#22: no instrs were given thus no blocks" *)
-  (* | [], blks, None -> failwith "#25: there is no current_blk" *)
-  | [], [], Some current_blk ->
-      (* print_string("\npass #last w/ only curr blk // ret last\n"); *)
-      (* print_block_instrs current_blk; *)
-      [current_blk]
-  | [], blks, Some current_blk -> 
-      print_string("\npass #last\n");
-      (* print_block_instrs current_blk; *)
-      List.append blks [current_blk]
+  | [], [], Some current_blk -> [current_blk]
+  | [], blks, Some current_blk -> List.append blks [current_blk]
   | i::is, [], None -> 
-    (* print_string("\npass #1 - [], None\n"); *)
     let (blks, new_current_blk) = block_helper i [] None in
     let next_blks = get_basic_blocks is [] (Some new_current_blk) in
-    (* print_string("\npass #1 - [], None\n"); *)
-      (* print_string ("ret #1"); *)
       List.append blks next_blks
   | i::is, [], Some current_blk -> 
-    (* print_string("\npass #2 - [], Some __ \n"); *)
     let (blks, new_current_blk) = block_helper i [] (Some current_blk) in
     let next_blks = get_basic_blocks is [] (Some new_current_blk) in
-    (* print_string("\npass #2 - [], Some __ \n"); *)
-      (* print_string ("ret #2"); *)
       List.append blks next_blks
   | i::is, blks, Some current_blk ->
-    (* print_string("\npass #3 -- blks, Some ___\n"); *)
     let (blks, new_current_blk) = block_helper i blks (Some current_blk) in
     let next_blks = get_basic_blocks is blks (Some new_current_blk) in
-    (* print_string("\npass #3 -- blks, Some ___\n"); *)
-      (* print_string ("ret #3"); *)
       List.append blks next_blks
-        (* List.append blks (get_basic_blocks is blks (Some current_blk)) *)
   | _ -> failwith "#23: get basic blocks error"
 
 
-let get_block_instrs_len blk = List.length (blk.instrs)
 
-let print_len_block_instrs_head blks =
-  let len = get_block_instrs_len (List.hd blks) in
-  print_string ("\nhead instrs len:" ^ string_of_int len ^ "\n");;
-
-let print_block_instrs_head blks =
-  let blk = List.hd blks in
-  let rec helper blk_i =
-    match blk_i with
-    | [] -> []
-    | (line_id, suffix, i)::is -> i :: (helper is)
-  in print_string ("**head block insts \n"^ (string_of_arm_prog (helper (blk.instrs))) ^ "\n\n");;
+(* TESTS *)
 
 let test_instrs = [Label "hello"];;
-(* let test_instrs0 = Label "hello" :: Label "bye" :: [];; *)
 let test_instrs0 = Label "hello" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: Label "bye":: [];;
 let test_instrs1 = Label "hello" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: [];;
 
 (* let test_blocks = get_basic_blocks test_instrs [] None;; *)
 let test_blocks0 = get_basic_blocks test_instrs0 [] None;;
-let test_blocks1 = get_basic_blocks test_instrs1 [] None;;
+(* let test_blocks1 = get_basic_blocks test_instrs1 [] None;; *)
 
-(* print_string (string_of_arm_prog [Label "hello label"; Label "hello label"]); *)
-
-print_string ("Test instrs 0");;
-print_string ("\n****input instrs:" ^ (string_of_arm_prog test_instrs0) ^ "\n");;
-print_string ("number of blocks: " ^ (string_of_int (List.length (test_blocks0))));; (* flush std_out;; *)
+print_string ("Test instrs set 0");;
+print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs0) ^ "\n");;
+print_string ("Num of blocks: " ^ (string_of_int (List.length (test_blocks0))));; (* flush std_out;; *)
 print_len_block_instrs_head (test_blocks0);;
 print_block_instrs (List.hd (test_blocks0));;
 
-
-(* print_string ("Test instrs 1");;
-print_string ("\n****input instrs:" ^ (string_of_arm_prog test_instrs1) ^ "\n");;
-print_string ("number of blocks: " ^ (string_of_int (List.length (test_blocks1))));; (* flush std_out;; *)
+(* 
+print_string ("\n\nTest instrs set 1");;
+print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs1) ^ "\n");;
+print_string ("Num of blocks: " ^ (string_of_int (List.length (test_blocks1))));; (* flush std_out;; *)
 print_len_block_instrs_head (test_blocks1);;
 print_block_instrs (List.hd (test_blocks1));; *)
 
@@ -330,21 +243,41 @@ let rec peephole_opt (instrs: arm_program) : arm_program =
         else instrs
     | _ -> [] 
 *)
+
 (* Peephole: remove redundant loads and stores *)
-(*
-let remove_redundant_load_store instr1 instr2 =
-  match instr1, instr2 with
-  | LDR load_instr, STR store_instr ->
-    begin
-      let (reg_load, addr_type) = load_instr  in
-      match load_instr, store_instr with
-      | (_,_, reg_ld, addr_type_ld), (_,_, reg_str, addr_type_str) ->
-        if (reg_ld == reg_str) && (addr_type_ld == addr_type_str) then
-          [instr1]
-        else instr1 :: instr2 :: []
-    end
-  | _ -> instr1 :: instr2 :: []
-*)
+(* input : 1 block *)
+(* if only 1 instruction, return *)
+(* go through each instruction. if one is load, check to see if the next is a store.
+    if the store has the same info, rm the str instruction.
+  if the str is the last instruction, update instrs out accordingly *)
+let remove_redundant_ldr_str blk =
+  let instrs = blk.instrs in
+  if (List.length instrs) == 0 then
+    blk
+  else
+    let rec helper instrs =
+      let len = List.length instrs in
+      match len, instrs with
+      | 0, _ -> []
+      | 1, _ -> instrs
+      | _, i::is ->
+        begin
+          match i, (List.hd is) with
+          | (ld1,_, LDR (_,_,rd1,addr_type1)), (ld2,_, STR (_,_,rd2,addr_type2)) ->
+            begin
+              match rd1, addr_type1, rd2, addr_type2 with
+              | rd1, Reg r1, rd2, Reg r2 ->
+                if (rd1 == r2) && (rd2 == r1) then
+                  let rest_instrs = helper (List.tl is) in
+                  List.append [i] rest_instrs
+                else helper is 
+              | _ -> helper is
+            end
+          | _ -> helper is
+        end
+      | _ -> failwith "#30: len and instrs mismatch"
+    in blk.instrs <- helper instrs; blk
+
 
 (* Peephole: Unreachable code elimination *)
 
