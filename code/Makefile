@@ -27,9 +27,8 @@ test: $(JLITE_FILES_TO_TEST)
 	$(ADB) shell ./data/local/tmp/$^ 1> $@;  # Run the executable in adb and exit
 	touch $@
 
-%.test: %.sim
-	@python2 $(TEST_DIR)diff.py $(subst %.sim, %.output, $<) $< 
-	@echo -e "\n"
+%.test: %.sim %.output
+	@cmp $^
 
 %.exe: %.s
 	$(GG) $(CXXFLAGS) $< -o $@
