@@ -273,7 +273,8 @@ let union_list (l: (id3_set) list) :id3_set=
 
 (* Given a node of key k, we will extract all the ins of the predeceId3Setors to build the out *)
 let update_out (table: stmt_table) (k: stmt_key): id3_set=
-	let succeId3Setors = (Hashtbl.find table k).succ in
+	let node = (Hashtbl.find table k) in
+	let succeId3Setors = node.succ in
 	let rec helper (succ: stmt_key list): id3_set list = 
 		match succ with
 		| head::tail ->
@@ -281,7 +282,12 @@ let update_out (table: stmt_table) (k: stmt_key): id3_set=
 			n.live_in :: helper tail
 		| [] -> []
 	in let in_list = helper succeId3Setors
-	in union_list in_list
+	in let return_out = match node.stmt with
+		   				| ReturnStmt3 var ->
+							Id3Set.singleton var
+						| _ ->
+							Id3Set.empty
+	in union_list (return_out::in_list)
 
 let rec visit_node (k: stmt_key) (table: stmt_table): bool=
 	let node = (Hashtbl.find table k) in
@@ -307,11 +313,23 @@ let rec visit_terminals (stmt_list: stmt_key list) (table: stmt_table): bool=
 		| head::tail -> (visit_node head table) || (visit_terminals tail table)
 		| [] -> false
 
+let reset_bools (table:stmt_table): unit = 
+	let rec f (k:stmt_key) (n:stmt_node):unit  =
+		begin
+			n.changed <- false;
+			n.visited <- false;
+		end
+	in Hashtbl.iter f table
+
 let liveness_analysis (table: stmt_table): unit = 
 	let terminals = find_stmts_without_succeId3Setors table in
 	let rec helper (stmt_list:stmt_key list): unit =
 		if visit_terminals stmt_list table
-		then helper stmt_list
+		then 
+			begin
+				reset_bools table;
+				helper stmt_list
+			end
 		else ()
 	in helper terminals
 
