@@ -3,27 +3,42 @@ OO = ocamlc -o
 OLEX = ocamllex
 OYACC = ocamlyacc
 CXXFLAGS = -g
+ADB = ./adb
+GG = ./g++
+ZZ = ./z.exe
+ZZIR3 = ./zir3.exe
 
 OBJS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo jlite_toir3.cmo ir3_to_arm.cmo arm_structs.cmo
 OCAML_OBJECTS = $(OBJS) jlite_main.cmo
 OCAML_OBJECTS_IR3 = $(OBJS) jlite_main_ir3.cmo
 TEST_DIR = test/
 
-all:  $(patsubst %.jlite, %.s, $(wildcard $(TEST_DIR)*.jlite)) $(patsubst %.jlite, %.ir3, $(wildcard $(TEST_DIR)*.jlite)) $(patsubst %.jlite, %.sim, $(wildcard $(TEST_DIR)*.jlite))  
+JLITE_FILES_TO_TEST = $(patsubst %.output, %.test, $(wildcard $(TEST_DIR)*.output))
+
+
+all:  $(patsubst %.jlite, %.ir3, $(wildcard $(TEST_DIR)*.jlite)) $(patsubst %.jlite, %.sim, $(wildcard $(TEST_DIR)*.jlite))  
+
+
+test: $(JLITE_FILES_TO_TEST)
+
 
 %.sim: %.exe
-	./adb push $^ /data/local/tmp/$(TEST_DIR); \
-	./adb shell ./data/local/tmp/$^  # Run the executable in adb and exit
+	$(ADB) push $^ /data/local/tmp/$(TEST_DIR) 1> /dev/null 2>&1; \
+	$(ADB) shell ./data/local/tmp/$^ 1> $@;  # Run the executable in adb and exit
 	touch $@
-	
+
+%.test: %.sim
+	@python2 $(TEST_DIR)diff.py $(subst %.sim, %.output, $<) $< 
+	@echo -e "\n"
+
 %.exe: %.s
-	./g++ $(CXXFLAGS) $< -o $@
+	$(GG) $(CXXFLAGS) $< -o $@
 	
 %.s: %.jlite z.exe 
-	./z.exe $< > $@
+	$(ZZ) $< > $@
 
 %.ir3: %.jlite zir3.exe
-	./zir3.exe $< > $@
+	$(ZZIR3) $< > $@
 	
 z.exe: $(OCAML_OBJECTS)
 	$(OO) $@ $+
@@ -58,7 +73,7 @@ jlite_main_ir3.cmo: jlite_main_ir3.ml ir3_to_arm.cmo jlite_toir3.cmo
 	$(OC) $<
 
 clean:
-	rm -f $(TEST_DIR)/*.cmo $(TEST_DIR)/*.cmi $(TEST_DIR)/jlite_parser.ml $(TEST_DIR)/jlite_lexer.ml $(TEST_DIR)/*.s $(TEST_DIR)/*.exe jlite_parser.mli $(TEST_DIR)/*.ir3 $(TEST_DIR)/*.sim
+	@rm -f $(TEST_DIR)/*.cmo $(TEST_DIR)/*.cmi $(TEST_DIR)/jlite_parser.ml $(TEST_DIR)/jlite_lexer.ml $(TEST_DIR)/*.s $(TEST_DIR)/*.exe jlite_parser.mli $(TEST_DIR)/*.ir3 $(TEST_DIR)/*.sim
 
-%.cmo : %.ml
-	$(OC) $<
+%.cmo: %.ml
+	@$(OC) $<
