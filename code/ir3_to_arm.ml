@@ -68,7 +68,7 @@ let rec find_label (node_list: stmt_node list) (label:label3): stmt_key =
 let find_successors (node:stmt_node) (node_list: stmt_node list): stmt_node = 
 	match node.stmt with
 	| GoTo3 label ->
-		List.append node.succ ([(find_label node_list label)] @ [ node.id + 1]);
+		node.succ = List.append node.succ [find_label node_list label];
 		node
 	| IfStmt3 (_,label) ->
 		List.append node.succ ([(find_label node_list label)] @ [ node.id + 1]);
@@ -168,20 +168,19 @@ let rec number_statement_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_n
 	| [] ->
 		[]
 
-let add_predecessor (k:stmt_key) (node: stmt_node) (table:(stmt_key, stmt_node) Hashtbl.t)
-                    :((stmt_key, stmt_node) Hashtbl.t) = 
+let add_predecessor (table:(stmt_key, stmt_node) Hashtbl.t) (k:stmt_key) (node: stmt_node)  = 
 	let rec helper (k:stmt_key) (preds:stmt_key list) (table:(stmt_key, stmt_node) Hashtbl.t) =
 		match preds with
 		| head::tail ->
 			(List.append (Hashtbl.find table head).pred [k]);
 			helper k tail table
-		| [] ->
-			table
+		| [] -> 
+			()
 	in (helper k node.succ table)
 
 let find_predecessors (table:(stmt_key, stmt_node) Hashtbl.t): ((stmt_key, stmt_node) Hashtbl.t) = 
 	(*TODO *)
-	Hashtbl.iter table add_predecessor table; 
+	Hashtbl.iter (add_predecessor table) table; 
 	table	
 
 (*creates a list of statement nodes, with correct successors given the program *)
@@ -213,11 +212,10 @@ let create_stmt_table (p:ir3_program): (stmt_key, stmt_node) Hashtbl.t =
 (* We need them for liveness analysis *)
 let find_stmts_without_successors (table: (stmt_key, stmt_node) Hashtbl.t): (stmt_node list) =
 	(* TODO *)
-	table 
+	[] 
 
-	let liveness_analysis (table: (stmt_key, stmt_node) Hashtbl.t): ((stmt_key, stmt_node): Hashtbl.t) = 
-
-
+let liveness_analysis (table: (stmt_key, stmt_node) Hashtbl.t): ((stmt_key, stmt_node) Hashtbl.t) = 
+	table		
 
 let compare_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
