@@ -8,6 +8,8 @@ open Arm_structs
 open Ir3_structs
 open Jlite_structs
 
+let table_size_init = 1000;;
+
 let labelcount = ref 0 
 let fresh_label () = 
 	(labelcount:=!labelcount+1; "L" ^ (string_of_int !labelcount))
@@ -47,6 +49,10 @@ type stmt_node =
 		live_in: (id3 list);
 		live_out: (id3 list);
 	}
+
+(* Hashtable of statements *)
+type stmt_table = 
+	(stmt_key, stmt_node) Hashtbl.t
 
 (* Find the stmt id of the label stmt which corresponds to the given label *)
 let rec find_label (node_list: stmt_node list) (label:label3): stmt_key =
@@ -108,6 +114,7 @@ let used_vars_in_idc3 (varid: idc3): id3 list =
 		[v]
 	| _ ->
 		[]
+
 let rec used_vars_in_idc3_list (varid_list: idc3 list): id3 list =
 	match varid_list with
 	| head::tail -> 
@@ -141,7 +148,7 @@ let used_vars (stmt:ir3_stmt): id3 list =
 		used_vars_in_idc3 varid
 	| AssignStmt3 (_, expr) ->
 		used_vars_in_expr expr
-	| AssignFieldStmt3 (expr1, expr2) ->
+	| AssignFieldStmt3 (expr1, expr2) -> (* Should not be used *)
 		(used_vars_in_expr expr1) @ (used_vars_in_expr expr2)
 	| MdCallStmt3 expr ->
 		used_vars_in_expr expr
@@ -151,7 +158,7 @@ let used_vars (stmt:ir3_stmt): id3 list =
 		[]
 
 (*gives a unique id to each statement node *)
-let rec number_statement_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_node list = 
+let rec create_stmt_node_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_node list = 
 	match stmt_list with
 	| head::tail ->
 		{
@@ -165,13 +172,13 @@ let rec number_statement_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_n
 			use = [];
 			live_in = []; 
 			live_out = [];
-		}::(number_statement_list tail mthd)
+		}::(create_stmt_node_list tail mthd)
 	| [] ->
 		[]
 
 (* Given a statement k, it adds its id to all its successors *)
-let add_predecessor (k:stmt_key) (node: stmt_node) (table:(stmt_key, stmt_node) Hashtbl.t): unit = 
-	let rec helper (k:stmt_key) (preds:stmt_key list) (table:(stmt_key, stmt_node) Hashtbl.t): unit =
+let add_predecessor (k:stmt_key) (node: stmt_node) (table:stmt_table): unit = 
+	let rec helper (k:stmt_key) (preds:stmt_key list) (table:stmt_table): unit =
 		match preds with
 		| head::tail ->
 			(Hashtbl.find table head).pred <- k :: (Hashtbl.find table head).pred;
@@ -180,43 +187,48 @@ let add_predecessor (k:stmt_key) (node: stmt_node) (table:(stmt_key, stmt_node) 
 			()
 	in (helper k node.succ table)
 
-let find_predecessors (table:(stmt_key, stmt_node) Hashtbl.t): unit = 
+let find_predecessors (table: stmt_table): unit = 
 	let map_add (k:stmt_key) (node: stmt_node):unit =
 		add_predecessor k node table
 	in (Hashtbl.iter map_add table)
 
 (*creates a list of statement nodes, with correct successors given the program *)
-let rec create_stmt_list ((_,main,mds):ir3_program): stmt_node list =
+let rec create_updated_stmt_node_list ((_,main,mds):ir3_program): stmt_node list =
 	let rec helper (mds:md_decl3 list): stmt_node list =
 		match mds with
 		| head::tail ->
-			(find_all_successors (number_statement_list head.ir3stmts head))@(helper tail)
+			(find_all_successors (create_stmt_node_list head.ir3stmts head))@(helper tail)
 		| [] ->
 			[]
 	in (helper (main::mds)) 
 
 (* create a hash table of statement where the unique id of a statement is the key *)
-let create_stmt_table (p:ir3_program): (stmt_key, stmt_node) Hashtbl.t = 
-	let rec helper (table:(stmt_key, stmt_node) Hashtbl.t) 
+let create_stmt_node_table (p:ir3_program): stmt_table = 
+	let rec helper (table:stmt_table) 
                    (nodes: stmt_node list)
-                   :(stmt_key, stmt_node) Hashtbl.t =
+                   :stmt_table =
 		match nodes with
 		| head::tail -> 
 			(Hashtbl.add table head.id head);
 			(helper table tail)
 		| [] ->
 			table
-	in let nodes = (create_stmt_list p) 
-	in let table = Hashtbl.create 1000
+	in let nodes = (create_updated_stmt_node_list p) 
+	(* Initial table size so that Ocaml do not increase size too often *)
+	in let table = Hashtbl.create table_size_init
 	in (helper table nodes)
+
+let filter (k:stmt_key) (n:stmt_node) (init:stmt_key list): stmt_key list=
+	match n.succ with 
+	| [] -> k :: init 
+	| _ -> init
 
 (* Find all the statements in the program which dont have sucessors *)
 (* We need them for liveness analysis *)
-let find_stmts_without_successors (table: (stmt_key, stmt_node) Hashtbl.t): (stmt_node list) =
-	(* TODO *)
-	[] 
+let find_stmts_without_successors (table: stmt_table): (stmt_key list) =
+	Hashtbl.fold filter table []
 
-let liveness_analysis (table: (stmt_key, stmt_node) Hashtbl.t): ((stmt_key, stmt_node) Hashtbl.t) = 
+let liveness_analysis (table: stmt_table): (stmt_table) = 
 	table		
 
 let compare_id3 (i1:id3) (i2:id3): bool =
