@@ -187,62 +187,44 @@ let rec get_basic_blocks
   in
   match instrs, blocks, current_blk with
   | [], blks, None -> failwith "#22: no instrs were given thus no blocks"
-  | [], [], Some current_blk -> [current_blk]
-  | [], blks, Some current_blk -> List.append blks [current_blk]
-  | i::is, [], None -> 
+
+  | [], [], Some current_blk -> 
+    print_string ("last -- 1 blk\n");
+    (* print_block_instrs current_blk; *)
+    [current_blk]
+
+  | [], blks, Some current_blk -> 
+    (* print_string ("last -- |blks| > 1\n"); *)
+    (* print_block_instrs current_blk; *)
+    List.append blks [current_blk]
+
+  | i::is, [], None ->
+    (* print_string ("pass #1\n"); *)
     let (blks, new_current_blk) = block_helper i [] None in
     let next_blks = get_basic_blocks is [] (Some new_current_blk) in
+      (* print_block_instrs new_current_blk; *)
       List.append blks next_blks
-  | i::is, [], Some current_blk -> 
+
+  | i::is, [], Some current_blk ->
+    (* print_string ("pass #2\n"); *)
     let (blks, new_current_blk) = block_helper i [] (Some current_blk) in
     let next_blks = get_basic_blocks is [] (Some new_current_blk) in
+      (* print_block_instrs new_current_blk; *)
       List.append blks next_blks
+
   | i::is, blks, Some current_blk ->
+    (* print_string ("pass #3\n"); *)
     let (blks, new_current_blk) = block_helper i blks (Some current_blk) in
     let next_blks = get_basic_blocks is blks (Some new_current_blk) in
+      (* print_block_instrs new_current_blk; *)
       List.append blks next_blks
+
   | _ -> failwith "#23: get basic blocks error"
 
 
 
-(* TESTS *)
 
-let test_instrs = [Label "hello"];;
-let test_instrs0 = Label "hello" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: Label "bye":: [];;
-let test_instrs1 = Label "hello" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: [];;
-
-(* let test_blocks = get_basic_blocks test_instrs [] None;; *)
-let test_blocks0 = get_basic_blocks test_instrs0 [] None;;
-(* let test_blocks1 = get_basic_blocks test_instrs1 [] None;; *)
-
-print_string ("Test instrs set 0");;
-print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs0) ^ "\n");;
-print_string ("Num of blocks: " ^ (string_of_int (List.length (test_blocks0))));; (* flush std_out;; *)
-print_len_block_instrs_head (test_blocks0);;
-print_block_instrs (List.hd (test_blocks0));;
-
-(* 
-print_string ("\n\nTest instrs set 1");;
-print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs1) ^ "\n");;
-print_string ("Num of blocks: " ^ (string_of_int (List.length (test_blocks1))));; (* flush std_out;; *)
-print_len_block_instrs_head (test_blocks1);;
-print_block_instrs (List.hd (test_blocks1));; *)
-
-
-
-(* Peephole Optimizations *)
-(*
-let rec peephole_opt (instrs: arm_program) : arm_program = 
-  let instrs_len = List.length instrs in 
-    match instrs_len with
-    | 0 -> []
-    | 1 -> instrs
-    | 2 ->
-      let (instr1, instr2) = (List.nth instrs 0, List.nth instrs 1) in
-        if (instr1 == instr2) then [instr1]
-        else instrs
-    | _ -> [] 
-*)
+(* PEEPHOLE *)
 
 (* Peephole: remove redundant loads and stores *)
 (* input : 1 block *)
@@ -262,21 +244,84 @@ let remove_redundant_ldr_str blk =
       | 1, _ -> instrs
       | _, i::is ->
         begin
-          match i, (List.hd is) with
-          | (ld1, LDR (_,_,rd1,addr_type1)), (ld2, STR (_,_,rd2,addr_type2)) ->
-            begin
-              match rd1, addr_type1, rd2, addr_type2 with
-              | rd1, Reg r1, rd2, Reg r2 ->
-                if (rd1 == r2) && (rd2 == r1) then
-                  let rest_instrs = helper (List.tl is) in
-                  List.append [i] rest_instrs
-                else helper is 
-              | _ -> helper is
-            end
-          | _ -> helper is
+        match i, (List.hd is) with
+        | (ld1, LDR (_,_,rd1,addr_type1)), (ld2, STR (_,_,rd2,addr_type2)) ->
+          begin
+          match addr_type1, addr_type2 with
+          | Reg r1, Reg r2 ->
+            if (rd1 = r2) && (rd2 = r1) then
+              List.append [i] (helper (List.tl is))
+            else i :: helper is 
+          | _ -> i :: helper is
+          end
+        | _ -> i :: helper is
         end
       | _ -> failwith "#30: len and instrs mismatch"
     in blk.instrs <- helper instrs; blk
+
+
+
+
+(* TESTS *)
+
+let test_instrs = [Label "hello"];;
+let test_instrs0 = Label "hello" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: Label "bye":: [];;
+let test_instrs1 = Label "hello" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: LDR ("", "", "v1", Reg ("a1")) :: [];;
+let test_instrs2 = Label "hello" 
+  :: ADD ("", false, "a1", "a0", RegOp ("v1"))
+  :: LDR ("", "", "v1", Reg ("a1"))
+  :: STR ("", "", "a1", Reg ("v1"))
+  :: SUB ("", false, "a1", "a0", RegOp ("v1"))
+  :: AND ("", false, "a1", "a0", RegOp ("v1"))
+  :: ORR ("", false, "a1", "a0", RegOp ("v1")) (* only storing last instr *)
+  :: [];;
+
+(* let test_blocks = get_basic_blocks test_instrs [] None;; *)
+(* let test_blocks0 = get_basic_blocks test_instrs0 [] None;; *)
+(* let test_blocks1 = get_basic_blocks test_instrs1 [] None;; *)
+let test_blocks2 = get_basic_blocks test_instrs2 [] None;;
+
+(* print_string ("Test instrs set 0");;
+print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs0) ^ "\n");;
+print_string ("Num of blocks: " ^ (string_of_int (List.length (test_blocks0))));; (* flush std_out;; *)
+print_len_block_instrs_head (test_blocks0);;
+print_block_instrs (List.hd (test_blocks0));; *)
+
+(* 
+print_string ("\n\n~~~~~~ Test instrs set 1 ~~~~~~~");;
+(* print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs1) ^ "\n");; *)
+print_string ("Num of blocks: " ^ (string_of_int (List.length (test_blocks1))));; (* flush std_out;; *)
+print_len_block_instrs_head (test_blocks1);;
+print_block_instrs (List.hd (test_blocks1));;
+ *)
+
+print_string ("\n\n~~~~~~ Test instrs set 2 ~~~~~~~");;
+(* print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs2) ^ "\n");; *)
+print_string ("\nNum of blocks: " ^ (string_of_int (List.length (test_blocks2))));; (* flush std_out;; *)
+print_len_block_instrs_head (test_blocks2);;
+print_block_instrs (List.hd (test_blocks2));;
+
+print_string ("\n\nPeephole: rm redundant load/store (on block1)");;
+let peephole1_block = remove_redundant_ldr_str (List.hd test_blocks2);;
+print_block_instrs peephole1_block;;
+
+
+
+(* Peephole Optimizations *)
+(*
+let rec peephole_opt (instrs: arm_program) : arm_program = 
+  let instrs_len = List.length instrs in 
+    match instrs_len with
+    | 0 -> []
+    | 1 -> instrs
+    | 2 ->
+      let (instr1, instr2) = (List.nth instrs 0, List.nth instrs 1) in
+        if (instr1 == instr2) then [instr1]
+        else instrs
+    | _ -> [] 
+*)
+
+
 
 
 (* Peephole: Unreachable code elimination *)
