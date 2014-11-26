@@ -34,18 +34,37 @@ let rec last ls =
   | l::ls -> last ls
   | _ -> failwith " last isn't working right"
 
-
+let print_block_instrs blk =
+  let rec helper blk_i =
+    match blk_i with
+    | [] -> []
+    | (line_id, suffix, i)::is -> i :: (helper is)
+  in print_string ("\n* Current block instr" ^ (string_of_arm_prog (helper (blk.instrs))) ^ "\n\n");;
 
 let rec get_basic_blocks 
   (instrs: arm_program)
   (blocks: block list)
   (current_blk: block option)
   : block list =
+
   let block_helper 
     (i: arm_instr)
     (blocks: block list)
     (current_blk: block option)
     : (block list * block) = 
+
+    let instr_helper i : (block list * block) =
+      let line_id = fresh_line () in
+      let new_instruction = (line_id, false, i) in
+      match current_blk with
+      | Some curr_blk -> 
+        let new_instr = (new_instruction, curr_blk.id, curr_blk.label) in
+          curr_blk.instrs <- List.append curr_blk.instrs [new_instruction];
+          curr_blk.instrs_out <- List.append curr_blk.instrs_out [new_instr];
+          (* print_block_instrs curr_blk; *)
+          (blocks, curr_blk)
+        | None -> failwith "#11: instrction block current block doesn't exist." 
+    in
     begin
       match i with
       | Label label -> (*create new block*)
@@ -138,7 +157,7 @@ let rec get_basic_blocks
                 in (helper blocks b_label, current_blk) 
           | None -> failwith "#4: Branch - current block doesn't exist"
         end 
-      | LDMFD reg_list ->
+(*      | LDMFD reg_list ->
         let line_id = fresh_line () in
         let ldmfd_instruction = (line_id, false, i) in
         begin
@@ -210,102 +229,92 @@ let rec get_basic_blocks
               (blocks, current_blk)
           | None -> failwith "#13: CMP instrction block current block doesn't exist." 
         end
-      | MUL (cond, suffix, rd, rn1, rn2) ->
-        let line_id = fresh_line () in
-        let mul_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk -> 
-            current_blk.instrs <- List.append current_blk.instrs [mul_instruction];
-            let mul_instr = (mul_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [mul_instr];
-              (blocks, current_blk)
-          | None -> failwith "#12: MUL instrction block current block doesn't exist." 
-        end
-      | ADD (cond, suffix, rd, rn, operand_type) ->
-        let line_id = fresh_line () in
-        let add_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk -> 
-            current_blk.instrs <- List.append current_blk.instrs [add_instruction];
-            let add_instr = (add_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [add_instr];
-              (blocks, current_blk)
-          | None -> failwith "#11: ADD instrction block current block doesn't exist." 
-        end
-      | SUB (cond, suffix, rd, rn, operand_type) ->
-        let line_id = fresh_line () in
-        let sub_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk -> 
-            current_blk.instrs <- List.append current_blk.instrs [sub_instruction];
-            let sub_instr = (sub_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [sub_instr];
-              (blocks, current_blk)
-          | None -> failwith "#10: SUB instrction block current block doesn't exist." 
-        end
-      | AND (cond, suffix, rd, rn, operand_type) ->
-        let line_id = fresh_line () in
-        let and_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk -> 
-            current_blk.instrs <- List.append current_blk.instrs [and_instruction];
-            let and_instr = (and_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [and_instr];
-              (blocks, current_blk)
-          | None -> failwith "#9: AND instrction block current block doesn't exist." 
-        end
-      | ORR (cond, suffix, rd, rn, operand_type) ->
-        let line_id = fresh_line () in
-        let or_instruction = (line_id, false, i) in
-        begin
-          match current_blk with
-          | Some current_blk -> 
-            current_blk.instrs <- List.append current_blk.instrs [or_instruction];
-            let or_instr = (or_instruction, current_blk.id, current_blk.label) in
-              current_blk.instrs_out <- List.append current_blk.instrs_out [or_instr];
-              (blocks, current_blk)
-          | None -> failwith "#8: Or instrction block current block doesn't exist." 
-        end
+       *)
+      (* | ADD (cond, suffix, rd, rn, operand_type) -> *)
+      | LDMFD _ | STMFD _ 
+      | MOV _ | CMP _
+      | LDR _ | STR _  
+      | SUB _ | AND _
+      | ORR _ | MUL _
+      | ADD _ -> instr_helper i 
       | _ -> failwith "#1: instruction not implemented in block generation"
     end
   in
   match instrs, blocks, current_blk with
-  | [], [], None -> failwith "#22: no instrs were given thus no blocks"
-  | [], blks, current_blk ->
-    begin
-      match current_blk with
-      | Some current_blk -> List.append blks [current_blk]
-    | None -> failwith "25# there is no current_blk"
-    end
-  | i::is, [], current_blk -> 
-    begin
-      let (blks, current_blk) = block_helper i [] current_blk in
-      let next_blks = get_basic_blocks is blks (Some current_blk) in
-        List.append blks next_blks
-    end
-  | i::is, blks, current_blk ->
-    begin
-      let (blks, current_blk) = block_helper i blks current_blk in
-      let next_blks = get_basic_blocks is blks (Some current_blk) in
-          List.append blks next_blks
-    end
+  | [], blks, None -> failwith "#22: no instrs were given thus no blocks"
+  (* | [], [], None -> failwith "#22: no instrs were given thus no blocks" *)
+  (* | [], blks, None -> failwith "#25: there is no current_blk" *)
+  | [], [], Some current_blk ->
+      (* print_string("\npass #last w/ only curr blk // ret last\n"); *)
+      (* print_block_instrs current_blk; *)
+      [current_blk]
+  | [], blks, Some current_blk -> 
+      print_string("\npass #last\n");
+      (* print_block_instrs current_blk; *)
+      List.append blks [current_blk]
+  | i::is, [], None -> 
+    (* print_string("\npass #1 - [], None\n"); *)
+    let (blks, new_current_blk) = block_helper i [] None in
+    let next_blks = get_basic_blocks is [] (Some new_current_blk) in
+    (* print_string("\npass #1 - [], None\n"); *)
+      (* print_string ("ret #1"); *)
+      List.append blks next_blks
+  | i::is, [], Some current_blk -> 
+    (* print_string("\npass #2 - [], Some __ \n"); *)
+    let (blks, new_current_blk) = block_helper i [] (Some current_blk) in
+    let next_blks = get_basic_blocks is [] (Some new_current_blk) in
+    (* print_string("\npass #2 - [], Some __ \n"); *)
+      (* print_string ("ret #2"); *)
+      List.append blks next_blks
+  | i::is, blks, Some current_blk ->
+    (* print_string("\npass #3 -- blks, Some ___\n"); *)
+    let (blks, new_current_blk) = block_helper i blks (Some current_blk) in
+    let next_blks = get_basic_blocks is blks (Some new_current_blk) in
+    (* print_string("\npass #3 -- blks, Some ___\n"); *)
+      (* print_string ("ret #3"); *)
+      List.append blks next_blks
         (* List.append blks (get_basic_blocks is blks (Some current_blk)) *)
-  (* | _ -> failwith "#23: get basic blocks error" *)
+  | _ -> failwith "#23: get basic blocks error"
 
-let test_instrs = [Label "hello label"]
-let test_instrs1 = Label "hello label" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: []
 
-(* let test_blocks = get_basic_blocks [Label "hello label"] [] None; *)
-let test_blocks = (* (get_basic_blocks test_instrs1 [] None) *)
-(* let test_blocks1 = block_helper1 test_instrs [] None *)
+let get_block_instrs_len blk = List.length (blk.instrs)
 
-(* let test_print instrs =  *)
-(* print_string (string_of_arm_prog test_instrs1); *)
-print_string (string_of_int (List.length (get_basic_blocks test_instrs1 [] None))); (* flush std_out;; *)
+let print_len_block_instrs_head blks =
+  let len = get_block_instrs_len (List.hd blks) in
+  print_string ("\nhead instrs len:" ^ string_of_int len ^ "\n");;
+
+let print_block_instrs_head blks =
+  let blk = List.hd blks in
+  let rec helper blk_i =
+    match blk_i with
+    | [] -> []
+    | (line_id, suffix, i)::is -> i :: (helper is)
+  in print_string ("**head block insts \n"^ (string_of_arm_prog (helper (blk.instrs))) ^ "\n\n");;
+
+let test_instrs = [Label "hello"];;
+(* let test_instrs0 = Label "hello" :: Label "bye" :: [];; *)
+let test_instrs0 = Label "hello" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: Label "bye":: [];;
+let test_instrs1 = Label "hello" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: [];;
+
+(* let test_blocks = get_basic_blocks test_instrs [] None;; *)
+let test_blocks0 = get_basic_blocks test_instrs0 [] None;;
+let test_blocks1 = get_basic_blocks test_instrs1 [] None;;
+
+(* print_string (string_of_arm_prog [Label "hello label"; Label "hello label"]); *)
+
+print_string ("Test instrs 0");;
+print_string ("\n****input instrs:" ^ (string_of_arm_prog test_instrs0) ^ "\n");;
+print_string ("number of blocks: " ^ (string_of_int (List.length (test_blocks0))));; (* flush std_out;; *)
+print_len_block_instrs_head (test_blocks0);;
+print_block_instrs (List.hd (test_blocks0));;
+
+
+(* print_string ("Test instrs 1");;
+print_string ("\n****input instrs:" ^ (string_of_arm_prog test_instrs1) ^ "\n");;
+print_string ("number of blocks: " ^ (string_of_int (List.length (test_blocks1))));; (* flush std_out;; *)
+print_len_block_instrs_head (test_blocks1);;
+print_block_instrs (List.hd (test_blocks1));; *)
+
 
 
 (* Peephole Optimizations *)
