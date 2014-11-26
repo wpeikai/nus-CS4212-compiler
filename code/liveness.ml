@@ -249,7 +249,11 @@ let create_stmt_node_table (p:ir3_program): stmt_table =
 	in let nodes = (create_updated_stmt_node_list p) 
 	(* Initial table size so that Ocaml do not increase size too often *)
 	in let table = Hashtbl.create table_size_init
-	in (helper table nodes)
+	in let filled_table = (helper table nodes)
+	in begin
+		find_predeceId3Setors filled_table;
+		filled_table
+	end
 
 let filter (k:stmt_key) (n:stmt_node) (init:stmt_key list): stmt_key list=
 	match n.succ with 
@@ -325,6 +329,8 @@ let print_stmt_node (table: stmt_table) (i:int): bool =
 		print_string ("\tSuccessors: " ^ (string_of_list n.succ string_of_int " ") ^ "\n" );
 		print_string ("\tdef: " ^ (string_of_list (Id3Set.elements  n.def) (fun a -> a) " ") ^ "\n" );
 		print_string ("\tuse: " ^ (string_of_list (Id3Set.elements  n.use) (fun a -> a) " ") ^ "\n" );
+		print_string ("\tLive IN: " ^ (string_of_list (Id3Set.elements  n.live_in) (fun a -> a) " ") ^ "\n" );
+		print_string ("\tLive OUT: " ^ (string_of_list (Id3Set.elements  n.live_out) (fun a -> a) " ") ^ "\n" );
 		true
 	| [] ->
 		false
