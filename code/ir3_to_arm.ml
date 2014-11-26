@@ -40,8 +40,8 @@ type stmt_node =
 		mark: bool;
 		stmt: ir3_stmt;
 		md: md_decl3;
-		pred: (stmt_key list);
-		succ: (stmt_key list);
+		mutable pred: (stmt_key list);
+		mutable succ: (stmt_key list);
 		def: (id3 list);
 		use: (id3 list);
 		live_in: (id3 list);
@@ -68,18 +68,19 @@ let rec find_label (node_list: stmt_node list) (label:label3): stmt_key =
 let find_successors (node:stmt_node) (node_list: stmt_node list): stmt_node = 
 	match node.stmt with
 	| GoTo3 label ->
-		node.succ = List.append node.succ [find_label node_list label];
+		node.succ <- (find_label node_list label) :: node.succ;
 		node
 	| IfStmt3 (_,label) ->
-		List.append node.succ ([(find_label node_list label)] @ [ node.id + 1]);
+		node.succ <- (find_label node_list label) :: (node.id + 1) :: node.succ;
 		node
 	| ReturnStmt3 _ -> (*No successor *)
 		node
 	| ReturnVoidStmt3 -> (*No successor *)
 		node
 	| _ -> (* Simple case*)
-		List.append node.succ [node.id + 1];
+		node.succ <- (node.id + 1) :: node.succ;
 		node
+
 (*find the successors for every statement in a list of statement *)
 (*we search the successors within the given list *)
 let find_all_successors (node_list: stmt_node list): stmt_node list = 
@@ -168,20 +169,21 @@ let rec number_statement_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_n
 	| [] ->
 		[]
 
-let add_predecessor (table:(stmt_key, stmt_node) Hashtbl.t) (k:stmt_key) (node: stmt_node)  = 
-	let rec helper (k:stmt_key) (preds:stmt_key list) (table:(stmt_key, stmt_node) Hashtbl.t) =
+(* Given a statement k, it adds its id to all its successors *)
+let add_predecessor (k:stmt_key) (node: stmt_node) (table:(stmt_key, stmt_node) Hashtbl.t): unit = 
+	let rec helper (k:stmt_key) (preds:stmt_key list) (table:(stmt_key, stmt_node) Hashtbl.t): unit =
 		match preds with
 		| head::tail ->
-			(List.append (Hashtbl.find table head).pred [k]);
+			(Hashtbl.find table head).pred <- k :: (Hashtbl.find table head).pred;
 			helper k tail table
 		| [] -> 
 			()
 	in (helper k node.succ table)
 
-let find_predecessors (table:(stmt_key, stmt_node) Hashtbl.t): ((stmt_key, stmt_node) Hashtbl.t) = 
-	(*TODO *)
-	Hashtbl.iter (add_predecessor table) table; 
-	table	
+let find_predecessors (table:(stmt_key, stmt_node) Hashtbl.t): unit = 
+	let map_add (k:stmt_key) (node: stmt_node):unit =
+		add_predecessor k node table
+	in (Hashtbl.iter map_add table)
 
 (*creates a list of statement nodes, with correct successors given the program *)
 let rec create_stmt_list ((_,main,mds):ir3_program): stmt_node list =
