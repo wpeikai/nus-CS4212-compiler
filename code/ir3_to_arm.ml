@@ -33,7 +33,7 @@ let label_exit_methd (md:md_decl3): string=
 let rec var_type (var:id3) (var_list: var_decl3 list): ir3_type =
 	match var_list with
 	| (head_type,head_id3)::tail ->
-		if (compare_id3 head_id3 var)
+		if (are_equal_id3 head_id3 var)
 		then head_type
 		else var_type var tail
 	| _ -> 
@@ -62,7 +62,7 @@ let index_id3_in_var_decl3_list (var:id3) (var_list:var_decl3 list): int=
 	let rec helper(i:int) (var:id3) (var_list:var_decl3 list): int = 
 		match var_list with
 		| (_, head_id3)::tail ->
-			if (compare_id3 head_id3 var)
+			if (are_equal_id3 head_id3 var)
 			then i
 			else helper (i+1) var tail
 		| _ -> failwith ("#47 var unknown: " ^ var)

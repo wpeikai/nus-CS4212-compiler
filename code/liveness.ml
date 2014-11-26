@@ -3,20 +3,27 @@ open Arm_structs
 open Ir3_structs
 open Jlite_structs
 
+module SS = Set.Make(
+	struct
+	    let compare = String.compare
+	    type t = id3
+	  end
+	);;
+
 let table_size_init = 1000;;
 
 let stmtcount = ref 0
 let fresh_stmt () = 
 	(stmtcount := !stmtcount+1; !stmtcount)
 
-let compare_id3 (i1:id3) (i2:id3): bool =
+let are_equal_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
 
 (* Is var in list? *)
 let rec is_var_in_id3_list (l:id3 list) (v:id3): bool =
 	match l with 
 	| head :: tail ->
-		if compare_id3 head v
+		if are_equal_id3 head v
 		then false
 		else is_var_in_id3_list tail v
 	| _ -> true
@@ -50,10 +57,10 @@ type stmt_node =
 		md: md_decl3;
 		mutable pred: (stmt_key list);
 		mutable succ: (stmt_key list);
-		mutable def: (id3 list);
-		mutable use: (id3 list);
-		mutable live_in: (id3 list);
-		mutable live_out: (id3 list);
+		mutable def: SS.t;
+		mutable use: SS.t;
+		mutable live_in: SS.t;
+		mutable live_out: SS.t;
 	}
 
 (* Hashtable of statements *)
@@ -106,47 +113,47 @@ let find_all_successors (node_list: stmt_node list): stmt_node list =
 
 (* Determines the used variables in a statement *)
 (* I consider we dont have AssignDeclStmt3 *)
- let def_vars (stmt:ir3_stmt): id3 list =
+ let def_vars (stmt:ir3_stmt): SS.t =
 	match stmt with
 	| AssignStmt3 (var, _)->
-		[var]
+		SS.singleton var
 	| _ ->
-		[]
+		SS.empty
 
 (* returns the variables used in an idc3 *)	
-let used_vars_in_idc3 (varid: idc3): id3 list =
+let used_vars_in_idc3 (varid: idc3): SS.t =
 	match varid with
 	| Var3 v ->
-		[v]
+		SS.singleton v
 	| _ ->
-		[]
+		SS.empty
 
-let rec used_vars_in_idc3_list (varid_list: idc3 list): id3 list =
+let rec used_vars_in_idc3_list (varid_list: idc3 list): SS.t =
 	match varid_list with
 	| head::tail -> 
-		(used_vars_in_idc3 head) @ (used_vars_in_idc3_list tail)
+		SS.union (used_vars_in_idc3 head) (used_vars_in_idc3_list tail)
 	| [] ->
-		[]
+		SS.empty
 
 (* returns the variables used in an ir3 expression *)
-let rec used_vars_in_expr (expr:ir3_exp): id3 list =
+let rec used_vars_in_expr (expr:ir3_exp): SS.t =
 	match expr with
 	| BinaryExp3 (_, a, b) ->
-		(used_vars_in_idc3 a) @ (used_vars_in_idc3 b)
+		SS.union (used_vars_in_idc3 a) (used_vars_in_idc3 b)
 	| UnaryExp3 (_, a) ->
 		(used_vars_in_idc3 a)
 	| FieldAccess3 (obj, _) ->
-		[obj]
+		SS.singleton obj
 	| Idc3Expr a ->
 		(used_vars_in_idc3 a)
 	| MdCall3 (_, var_list) ->
 		(used_vars_in_idc3_list var_list)
 	| ObjectCreate3 _ ->
-		[]
+		SS.empty
 
 
 (* returns the list of the variables used in a statement *)
-let used_vars (stmt:ir3_stmt): id3 list =
+let used_vars (stmt:ir3_stmt): SS.t =
 	match stmt with
 	| IfStmt3 (expr, _) ->
 		used_vars_in_expr expr
@@ -155,13 +162,13 @@ let used_vars (stmt:ir3_stmt): id3 list =
 	| AssignStmt3 (_, expr) ->
 		used_vars_in_expr expr
 	| AssignFieldStmt3 (expr1, expr2) -> (* Should not be used *)
-		(used_vars_in_expr expr1) @ (used_vars_in_expr expr2)
+		SS.union (used_vars_in_expr expr1) (used_vars_in_expr expr2)
 	| MdCallStmt3 expr ->
 		used_vars_in_expr expr
 	| ReturnStmt3 var ->
-		[var]
+		SS.singleton var
 	| _ ->
-		[]
+		SS.empty
 
 (*gives a unique id to each statement node *)
 let rec create_stmt_node_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_node list = 
@@ -177,8 +184,8 @@ let rec create_stmt_node_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_n
 			succ = [];
 			def = (def_vars head);
 			use = (used_vars head);
-			live_in = []; 
-			live_out = [];
+			live_in = SS.empty; 
+			live_out = SS.empty;
 		}::(create_stmt_node_list tail mthd)
 	| [] ->
 		[]
@@ -235,22 +242,16 @@ let filter (k:stmt_key) (n:stmt_node) (init:stmt_key list): stmt_key list=
 let find_stmts_without_successors (table: stmt_table): stmt_key list =
 	Hashtbl.fold filter table []
 
-let diff (l1: id3 list) (l2: id3 list): id3 list=
-	List.filter (is_var_not_in_id3_list l2) l1
+let compute_in_from_out (out: SS.t) (use: SS.t) (def: SS.t): SS.t=
+	SS.union use (SS.diff out def)
 
-let union (l1: id3 list) (l2: id3 list): id3 list=
-	l1 @ (diff l2 l1)
-
-let compute_in_from_out (out: id3 list) (use: id3 list) (def: id3 list): id3 list=
-	union use (diff out def)
-
-let union_list (l: (id3 list) list) :id3 list=
-	List.fold_left union [] l
+let union_list (l: (SS.t) list) :SS.t=
+	List.fold_left SS.union SS.empty l
 
 (* Given a node of key k, we will extract all the ins of the predecessors to build the out *)
-let update_out (table: stmt_table) (k: stmt_key): id3 list=
+let update_out (table: stmt_table) (k: stmt_key): SS.t=
 	let successors = (Hashtbl.find table k).succ in
-	let rec helper (succ: stmt_key list): (id3 list) list = 
+	let rec helper (succ: stmt_key list): SS.t list = 
 		match succ with
 		| head::tail ->
 			let n = (Hashtbl.find table head) in
@@ -270,7 +271,7 @@ let rec visit_node (k: stmt_key) (table: stmt_table): bool=
 			node.live_out <- update_out table k;
 			let former_in = node.live_in in
 			node.live_in <- compute_in_from_out node.live_out node.use node.def;
-			node.changed <- not (compare_id3_list former_in node.live_in);
+			node.changed <- not (SS.equal former_in node.live_in);
 			let rec helper l =
 			match l with
 				| head::tail -> (visit_node head table) || (helper tail)
