@@ -82,6 +82,10 @@ type stmt_node =
 type stmt_table = 
 	(stmt_key, stmt_node) Hashtbl.t
 
+(* Hashtable of graphs *)
+type graph_table = 
+	(id3, edge_set) Hashtbl.t
+
 (* Find the stmt id of the label stmt which corresponds to the given label *)
 let rec find_label (node_list: stmt_node list) (label:label3): stmt_key =
 	match node_list with
@@ -322,3 +326,50 @@ let cartesian_square (s1:id3_set): edge_set=
 			EdgeSet.union (Id3Set.fold f e_set EdgeSet.empty) (helper tail e_set)
 		| [] -> EdgeSet.empty
 	in (helper elem_list s1)
+
+let f k v init = v :: init
+
+let stmt_list_from_hashtable (hashtable:stmt_table):stmt_node list =
+	Hashtbl.fold f hashtable []
+
+let find_graph (mthd:id3) (table:graph_table) :edge_set =
+	let all_graphs_found = Hashtbl.find_all table mthd in
+	match all_graphs_found with 
+	| head:: [] ->
+		head
+	| [] ->
+		let new_edge_set = EdgeSet.empty in
+		begin
+			Hashtbl.add table mthd new_edge_set;
+			new_edge_set
+		end
+	| _ -> failwith "99"
+
+let update_graph graph_key new_edge_set1 new_edge_set2 all_graphs:unit =
+	let graph = find_graph graph_key all_graphs in
+	let new_graph = EdgeSet.union graph new_edge_set1 in
+	let new_new_graph = EdgeSet.union new_graph new_edge_set2 in
+	begin
+		Hashtbl.remove all_graphs graph_key;
+		Hashtbl.add all_graphs graph_key new_new_graph;
+	end
+
+
+let create_all_graphs (table:stmt_table):graph_table =
+	let stmt_list = stmt_list_from_hashtable table in
+	let rec helper (table:graph_table) 
+                   (stmt_list: stmt_node list)
+                   :graph_table =
+		match stmt_list with
+		| head::tail -> 
+			let live_in_edges = cartesian_square head.live_in in
+			let live_out_edges = cartesian_square head.live_out in
+			begin
+			update_graph head.md.id3  live_in_edges live_out_edges table;
+			(helper table tail)
+			end
+		| [] ->
+			table
+	(* Initial table size so that Ocaml do not increase size too often *)
+	in let table = (Hashtbl.create 1000)
+	in (helper table stmt_list)
