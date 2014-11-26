@@ -5,7 +5,7 @@ open Arm_structs
 
 (* get the basic blocks from the ARM instructions *)
 (* (id, leader flag, instruction ) *)
-type block_instr = int * bool * arm_instr 
+type block_instr = int * arm_instr 
 
 (* returns in form:  *) 
 (* Block: block id, label associated, instrs inside block, instrs leading out *)
@@ -40,7 +40,7 @@ let print_block_instrs blk =
   let rec helper blk_i =
     match blk_i with
     | [] -> []
-    | (line_id, suffix, i)::is -> i :: (helper is)
+    | (line_id, i)::is -> i :: (helper is)
   in print_string (blk_id ^ (string_of_arm_prog (helper (blk.instrs))) ^ "\n\n");;
 
 (* print length of one block's instructions *)
@@ -57,7 +57,7 @@ let print_block_instrs_head blks =
   let rec helper blk_i =
     match blk_i with
     | [] -> []
-    | (line_id, suffix, i)::is -> i :: (helper is)
+    | (line_id, i)::is -> i :: (helper is)
   in print_string ("**head block insts \n"^ (string_of_arm_prog (helper (blk.instrs))) ^ "\n\n");;
 
 (* Make all basic blocks *)
@@ -75,7 +75,7 @@ let rec get_basic_blocks
 
     let instr_helper i : (block list * block) =
       let line_id = fresh_line () in
-      let new_instruction = (line_id, false, i) in
+      let new_instruction = (line_id, i) in
       match current_blk with
       | Some curr_blk -> 
         let new_instr = (new_instruction, curr_blk.id, curr_blk.label) in
@@ -90,7 +90,7 @@ let rec get_basic_blocks
         let blk_id = fresh_blk () in
         let line_id = fresh_line () in
         (* update current block *)
-        let label_instruction = (line_id, false, i) in
+        let label_instruction = (line_id, i) in
         let new_blk = {
           id = blk_id;
           label = label;
@@ -109,7 +109,7 @@ let rec get_basic_blocks
         end
       | PseudoInstr pseudo ->
         let line_id = fresh_line () in
-        let p_instruction = (line_id, false, i) in
+        let p_instruction = (line_id, i) in
         begin
           match current_blk with
           | Some current_blk -> 
@@ -122,7 +122,7 @@ let rec get_basic_blocks
         end 
       | B (cond, b_label) -> (* branch *)
         let line_id = fresh_line () in
-        let b_instruction = (line_id, false, i) in
+        let b_instruction = (line_id, i) in
         begin
           match current_blk with
           | Some current_blk ->
@@ -150,7 +150,7 @@ let rec get_basic_blocks
         end
       | BL (cond, b_label) -> (* branch *)
         let line_id = fresh_line () in
-        let bl_instruction = (line_id, false, i) in
+        let bl_instruction = (line_id, i) in
         begin
           match current_blk with
           | Some current_blk ->
@@ -263,7 +263,7 @@ let remove_redundant_ldr_str blk =
       | _, i::is ->
         begin
           match i, (List.hd is) with
-          | (ld1,_, LDR (_,_,rd1,addr_type1)), (ld2,_, STR (_,_,rd2,addr_type2)) ->
+          | (ld1, LDR (_,_,rd1,addr_type1)), (ld2, STR (_,_,rd2,addr_type2)) ->
             begin
               match rd1, addr_type1, rd2, addr_type2 with
               | rd1, Reg r1, rd2, Reg r2 ->
