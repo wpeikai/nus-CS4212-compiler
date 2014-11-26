@@ -168,7 +168,21 @@ let rec number_statement_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_n
 	| [] ->
 		[]
 
+let add_predecessor (k:stmt_key) (node: stmt_node) (table:(stmt_key, stmt_node) Hashtbl.t)
+                    :((stmt_key, stmt_node) Hashtbl.t) = 
+	let rec helper (k:stmt_key) (preds:stmt_key list) (table:(stmt_key, stmt_node) Hashtbl.t) =
+		match preds with
+		| head::tail ->
+			(List.append (Hashtbl.find table head).pred [k]);
+			helper k tail table
+		| [] ->
+			table
+	in (helper k node.succ table)
 
+let find_predecessors (table:(stmt_key, stmt_node) Hashtbl.t): ((stmt_key, stmt_node) Hashtbl.t) = 
+	(*TODO *)
+	Hashtbl.iter table add_predecessor table; 
+	table	
 
 (*creates a list of statement nodes, with correct successors given the program *)
 let rec create_stmt_list ((_,main,mds):ir3_program): stmt_node list =
@@ -194,6 +208,16 @@ let create_stmt_table (p:ir3_program): (stmt_key, stmt_node) Hashtbl.t =
 	in let nodes = (create_stmt_list p) 
 	in let table = Hashtbl.create 1000
 	in (helper table nodes)
+
+(* Find all the statements in the program which dont have sucessors *)
+(* We need them for liveness analysis *)
+let find_stmts_without_successors (table: (stmt_key, stmt_node) Hashtbl.t): (stmt_node list) =
+	(* TODO *)
+	table 
+
+	let liveness_analysis (table: (stmt_key, stmt_node) Hashtbl.t): ((stmt_key, stmt_node): Hashtbl.t) = 
+
+
 
 let compare_id3 (i1:id3) (i2:id3): bool =
 	((String.compare i1 i2) == 0)
