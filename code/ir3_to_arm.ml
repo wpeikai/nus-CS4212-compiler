@@ -39,7 +39,7 @@ let rec var_type (var:id3) (var_list: var_decl3 list): ir3_type =
 		then head_type
 		else var_type var tail
 	| _ -> 
-		failwith "#259 Unknown variable type"
+		failwith ("#259 Unknown variable " ^  var)
 
 (* returns the variables of a class given the class type *)
 let rec class_var_list (class_type:ir3_type) ((class_list,_,_):ir3_program):var_decl3 list =
@@ -68,23 +68,27 @@ let index_id3_in_var_decl3_list (var:id3) (var_list:var_decl3 list): int=
 			if (compare_id3 head_id3 var)
 			then i
 			else helper (i+1) var tail
-		| _ -> failwith "#47"
+		| _ -> failwith ("#47 var unknown: " ^ var)
 	in helper 0 var var_list
 
-(* Return the offset between fp and the local variables based on the variable declarations listz *)
+(* Return the offset between fp and the local variables based on the variable declarations list *)
 let get_offset (var:id3) (md:md_decl3): int =
-	let index_var = index_id3_in_var_decl3_list var md.localvars3
+	let index_var = index_id3_in_var_decl3_list var (md.localvars3 @ md.params3)
 	in 24 + 4 * index_var
 
 (* Returns offset of variable within a class structure *)
 let get_field_offset (class_id3:id3) (field_id3:id3) (md:md_decl3) (program_ir3:ir3_program):int=
-	let vtype = var_type class_id3 md.localvars3 in
+	(* Find the class name in the local variables or in the params *)
+	let vtype = var_type class_id3 (md.localvars3 @ md.params3) in
 		let var_list = class_var_list vtype program_ir3 in
 			4 * (index_id3_in_var_decl3_list field_id3 var_list)
 	
-
 (* Only works on simple types at the moment *)
 let get_stack_space (md:md_decl3): int =	
+	24 + 4 * List.length(md.localvars3 @ md.params3)
+
+(* Only works on simple types at the moment *)
+let get_stack_local_vars_space (md:md_decl3): int =	
 	24 + 4 * List.length(md.localvars3)
 
 (* Convert an integer i to #i *)
@@ -108,16 +112,50 @@ let convert_idc3 (var:idc3) (register:reg) (md:md_decl3): arm_program =
 		end
 	| _ -> failwith "#55"
 
-
-(* Push all idc3 variables on idc3_list in the stack in the registers a1, a2, a3, a4 *)
-let rec push_arguments_on_stack (idc3_list: idc3 list) (md:md_decl3) : arm_program=
-	(* 4 arguments only *)
-	let argcount = ref 0 in
-	let fresh_arg (): string = (argcount:=!argcount+1; "a" ^ (string_of_int !argcount))
-	in match idc3_list with 
-	| head :: tail -> 
-		convert_idc3 head (fresh_arg()) md @ push_arguments_on_stack tail md
+(* 
+(* Return the n first elements of l *)
+let rec filter_first_n (n:int) (l: idc3 list) : idc3 list=
+	match l with
+	| head::tail ->	
+		if n > 0
+		then head :: filter_first_n (n-1) tail
+		else []
 	| [] -> []
+
+Return all elements execpt the n first elements of l
+(* Return empty list if less than n *)
+let rec filter_last_n (n:int) (l: idc3 list) : idc3 list=
+	if n == 0
+	then l
+	else match l with
+		| head::tail ->	
+			filter_last_n (n-1) tail
+		| [] -> [] *)
+	
+(* Push all idc3 variables on idc3_list in the stack in the registers a1, a2, a3, a4 *)
+let rec push_arguments_on_stack (n:int) (idc3_list: idc3 list) (md:md_decl3) : arm_program=
+	
+	if n < 4
+	(* 4 arguments only *)
+	then match idc3_list with 
+		| head :: tail -> 
+			(convert_idc3 head ("a" ^ (string_of_int (n+1))) md) @ (push_arguments_on_stack (n+1) tail md)
+		| [] -> []
+	else 
+	let sub_sp_instr = 
+		if n == 4
+		then [SUB ("", false, "sp", "sp", (number_op ((List.length idc3_list) * 4)))]
+		else []
+	in
+	(* If there are more than 4 arguments *)
+	match idc3_list with 
+		| head :: tail -> 
+			sub_sp_instr @
+			convert_idc3 head "v1" md @
+			STR ("", "", "v1", (RegPreIndexed ("sp", (4 * (n-4)), false))) :: 
+			push_arguments_on_stack (n+1) tail md
+		| [] -> []
+	
 
 (* Convert an ir3 expr to arm instructions *)
 let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_program=
@@ -216,9 +254,12 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_
 		BL ("", "_Znwj(PLT)") ::
 		MOV ("", false, "v1", (RegOp "a1")) :: []	
 	| MdCall3 (id3_0, idc3_list) -> 
-		push_arguments_on_stack idc3_list md @ 
+		let idc3_list_length = (List.length idc3_list) in
+		push_arguments_on_stack 0 idc3_list md @ 
 		BL ("", id3_0 ^ "(PLT)") ::
-		[MOV ("", false, "v1", (RegOp "a1"))]
+		if idc3_list_length > 4
+		then [ADD ("", false, "sp", "sp", number_op ((idc3_list_length-4)*4))] @ [MOV ("", false, "v1", (RegOp "a1"))]
+		else [MOV ("", false, "v1", (RegOp "a1"))]
 	| _ ->
 		failwith "#50: Expression not yet implemented"
 
@@ -308,17 +349,39 @@ let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3) (program_ir3:
 			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
 		| [] -> [], []
 
+(* Store all parameters in the stack when a function is called *)
+let rec store_params_instr (n:int) (params_list: var_decl3 list) (md:md_decl3) : arm_program=
+	let stack_local_var_size = get_stack_local_vars_space md 
+	in if n < 4
+	(* 4 arguments only *)
+	then match params_list with 
+		| head :: tail -> 
+			STR ("", "", "a" ^ (string_of_int (n+1)), (RegPreIndexed ("fp", -(stack_local_var_size + 4 * n), false))) ::
+			store_params_instr (n+1) tail md
+		| [] -> []
+	else 
+	(* If there are more than 4 arguments *)
+	match params_list with 
+		| head :: tail -> 
+			LDR ("", "", "v1", (RegPreIndexed ("fp", (4 * (n-3)), false))) ::
+			STR ("", "", "v1", (RegPreIndexed ("fp", -(stack_local_var_size + 4 * n), false))) ::
+			store_params_instr (n+1) tail md
+		| [] -> []
+
+
 let convert_ir3_md_decl (md:md_decl3) (program_ir3:ir3_program): arm_program * arm_program=
 	let data_instr_list, text_instr_list = convert_ir3_stmt_list md.ir3stmts md program_ir3 in
+	let store_params = store_params_instr 0 md.params3 md in
 	data_instr_list,
 		(*Label with function name*)
 		PseudoInstr ("\n" ^ md.id3 ^ ":") ::
 		(*Store registers on the stack*)
 		STMFD ("fp" :: "lr" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
 		(* sp = fp - 24 *)
-		ADD ("", false, "fp", "sp", ImmedOp "#24") ::
+		ADD ("", false, "fp", "sp", number_op 24) ::
 		(* allocate local variables*)
-		SUB ("", false, "sp", "fp", ImmedOp ("#" ^ (string_of_int (get_stack_space md)))) ::
+		SUB ("", false, "sp", "fp", number_op (get_stack_space md)) ::
+		store_params @
 		text_instr_list @
 		(* Put a L#exit label here *)
 		PseudoInstr ("\n" ^ label_exit_methd md ^ ":") ::
