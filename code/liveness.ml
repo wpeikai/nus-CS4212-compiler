@@ -9,6 +9,31 @@ let stmtcount = ref 0
 let fresh_stmt () = 
 	(stmtcount := !stmtcount+1; !stmtcount)
 
+let compare_id3 (i1:id3) (i2:id3): bool =
+	((String.compare i1 i2) == 0)
+
+(* Is var in list? *)
+let rec is_var_in_id3_list (l:id3 list) (v:id3): bool =
+	match l with 
+	| head :: tail ->
+		if compare_id3 head v
+		then false
+		else is_var_in_id3_list tail v
+	| _ -> true
+
+(* Is var not in list? *)
+let is_var_not_in_id3_list l v =
+	not (is_var_in_id3_list l v)
+
+let rec is_l1_included_in_l2 l1 l2 :bool=
+	match l1 with
+	| head::tail -> if is_var_in_id3_list l2 head
+					then is_l1_included_in_l2 tail l2
+					else false
+	| [] -> true
+
+let rec compare_id3_list (l1:id3 list) (l2:id3 list): bool =
+	is_l1_included_in_l2 l1 l2 && is_l1_included_in_l2 l2 l1
 
 (* Key for a stmt in the stmt table *)
 type stmt_key = int
@@ -19,15 +44,16 @@ type var_key = string
 type stmt_node = 
 	{
 		id: stmt_key;
-		mark: bool;
+		mutable changed: bool;
+		mutable visited: bool;
 		stmt: ir3_stmt;
 		md: md_decl3;
 		mutable pred: (stmt_key list);
 		mutable succ: (stmt_key list);
-		def: (id3 list);
-		use: (id3 list);
-		live_in: (id3 list);
-		live_out: (id3 list);
+		mutable def: (id3 list);
+		mutable use: (id3 list);
+		mutable live_in: (id3 list);
+		mutable live_out: (id3 list);
 	}
 
 (* Hashtable of statements *)
@@ -143,13 +169,14 @@ let rec create_stmt_node_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_n
 	| head::tail ->
 		{
 			id = fresh_stmt(); 
-			mark = false;
+			changed = true;
+			visited = false;
 			stmt = head;
 			md = mthd; 
 			pred = [];
 			succ = [];
 			def = (def_vars head);
-			use = [];
+			use = (used_vars head);
 			live_in = []; 
 			live_out = [];
 		}::(create_stmt_node_list tail mthd)
@@ -208,5 +235,58 @@ let filter (k:stmt_key) (n:stmt_node) (init:stmt_key list): stmt_key list=
 let find_stmts_without_successors (table: stmt_table): stmt_key list =
 	Hashtbl.fold filter table []
 
-let liveness_analysis (table: stmt_table): (stmt_table) = 
-	table		
+let diff (l1: id3 list) (l2: id3 list): id3 list=
+	List.filter (is_var_not_in_id3_list l2) l1
+
+let union (l1: id3 list) (l2: id3 list): id3 list=
+	l1 @ (diff l2 l1)
+
+let compute_in_from_out (out: id3 list) (use: id3 list) (def: id3 list): id3 list=
+	union use (diff out def)
+
+let union_list (l: (id3 list) list) :id3 list=
+	List.fold_left union [] l
+
+(* Given a node of key k, we will extract all the ins of the predecessors to build the out *)
+let update_out (table: stmt_table) (k: stmt_key): id3 list=
+	let successors = (Hashtbl.find table k).succ in
+	let rec helper (succ: stmt_key list): (id3 list) list = 
+		match succ with
+		| head::tail ->
+			let n = (Hashtbl.find table head) in
+			n.live_in :: helper tail
+		| [] -> []
+	in let in_list = helper successors
+	in union_list in_list
+
+let rec visit_node (k: stmt_key) (table: stmt_table): bool=
+	let node = (Hashtbl.find table k) in
+	if node.visited
+	then node.changed
+	else
+		begin
+			(* Set node visited *)
+			node.visited <- true;
+			node.live_out <- update_out table k;
+			let former_in = node.live_in in
+			node.live_in <- compute_in_from_out node.live_out node.use node.def;
+			node.changed <- not (compare_id3_list former_in node.live_in);
+			let rec helper l =
+			match l with
+				| head::tail -> (visit_node head table) || (helper tail)
+				| [] -> false
+			in ((helper node.pred) || node.changed)
+		end
+
+let rec visit_terminals (stmt_list: stmt_key list) (table: stmt_table): bool=
+	match stmt_list with
+		| head::tail -> (visit_node head table) || (visit_terminals tail table)
+		| [] -> false
+
+let liveness_analysis (table: stmt_table): unit = 
+	let terminals = find_stmts_without_successors table in
+	let rec helper (stmt_list:stmt_key list): unit =
+		if visit_terminals stmt_list table
+		then helper stmt_list
+		else ()
+	in helper terminals

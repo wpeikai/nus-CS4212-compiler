@@ -25,9 +25,6 @@ let ifcount = ref 0
 let fresh_if () = 
 	(ifcount:=!ifcount+1; (string_of_int !ifcount))
 
-let compare_id3 (i1:id3) (i2:id3): bool =
-	((String.compare i1 i2) == 0)
-
 (* Label exist of a metthod *)
 let label_exit_methd (md:md_decl3): string=
 	"." ^ md.id3 ^ "Exit"
@@ -59,7 +56,6 @@ let rec class_var_list (class_type:ir3_type) ((class_list,_,_):ir3_program):var_
 		| _ ->
 			failwith "#261 Looks like it's trying to access the field of NOT a class"
 	in helper class_list class_type
-				
 	
 (* Find the index of the variable in a list of variable *)
 let index_id3_in_var_decl3_list (var:id3) (var_list:var_decl3 list): int=
@@ -391,3 +387,4 @@ let ir3_program_to_arm (program_ir3:ir3_program):arm_program =
 	PseudoInstr ("\n.global main") ::
    	text_instr_list @
 	[PseudoInstr ("\n")] (* Add a newline at the end *)
+
