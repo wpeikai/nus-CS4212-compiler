@@ -12,6 +12,9 @@ class Main {
 		res = f.fib(11);
 		println("Fibo 11 is");
 		println(res);
+		res = f.fib(32);
+		println("Fibo 32 is");
+		println(res);
 		return;
 	}
 }
