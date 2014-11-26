@@ -109,14 +109,14 @@ let find_succeId3Setors (node:stmt_node) (node_list: stmt_node list): stmt_node 
 		node.succ <- (find_label node_list label) :: node.succ;
 		node
 	| IfStmt3 (_,label) ->
-		node.succ <- (find_label node_list label) :: (node.id + 1) :: node.succ;
+		node.succ <- (find_label node_list label) :: (node.id - 1) :: node.succ;
 		node
 	| ReturnStmt3 _ -> (*No succeId3Setor *)
 		node
 	| ReturnVoidStmt3 -> (*No succeId3Setor *)
 		node
 	| _ -> (* Simple case*)
-		node.succ <- (node.id + 1) :: node.succ;
+		node.succ <- (node.id - 1) :: node.succ;
 		node
 
 (*find the succeId3Setors for every statement in a list of statement *)
@@ -310,6 +310,31 @@ let liveness_analysis (table: stmt_table): unit =
 		then helper stmt_list
 		else ()
 	in helper terminals
+
+let rec string_of_list_of_int (l: int list):string =
+	match l with
+	| head::tail ->
+		(string_of_int head) ^ " " ^ (string_of_list_of_int tail)
+	| [] ->
+		 ""
+let print_stmt_node (table: stmt_table) (i:int): bool =
+	match (Hashtbl.find_all table i) with
+	| n::tail ->
+		print_string ((string_of_int i) ^ ": " ^ (string_of_ir3_stmt n.stmt) ^ "\n");
+		print_string ("\tPredecessors: " ^ (string_of_list n.pred string_of_int " ") ^ "\n" );
+		print_string ("\tSuccessors: " ^ (string_of_list n.succ string_of_int " ") ^ "\n" );
+		print_string ("\tdef: " ^ (string_of_list (Id3Set.elements  n.def) (fun a -> a) " ") ^ "\n" );
+		print_string ("\tuse: " ^ (string_of_list (Id3Set.elements  n.use) (fun a -> a) " ") ^ "\n" );
+		true
+	| [] ->
+		false
+
+let print_all_stmt_node (table: stmt_table): unit =
+	let rec helper (table:stmt_table) (i:int): unit =
+		if (print_stmt_node table i)
+		then helper table (i-1)
+		else ()
+	in helper table (Hashtbl.length table)
 
 let f v1 v2 (e_set:edge_set) =
 	EdgeSet.add (v1, v2) e_set

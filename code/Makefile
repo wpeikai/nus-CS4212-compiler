@@ -8,7 +8,7 @@ GG = ./g++
 ZZ = ./z.exe
 ZZIR3 = ./zir3.exe
 
-OBJS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo jlite_toir3.cmo liveness.cmo ir3_to_arm.cmo arm_structs.cmo
+OBJS = arm_structs.cmo jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo jlite_toir3.cmo liveness.cmo ir3_to_arm.cmo 
 OCAML_OBJECTS = $(OBJS) jlite_main.cmo
 OCAML_OBJECTS_IR3 = $(OBJS) jlite_main_ir3.cmo
 TEST_DIR = test/

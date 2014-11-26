@@ -377,9 +377,10 @@ let rec convert_md_decl3_list (mds:md_decl3 list) (program_ir3:ir3_program):arm_
 
 (* Convert a ir3 program to arm program *)
 let ir3_program_to_arm (program_ir3:ir3_program):arm_program =
+	let stmt_table = create_stmt_node_table program_ir3 in	
 	let (cdata3_list, main_md_decl3, md_decl3_list) = program_ir3 in
 	let data_instr_list, text_instr_list = convert_md_decl3_list (main_md_decl3 :: md_decl3_list) program_ir3 in
-
+	print_all_stmt_node stmt_table;
 	PseudoInstr (".data") ::
 	PseudoInstr ("") ::
 	data_instr_list @
