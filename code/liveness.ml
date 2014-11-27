@@ -417,19 +417,21 @@ let is_linked (e1, e2:edge) (f:id3):bool=
 	(are_equal_id3 e1 f) || (are_equal_id3 e2 f)
 
 let find_all_linked_var e_set var =
-	let return_linked_var (e1, e2) v =
+	let return_linked_var (e1, e2) v init:id3_set=
 		if (are_equal_id3 e1 v)
-		then e2
-		else e1
-	in let f (e1, e2) init =
-		Id3Set.add (return_linked_var (e1, e2) var) init
+		then Id3Set.add e2 init
+		else
+			if (are_equal_id3 e2 v)
+			then Id3Set.add e1 init
+			else init
+	in let f (e1, e2) init = return_linked_var (e1, e2) var init
 	in EdgeSet.fold f e_set Id3Set.empty
 
 
 let find_all_colors id3_all_set table_color =
 	let f var init =
 		match Hashtbl.find_all table_color var with
-			| head::[] -> ColorSet.add head  init
+			| head::[] -> ColorSet.add head init
 			| [] -> init
 			| _ -> failwith "789"
 	in Id3Set.fold f id3_all_set ColorSet.empty
@@ -606,7 +608,7 @@ let rec perfect_elimination_ordering_4 (set:edge_set): id3 list =
 		let new_set = remove_edges_containing v set in
 		print_string ("New Graph: " ^ (string_of_list (EdgeSet.elements new_set) (string_of_edge) " ") ^ "\n");
 		print_string ("Cardinal: " ^ (string_of_int (EdgeSet.cardinal new_set)) ^ "\n");
-		v::(perfect_elimination_ordering new_set)
+		v::(perfect_elimination_ordering_4 new_set)
 		end
 		
 let rec perfect_elimination_ordering_2 (set:edge_set): id3 list = 
@@ -747,7 +749,7 @@ then recolor the graph,
 and store the hash table of the colored/registers  *)
 let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_node list) =
 	(* print_string (md.id3 ^ "\n"); *)
-	let nb_registers_available = 7 in
+	let nb_registers_available = 4 in
 	(* Get the stmt table from md *)
 	let stmt_tab, stmt_list = stmt_table_and_stmt_list_from_md md in
 	(* Analyze the stmt table such as initiaze changed, add predecessors, successors,
@@ -759,9 +761,9 @@ let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_no
 	let color_graph = create_graph_color_from_stmt_table stmt_tab variables in
 	(* Then color a new table depending of the numbers of registers available *)
 	(* Let s start with 5 *)
-	let new_color_table = choose_spilled_vars color_graph nb_registers_available in
+	let var_spilled = choose_spilled_vars color_graph nb_registers_available in
 	(* Add the load and str statements to the ir3 program *)
-	let new_ir3_stmt_list = add_str_load_stmt_in_ir3_program stmt_list new_color_table in
+	let new_ir3_stmt_list = add_str_load_stmt_in_ir3_program stmt_list var_spilled in
 	(* Recreate a md object *)
 	let new_md = 
 		{ 
