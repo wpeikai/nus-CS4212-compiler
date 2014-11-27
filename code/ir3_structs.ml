@@ -47,6 +47,8 @@ type ir3_stmt =
 	| MdCallStmt3 of ir3_exp
 	| ReturnStmt3 of id3
 	| ReturnVoidStmt3
+	| LoadStmt3 of id3
+	| StrStmt3 of id3
 
 (* Ocaml Tuple Type representing an IR3 variable declaration *)
 type var_decl3 = ir3_type * id3

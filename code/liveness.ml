@@ -1,7 +1,7 @@
 
 open Arm_structs
-open Ir3_structs
 open Jlite_structs
+open Ir3_structs
 
 module Id3Set = Set.Make(
 	struct
@@ -231,36 +231,6 @@ let find_predecessors (table: stmt_table): unit =
 		add_predecessor k node table
 	in (Hashtbl.iter map_add table)
 
-(*creates a list of statement nodes, with correct successors given the program *)
-let rec create_updated_stmt_node_list ((_,main,mds):ir3_program): stmt_node list =
-	let rec helper (mds:md_decl3 list): stmt_node list =
-		match mds with
-		| head::tail ->
-			(find_all_successors (create_stmt_node_list head.ir3stmts head))@(helper tail)
-		| [] ->
-			[]
-	in (helper (main::mds)) 
-
-(* create a hash table of statement where the unique id of a statement is the key *)
-let create_stmt_node_table (p:ir3_program): stmt_table = 
-	let rec helper (table:stmt_table) 
-                   (nodes: stmt_node list)
-                   :stmt_table =
-		match nodes with
-		| head::tail -> 
-			(Hashtbl.add table head.id head);
-			(helper table tail)
-		| [] ->
-			table
-	in let nodes = (create_updated_stmt_node_list p) 
-	(* Initial table size so that Ocaml do not increase size too often *)
-	in let table = Hashtbl.create table_size_init
-	in let filled_table = (helper table nodes)
-	in begin
-		find_predecessors filled_table;
-		filled_table
-	end
-
 let filter (k:stmt_key) (n:stmt_node) (init:stmt_key list): stmt_key list=
 	match n.succ with 
 	| [] -> k :: init 
@@ -328,6 +298,7 @@ let reset_bools (table:stmt_table): unit =
 		end
 	in Hashtbl.iter f table
 
+(* Analyze the stmt table and modify the stmt node *)
 let liveness_analysis (table: stmt_table): unit = 
 	let terminals = find_stmts_without_successors table in
 	let rec helper (stmt_list:stmt_key list): unit =
@@ -387,19 +358,21 @@ let f k v init = v :: init
 
 let stmt_list_from_hashtable (hashtable:stmt_table):stmt_node list =
 	Hashtbl.fold f hashtable []
-
+(* 
+(* Retrieve the edge set from the graph table *)
 let find_graph (mthd:id3) (table:graph_table) :edge_set =
 	let all_graphs_found = Hashtbl.find_all table mthd in
 	match all_graphs_found with 
 	| head:: [] ->
 		head
 	| [] ->
-		let new_edge_set = EdgeSet.empty in
+		let new_edge_set =  in
 		begin
 			Hashtbl.add table mthd new_edge_set;
 			new_edge_set
 		end
 	| _ -> failwith "99"
+
 
 let update_graph graph_key new_edge_set1 new_edge_set2 all_graphs:unit =
 	let graph = find_graph graph_key all_graphs in
@@ -408,27 +381,139 @@ let update_graph graph_key new_edge_set1 new_edge_set2 all_graphs:unit =
 	begin
 		Hashtbl.remove all_graphs graph_key;
 		Hashtbl.add all_graphs graph_key new_new_graph;
-	end
+	end *)
 
-
-let create_all_graphs (table:stmt_table):graph_table =
+(* Create the edge set for one method *)
+let create_graph_from_stmt_table (table:stmt_table):edge_set =
 	let stmt_list = stmt_list_from_hashtable table in
-	let rec helper (table:graph_table) 
-                   (stmt_list: stmt_node list)
-                   :graph_table =
+	let rec helper (graph:edge_set) 
+                   (stmt_list: stmt_node list) :edge_set =
 		match stmt_list with
 		| head::tail -> 
 			let live_in_edges = cartesian_square head.live_in in
 			let live_out_edges = cartesian_square head.live_out in
-			begin
-			update_graph head.md.id3  live_in_edges live_out_edges table;
-			(helper table tail)
-			end
+			let new_graph = EdgeSet.union graph live_in_edges in
+			let new_new_graph = EdgeSet.union new_graph live_out_edges in
+			(helper graph tail)
 		| [] ->
-			table
+			graph
 	(* Initial table size so that Ocaml do not increase size too often *)
-	in let table = (Hashtbl.create 1000)
-	in (helper table stmt_list)
+	in (helper (EdgeSet.empty) stmt_list)
+
+
+(* Hashtable of the color of the variables *)
+type colored_table = 
+	(id3, int) Hashtbl.t
+
+module ColorSet = Set.Make(
+	struct
+	    let compare :int -> int -> int = compare 
+	    type t = int
+	  end
+	);;
+
+type color_set = ColorSet.t
+
+let is_linked (e1, e2:edge) (f:id3):bool=
+	(are_equal_id3 e1 f) || (are_equal_id3 e2 f)
+
+let find_all_linked_var e_set var =
+	let return_linked_var (e1, e2) v =
+		if (are_equal_id3 e1 v)
+		then e2
+		else e1
+	in let f (e1, e2) init =
+		Id3Set.add (return_linked_var (e1, e2) var) init
+	in EdgeSet.fold f e_set Id3Set.empty
+
+
+let find_all_colors id3_all_set table_color =
+	let f var init =
+		match Hashtbl.find_all table_color var with
+			| head::[] -> ColorSet.add head  init
+			| [] -> init
+			| _ -> failwith "789"
+	in Id3Set.fold f id3_all_set ColorSet.empty
+
+let color_variables_stack (e_set: edge_set) (stack_variables: id3 list) : colored_table =
+	let rec helper e_set stack_var max_color color_table:colored_table =
+		match stack_var with
+		| head::tail ->	
+			let id3set_linked = find_all_linked_var e_set head in
+			let all_colors_linked_set = find_all_colors id3set_linked color_table in
+			let max_color_found =
+				try ColorSet.max_elt all_colors_linked_set
+					with Not_found -> 1
+			in let rec helper_2 color_set current_color max_color =
+				if current_color == max_color +1
+				then max_color +1, max_color +1
+				else 
+					let is_same_color (c:int):bool = (c == current_color) in
+					if ColorSet.exists is_same_color color_set
+					then helper_2 color_set (current_color+1) max_color
+					else current_color, max_color
+			in let color_found, new_max_color = helper_2 all_colors_linked_set 1 max_color_found in
+			begin
+				Hashtbl.add color_table head color_found;
+				helper e_set tail new_max_color color_table
+			end
+		| [] -> color_table
+	in (helper e_set stack_variables 0 (Hashtbl.create 1000))
+
+let max_color_in_colored_table colored_table =
+	let f var elt init =
+		if elt > init
+		then elt
+		else init in
+	Hashtbl.fold f colored_table 0
+
+(* Choose max_color - max_register variables *)
+(* TODO: To optimize. choose the less busy color *)
+(* Return a new color table *)
+let choose_spilled_vars color_table (max_registers:int): id3_set =
+	(* No need to find the max color here, maybe later *)
+	(* let max_color = max_color_in_colored_table colored_table in *)
+	let f k v init = 
+		if v > max_registers
+		then Id3Set.add k init
+		else init in
+	Hashtbl.fold f color_table Id3Set.empty
+
+let convert_stmt_node_load_str stmt_node variables_spilled_set :ir3_stmt list =
+	let f elt init = 
+		let equal_elt v = are_equal_id3 elt v in
+		if Id3Set.exists equal_elt stmt_node.live_in 
+		then (LoadStmt3 elt) :: init
+		else [stmt_node.stmt]
+	in 
+	let g elt init = 
+		let equal_elt v = are_equal_id3 elt v in
+		if Id3Set.exists equal_elt stmt_node.live_out
+		then init @ [StrStmt3 elt]
+		else [stmt_node.stmt]
+	in let load_stmt = Id3Set.fold f variables_spilled_set [stmt_node.stmt]
+	in Id3Set.fold g variables_spilled_set load_stmt
+	
+
+let add_str_load_stmt_in_ir3_program (stmt_node_list: stmt_node list) variables_spilled_set: ir3_stmt list =
+	let rec helper ir3_stmt_list: ir3_stmt list=
+		match ir3_stmt_list with
+		| head::tail ->
+			(convert_stmt_node_load_str head variables_spilled_set) @
+				(helper tail)
+		| [] -> []
+	in (helper stmt_node_list)
+
+
+(*creates a list of statement nodes, with correct successors given the program *)
+let rec create_updated_stmt_node_list ((class_decl,main,mds):ir3_program): stmt_node list =
+	let rec helper (mds:md_decl3 list): stmt_node list =
+		match mds with
+		| head::tail ->
+			(find_all_successors (create_stmt_node_list head.ir3stmts head))@(helper tail)
+		| [] ->
+			[]
+	in (helper (main::mds)) 
 
 type bool_set = edge_set * bool
 
@@ -619,10 +704,103 @@ let rec perfect_elimination_ordering_2 (set:edge_set): id3 list =
 	if (EdgeSet.is_empty new_set)
 	then [v]
 	else v::(perfect_elimination_ordering_2 new_set)
-(* 
-let create_register_table graph_table md =
 
+type md_key = id3
+type md_struct =
+	{
+		id: md_key;
+		stmts_t: stmt_table;
+		colored_t: colored_table;
+		all_var: id3_set;
+	}
 
+(* Hashtable of methods *)
+type md_table = 
+	(md_key, stmt_table) Hashtbl.t
 
-let create_all_registers_table (all_graphs) =
- *)
+(*creates a list of statement nodes, with correct successors given the program *)
+let rec create_updated_stmt_node_list_from_mthd md: stmt_node list =
+	find_all_successors (create_stmt_node_list md.ir3stmts md)
+
+let create_hash_table_from_node_list (stmt_node_list:stmt_node list):stmt_table  =
+	let rec helper (stmt_node_list: stmt_node list) table:stmt_table =
+		match stmt_node_list with
+		| head:: tail ->
+			begin
+			Hashtbl.add table head.id head;
+			helper tail table
+			end
+		| [] -> table
+	in (helper stmt_node_list (Hashtbl.create 100))
+
+(* Create stmt table from a method decl *)
+let stmt_table_and_stmt_list_from_md md : stmt_table * stmt_node list=
+	let nodes_list = (create_updated_stmt_node_list_from_mthd md) in
+	let filled_table = create_hash_table_from_node_list nodes_list in
+	begin 
+		find_predecessors filled_table;
+		filled_table, nodes_list
+	end
+
+(* create a hash table of statement where the unique id of a statement is the key *)
+let create_md_table (p:ir3_program): md_table= 
+	let rec helper (table:md_table) 
+                   (md_list: md_decl3 list)
+                   :md_table =
+		match md_list with
+		| head::tail -> 
+			let stmt_t, _ = stmt_table_and_stmt_list_from_md head in
+			begin
+				Hashtbl.add table head.id3 stmt_t;
+				helper table tail
+			end
+		| [] -> table
+	(* Initial table size so that Ocaml do not increase size too often *)
+	in let cdata3_list, main_md, methd_list = p
+	in (helper (Hashtbl.create 100) (main_md::methd_list))
+
+let create_graph_color_from_stmt_table stmt_table: colored_table =
+	(* Create the edge set *)
+	let md_edge_set = create_graph_from_stmt_table stmt_table in
+	(* Create the stack variables correctly ordered*)
+	let stack_var_list = perfect_elimination_ordering md_edge_set in
+	(* Color = int *)
+	(* Color the stack_var_list *)
+	(* Return a hash table : variable -> color *)
+	color_variables_stack md_edge_set stack_var_list
+
+(* First create the normal node statements table,
+then analyze the liveness,
+then color the graphs,
+then choose the spilled vars depending of the number of registers available,
+then add the load and store statements,
+then reanalyze the liveness,
+then recolor the graph, 
+and store the hash table of the colored/registers  *)
+let new_stmt_table_from_md md (nb_registers_available:int): md_decl3 * colored_table =
+	(* Get the stmt table from md *)
+	let stmt_tab, stmt_list = stmt_table_and_stmt_list_from_md md in
+	(* Analyze the stmt table such as initiaze changed, add predecessors, successors,
+	and define the live_in and live_out *)
+	liveness_analysis stmt_tab;
+	let color_graph = create_graph_color_from_stmt_table stmt_tab in
+	(* Then color a new table depending of the numbers of registers available *)
+	(* Let s start with 5 *)
+	let new_color_table = choose_spilled_vars color_graph nb_registers_available in
+	(* Add the load and str statements to the ir3 program *)
+	let new_ir3_stmt_list = add_str_load_stmt_in_ir3_program stmt_list new_color_table in
+	(* Recreate a md object *)
+	let new_md = 
+		{ 
+		  id3= md.id3;	
+		  rettype3= md.rettype3;
+		  params3= md.params3;
+		  localvars3= md.localvars3;
+		  ir3stmts= new_ir3_stmt_list; 
+ 		} in
+	(* Recreate a new stmt table from md *)
+	let new_stmt_tab, _ = stmt_table_and_stmt_list_from_md md in
+	(* Redo the analysis taking account the new load and str statements *)
+	liveness_analysis new_stmt_tab;
+	(* Get the final color table which size should be less than the nb of registers *)
+	new_md, (create_graph_color_from_stmt_table new_stmt_tab)
