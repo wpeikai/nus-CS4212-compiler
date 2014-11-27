@@ -105,7 +105,7 @@ let rec convert_jlite_expr (exp_jlite: jlite_exp) (counter_var:int ref) (counter
 
 					let if_else_stmt = ifstmt :: stmt_list_create_temp_false @ (GoTo3 label_int_next) :: label_if :: stmt_list_create_temp_true :: [label_next] in
 
-					type_ir3, Idc3Expr (Var3 id3_expr), stmt_list_1 @ stmt_list_2 @ if_else_stmt, localvars_0 @ localvars_1 @ localvars_2 @ localvars_7 @ localvars_8
+					type_ir3, Idc3Expr (Var3 id3_expr), stmt_list_1 @ stmt_list_2 @ idc3_create_temp_list1 @ idc3_create_temp_list2 @ if_else_stmt, localvars_0 @ localvars_1 @ localvars_2 @ localvars_7 @ localvars_8
 				| BooleanOp "||" -> 
 					(* Create the labels *)
 					let label_int_if = create_label counter_label in

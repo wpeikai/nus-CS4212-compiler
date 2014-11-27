@@ -311,9 +311,8 @@ let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (progr
 								| "-" -> 
 									MOV ("", false, "a3", (number_op 0)) ::
 									SUB ("", false, var_used0, "a3", var_used2reg) :: []
-								| "!" -> 
-									MOV ("eq", false, var_used0, var_used2reg) :: 
-									MOV ("ne", false, var_used0, var_used2reg) :: []
+								| "!" ->
+									MVN ("", false, var_used0, var_used2reg) :: []
 								| _ -> failwith "#67"
 							end in
 						[],
@@ -322,7 +321,6 @@ let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (progr
 							arm_op_instructions 	@
 							aft0 @
 							aft2
-
 					| _ -> failwith "#544: Unknown unary operator"
 				end
 			| Idc3Expr idc3_0 ->
@@ -539,22 +537,42 @@ let rec store_params_instr (n:int) (params_list: var_decl3 list) (md:md_decl3) :
 		| [] -> []
 
 
-let convert_ir3_md_decl color_table (md:md_struct) (program_ir3:ir3_program): arm_program * arm_program=
-	let data_instr_list, text_instr_list = convert_ir3_stmt_node_list md.stmt_node_list color_table md.md program_ir3 in
-	let store_params = store_params_instr 0 md.md.params3 md.md in
+(* Alive params should be loaded at the beginnning of the function *)
+let load_alive_params md_struct :arm_program =
+	let color_table = md_struct.colored_tab in
+	let first_stmt_node = List.hd md_struct.stmt_node_list in
+	let all_var_alive = first_stmt_node.live_in in
+	let all_params = md_struct.md.params3 in
+	let f (init:id3 list) (elt:var_decl3)  : (id3 list)  =
+					let _, res = elt in
+					 if (Id3Set.exists (are_equal_id3 res) all_var_alive)
+					 then res :: init
+					 else init in
+	let all_params_to_load =
+		List.fold_left f [] all_params
+	in let g  (init:arm_program) (elt:id3) : arm_program= 
+		let color = Hashtbl.find color_table elt in
+		(LDR ("", "", (color_to_register color), (RegPreIndexed ("fp", -(get_offset elt md_struct.md), false)))) :: init
+	in List.fold_left g [] all_params_to_load
+
+
+let convert_ir3_md_decl color_table (md_struct:md_struct) (program_ir3:ir3_program): arm_program * arm_program=
+	let data_instr_list, text_instr_list = convert_ir3_stmt_node_list md_struct.stmt_node_list color_table md_struct.md program_ir3 in
+	let store_params = store_params_instr 0 md_struct.md.params3 md_struct.md in
+	let load_params = load_alive_params md_struct in
 	data_instr_list,
 		(*Label with function name*)
-		PseudoInstr ("\n" ^ md.md.id3 ^ ":") ::
+		PseudoInstr ("\n" ^ md_struct.md.id3 ^ ":") ::
 		(*Store registers on the stack*)
 		STMFD ("fp" :: "lr" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
 		(* sp = fp - 24 *)
 		ADD ("", false, "fp", "sp", number_op 24) ::
 		(* allocate local variables*)
-		SUB ("", false, "sp", "fp", number_op (get_stack_space md.md)) ::
+		SUB ("", false, "sp", "fp", number_op (get_stack_space md_struct.md)) ::
 		store_params @
 		text_instr_list @
 		(* Put a L#exit label here *)
-		PseudoInstr ("\n" ^ label_exit_methd md.md ^ ":") ::
+		PseudoInstr ("\n" ^ label_exit_methd md_struct.md ^ ":") ::
 		SUB ("", false, "sp", "fp", ImmedOp "#24") ::
 		[LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: [])]
 
