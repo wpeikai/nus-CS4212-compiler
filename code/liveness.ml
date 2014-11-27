@@ -430,6 +430,128 @@ let create_all_graphs (table:stmt_table):graph_table =
 	in let table = (Hashtbl.create 1000)
 	in (helper table stmt_list)
 
+type bool_set = edge_set * bool
+
+(* this partition returns true if none of the ends of the edge contains var *)
+let partition_function (var: id3) (n1,n2:id3 * id3): bool =
+	(not (are_equal_id3 var n1)) && (not (are_equal_id3 var n2))
+
+let has_been_replaced ((_,b): bool_set): bool = b
+
+let find_and_remove_var ((set,b):bool_set): id3 * bool_set * bool_set = 
+	let set_elt = EdgeSet.elements set in
+	match set_elt with
+	| (n,_)::tail ->
+		let s1, s2 = (EdgeSet.partition (partition_function n) set)
+		in n, (s1,b), (s2,false)
+	| _ ->
+		failwith "#678 maybe the set should not be empty"
+
+let other_end_of_edge ((e1,e2): id3*id3) (v: id3): id3 =
+	if (are_equal_id3 e1 v) then e2 else e2
+
+let extract_adjacent_nodes_to (var:id3) (edges:edge_set): id3_set =
+	let rec helper (edge_list: (id3 * id3) list) (result_set: id3_set) (var:id3): id3_set = 
+		match edge_list with
+		| head::tail ->
+			let n = other_end_of_edge head var in
+			let new_set = Id3Set.add n result_set in
+			helper tail new_set var
+		| [] ->
+			result_set
+	in helper (EdgeSet.elements edges) Id3Set.empty var
+
+let set_replace ((e,_): bool_set) :bool_set = e,true
+
+let edge_set_contains (var:id3) ((set,_): bool_set): bool =
+	let rec helper (var:id3) (edges: (id3 * id3) list): bool = 
+	match edges with
+	| head::tail ->
+		if partition_function var head
+		then helper var tail
+		else true
+	| [] ->
+		false
+	in helper var (EdgeSet.elements set)
+		
+
+let find_set_containing (var:id3) (set_seq: bool_set list): (bool_set list) * bool_set * (bool_set list) =
+	let rec helper (var:id3) (left_part: bool_set list) (right_part: bool_set list) =
+	match right_part with
+	| head::tail ->
+		if edge_set_contains var head
+		then left_part, head, tail
+		else helper var (List.append left_part [head]) tail
+	| [] ->
+		failwith "#736 This should not happen"
+	in helper var [] set_seq
+
+let rec bool_set_list_from_edge_set_list (set_seq: edge_set list): bool_set list =
+	match set_seq with
+	| head::tail ->
+		(head,false)::bool_set_list_from_edge_set_list tail
+	| [] ->
+		[]
+	
+
+let create_new_set_seq (bool_set_seq: bool_set list) (removed_edges: edge_set) (var:id3): (bool_set list) = 
+	let edge_sequence = EdgeSet.elements removed_edges in
+	let rec helper (node_seq: id3 list) (bool_set_seq: bool_set list)=
+	match node_seq with
+	| head::tail ->
+		let left_part,s,right_part = find_set_containing head bool_set_seq in
+		if has_been_replaced s 
+		then 
+			(* Put head in the set before s *)
+			begin
+				let rev_left_part = List.rev left_part in
+				let t,to_rev_seq = match rev_left_part with
+				| head::tail ->
+					head,tail
+				| [] ->
+					failwith "#873 This should not happen"
+				in
+				let s_set, _ = s in
+				let new_s_set,to_add_to_t = EdgeSet.partition (partition_function head) s_set in
+				let new_s = new_s_set,true in
+				let t_set, _ = t in
+				let new_t_set = EdgeSet.union t_set to_add_to_t in
+				let new_t = new_t_set, (has_been_replaced t) in
+				helper tail ((List.rev to_rev_seq) @ [new_t] @ [new_s] @ right_part)
+			end
+		else
+			(* Create an empty t and put it before s *)
+			begin
+				let t = (EdgeSet.empty,false) in
+				let left_part,s,right_part = find_set_containing head bool_set_seq in
+				helper tail (left_part @ [t] @ [(set_replace s)] @ right_part)
+			end
+	| [] ->
+		bool_set_seq
+	in let adjacent_nodes_set = extract_adjacent_nodes_to var removed_edges
+	in let adjacent_nodes_list = Id3Set.elements adjacent_nodes_set
+	in helper adjacent_nodes_list bool_set_seq
+
+let perfect_elimination_ordering (set:edge_set): id3 list =
+	let set_sequence = [set] in
+	let var_sequence = [] in
+	let rec helper (bool_set_seq:bool_set list) (var_seq: id3 list): id3 list =
+		match bool_set_seq with
+		| head::tail ->
+			begin
+			let var,new_bool_set,(removed_edges,_) = (find_and_remove_var head) in
+			let (new_set,_) = new_bool_set in
+			let new_set_seq = if (EdgeSet.is_empty new_set) then tail else new_bool_set::tail in
+			let new_var_seq = List.append var_seq [var] in
+			let new_new_set_seq = create_new_set_seq new_set_seq removed_edges var in
+			helper new_new_set_seq new_var_seq
+			end
+		| [] ->
+			var_seq
+	in let initial_bool_set = bool_set_list_from_edge_set_list [set] 
+	in helper initial_bool_set []
+
+
 (* 
 let create_register_table graph_table md =
 
