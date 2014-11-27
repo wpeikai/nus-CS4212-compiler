@@ -501,9 +501,9 @@ let convert_stmt_node_load_str stmt_node variables_spilled_set :ir3_stmt list =
 	
 
 let add_str_load_stmt_in_ir3_program (stmt_node_list: stmt_node list) variables_spilled_set: ir3_stmt list =
-	let p f = print_string (f ^ "\n") in
+(* 	let p f = print_string (f ^ "\n") in
 	Id3Set.iter p variables_spilled_set;
-	print_string "\n";
+	print_string "\n"; *)
 	let rec helper ir3_stmt_list: ir3_stmt list=
 		match ir3_stmt_list with
 		| head::tail ->

@@ -95,11 +95,13 @@ let number_op (i:int): operand2_type=
 let color_to_register (color:int): string =
 	let letter = if color >= 0 then "v" else "a" in (letter ^ (string_of_int color))	
 let convert_id3_var id3_0 color_table md  preferred_reg: arm_program * arm_program * reg =
-	let reg1 = try [], [], color_to_register (Hashtbl.find color_table id3_0) with Not_found ->
+	let reg1 = Hashtbl.find color_table id3_0 in
+	if reg1 > 0 
+	then [], [], color_to_register reg1
+	else
 		[LDR ("", "", preferred_reg, (RegPreIndexed ("fp", - get_offset id3_0 md , false)))],
 		[STR ("", "", preferred_reg, (RegPreIndexed ("fp", - get_offset id3_0 md , false)))],
 		preferred_reg
-	in reg1
 
 (* From a idc3 and the register, it gives all the instructions *)
 let convert_operand (var:idc3) color_table (md:md_decl3) preferred_reg : arm_program * arm_program * operand2_type =
