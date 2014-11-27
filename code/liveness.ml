@@ -662,7 +662,7 @@ let process_s (v:id3)(e_set:edge_set)  (i_set:id3_set): id3_set list =
 
 let perfect_elimination_ordering (e_set:edge_set) (variables: id3 list) : id3 list =
 	(* let all_nodes = get_all_nodes e_set in *)
-	let all_nodes = Id3Set.of_list variables in
+	let all_nodes = add_list_to_set variables Id3Set.empty in
 
 	let sigma_list = ref [all_nodes] in
 	let is_sigma_list_empty = ref ((List.length !sigma_list) == 0) in

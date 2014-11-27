@@ -134,14 +134,17 @@ let rec push_arguments_on_stack (n:int) (idc3_list: idc3 list) (md:md_decl3) : a
 			push_arguments_on_stack (n+1) tail md
 		| [] -> []
 	
+let color_to_register (color:int): string =
+	let letter = if color >= 0 then "v" else "a" in (letter ^ (string_of_int color))	
 
 (* Convert an ir3 expr to arm instructions *)
-let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_program=
+let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program) (color_table:colored_table) (dest_reg:string): arm_program=
 	match exp with
 	| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
-		let instructions1 = convert_idc3 idc3_1 "a1" md
-		in let instructions2 = convert_idc3 idc3_2 "a2" md
-		in 
+		let instructions1 = convert_idc3 idc3_1 "a1" mld in
+		let instructions2 = convert_idc3 idc3_2 "a2" md in 
+		let reg1 = color_to_register (Hashtbl.find color_table id3_0) in
+		let reg2 = color_to_register (Hashtbl.find color_table id3_0) in
 		begin
 			match ir3_op_1 with 
 			| AritmeticOp op ->
@@ -244,8 +247,9 @@ let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program): arm_
 (* Convert an ir3 statement to arm instructions *)
 let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm_program * arm_program = 
 	match stmt with
-	| AssignStmt3 (id3_0, ir3_exp_0) ->
-		[], (convert_ir3_expr ir3_exp_0 md program_ir3) @ [STR ("", "", "v1", (RegPreIndexed ("fp", - get_offset id3_0 md, false)))]
+	| AssignStmt3 (id3_0, ir3_exp_0) -> (*TODO *)
+		let dest_reg = color_to_register (Hashtbl.find color_table id3_0) in
+		[], (convert_ir3_expr ir3_exp_0 md program_ir3 dest_reg)
 	| PrintStmt3 idc3_0 ->
 		begin
 			(* Label fresh gives a new label *)
@@ -260,16 +264,16 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 			| IntLiteral3 i -> 
 				(* Add a newline at the end of the string *)
 				Label label_string :: 
-				[PseudoInstr (".asciz \"%i\\n\"")],
+				[PseudoInstr (".asciz \"" ^ i ^"\\n\"")],
 				LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) :: 
-				MOV ("", false, "a2", (number_op i)) :: 
 				[BL ("", "printf(PLT)")]
 			| Var3 var_id3 -> 
 				(* Add a newline at the end of the string *)
+				let reg = color_to_register (Hashtbl.find color_table var_id3) in
 				Label label_string :: 
 				[PseudoInstr (".asciz \"%i\\n\"")],
-				LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) ::
-				LDR ("", "", "a2", (RegPreIndexed ("fp", - get_offset var_id3 md , false))) ::
+				LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) ::	
+				MOV ("", "", "a2", (RegOp reg)) ::
 				[BL ("", "printf(PLT)")]
 			| _ -> failwith "#69"
 		end
@@ -295,11 +299,11 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 		in let var_offset_r = (get_offset idc3_1 md)
 		in let var_offset_l = (get_offset id3_1 md)
 		in let field_offset = (get_field_offset id3_1 id3_2 md program_ir3)
+		in let reg_l = color_to_register (Hashtbl.find color_table id3_1)
+		in let reg_r = color_to_register (Hashtbl.find color_table idc3_1)
 		in [],
-		LDR ("", "", "v1", (RegPreIndexed ("fp", -var_offset_r , false))) ::
-		LDR ("", "", "v2", (RegPreIndexed ("fp", -var_offset_l , false))) ::
-		STR ("", "", "v1", (RegPreIndexed ("v2", field_offset, false))) :: []	
-	| IfStmt3 (ir3_expr_0, label_0) -> 
+		STR ("", "", reg_r, (RegPreIndexed (reg_l, field_offset, false))) :: []	
+	| IfStmt3 (ir3_expr_0, label_0) -> (*TODO*)
 		[],
 		convert_ir3_expr ir3_expr_0 md program_ir3 @
 		CMP ("", "v1", (number_op 1)) ::
@@ -309,9 +313,11 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 	| GoTo3 label_0 -> 
 		[], [B ("", "." ^ (string_of_int label_0))]
 	| ReturnStmt3 id3_1 ->
-		let var_offset = (get_offset id3_1 md)
+		let var_offset = (get_offset id3_1 md) in
+		let color = Hashtbl.find id3_1 in
+		let reg = color_to_register color
 		in [],
-		LDR ("", "", "a1", (RegPreIndexed ("fp", -var_offset , false))) :: 
+		MOV ("", "", "a1", (RegOp reg)) :: 
 		[B ("", label_exit_methd md)]
 	| ReturnVoidStmt3 ->
 		[], MOV ("", false, "a1", number_op 0) :: 
