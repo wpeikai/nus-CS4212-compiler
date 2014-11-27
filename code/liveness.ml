@@ -139,6 +139,8 @@ let find_all_successors (node_list: stmt_node list): stmt_node list =
 	match stmt with
 	| AssignStmt3 (var, _)->
 		Id3Set.singleton var
+	| LoadStmt3 var ->
+		Id3Set.singleton var
 	| _ ->
 		Id3Set.empty
 
@@ -188,6 +190,8 @@ let used_vars (stmt:ir3_stmt): id3_set =
 	| MdCallStmt3 expr ->
 		used_vars_in_expr expr
 	| ReturnStmt3 var ->
+		Id3Set.singleton var
+	| StrStmt3 var ->
 		Id3Set.singleton var
 	| _ ->
 		Id3Set.empty
@@ -483,23 +487,27 @@ let choose_spilled_vars color_table (max_registers:int): id3_set =
 let convert_stmt_node_load_str stmt_node variables_spilled_set :ir3_stmt list =
 	let f elt init = 
 		let equal_elt v = are_equal_id3 elt v in
-		if Id3Set.exists equal_elt stmt_node.live_in 
+		if Id3Set.exists equal_elt stmt_node.use 
 		then (LoadStmt3 elt) :: init
-		else [stmt_node.stmt]
+		else init
 	in 
 	let g elt init = 
 		let equal_elt v = are_equal_id3 elt v in
-		if Id3Set.exists equal_elt stmt_node.live_out
+		if Id3Set.exists equal_elt stmt_node.def
 		then init @ [StrStmt3 elt]
-		else [stmt_node.stmt]
-	in let load_stmt = Id3Set.fold f variables_spilled_set [stmt_node.stmt]
-	in Id3Set.fold g variables_spilled_set load_stmt
+		else init
+	in let load_stmt_added = Id3Set.fold f variables_spilled_set [stmt_node.stmt]
+	in Id3Set.fold g variables_spilled_set load_stmt_added
 	
 
 let add_str_load_stmt_in_ir3_program (stmt_node_list: stmt_node list) variables_spilled_set: ir3_stmt list =
+	let p f = print_string (f ^ "\n") in
+	Id3Set.iter p variables_spilled_set;
+	print_string "\n";
 	let rec helper ir3_stmt_list: ir3_stmt list=
 		match ir3_stmt_list with
 		| head::tail ->
+			(* print_node ((convert_stmt_node_load_str head variables_spilled_set)); *)
 			(convert_stmt_node_load_str head variables_spilled_set) @
 				(helper tail)
 		| [] -> []
@@ -759,6 +767,13 @@ let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_no
 	let f init (_, v) = v :: init in
 	let variables = List.fold_left f [] decl_variables in 
 	let color_graph = create_graph_color_from_stmt_table stmt_tab variables in
+	
+
+	print_stmt_list stmt_list color_graph;
+
+	print_string "\n\n\n*****2nd* version*************\n\n\n\n\n";
+
+
 	(* Then color a new table depending of the numbers of registers available *)
 	(* Let s start with 5 *)
 	let var_spilled = choose_spilled_vars color_graph nb_registers_available in
@@ -774,7 +789,8 @@ let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_no
 		  ir3stmts= new_ir3_stmt_list; 
  		} in
 	(* Recreate a new stmt table from md *)
-	let new_stmt_tab, new_stmt_list = stmt_table_and_stmt_list_from_md md in
+	let new_stmt_tab, new_stmt_list = stmt_table_and_stmt_list_from_md new_md in
+
 	(* Redo the analysis taking account the new load and str statements *)
 	liveness_analysis new_stmt_tab;
 	(* Get the final color table which size should be less than the nb of registers *)
@@ -782,6 +798,8 @@ let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_no
 
 let create_new_md_struct md =
 	let new_md_decl, stmt_tab, color_graph, new_stmt_list = new_stmt_table_from_md md in
+	print_stmt_list new_stmt_list color_graph;
+
 	create_md_struct new_md_decl.id3 color_graph new_md_decl stmt_tab new_stmt_list
 
 (* create a hash table of statement where the unique id of a statement is the key *)
@@ -809,7 +827,7 @@ let print_graph_color color_graph:unit =
 let print_md_struc md_key md_structure:unit =
 	begin
 	print_graph_color md_structure.colored_tab;
-	(* print_stmt_list md_structure.stmt_node_list md_structure.colored_tab; *)
+	print_stmt_list md_structure.stmt_node_list md_structure.colored_tab;
 	end
 
 

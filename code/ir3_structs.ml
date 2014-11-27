@@ -173,6 +173,11 @@ let string_of_ir3_stmt (s:ir3_stmt):string =
 		print_tab() ^ "Return "^ id ^";"
 	| ReturnVoidStmt3 ->  
 		print_tab() ^ "Return;"
+	| LoadStmt3 id ->
+		print_tab() ^ "Load " ^ id ^ ";"
+	| StrStmt3 id ->
+		print_tab() ^ "Str " ^ id ^ ";"
+
   
 (* display an IR3 variable declaration *)
 let string_of_var_decl3 ((t,id):var_decl3) : string = 
