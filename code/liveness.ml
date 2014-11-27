@@ -13,8 +13,8 @@ module Id3Set = Set.Make(
 type id3_set = Id3Set.t
 type edge = id3 * id3
 
-let compare_edges (e1, e2:edge) (f1, f2:edge): int = 
-	abs (String.compare e1 f1) + abs (String.compare e2 f2)
+let compare_edges (e1, e2:edge) (f1, f2:edge): int =
+	String.compare (e1^"!"^e2) (f1^"!"^f2)
 
 module EdgeSet = Set.Make(
 	struct
@@ -545,13 +545,21 @@ let get_nodes_adjacent_to (var:id3) (set:edge_set): id3_set =
 let edge_set_contains (edge: id3 * id3) (graph: edge_set): bool =
 	let m = EdgeSet.cardinal graph in
 	let n = EdgeSet.cardinal (EdgeSet.diff graph (EdgeSet.singleton edge)) in
+	print_string ("m = " ^ (string_of_int m) ^ "\n");
+	print_string ("n = " ^ (string_of_int n) ^ "\n");
 	not (m == n)
+
+let string_of_edge ((e1,e2): id3 * id3): string = 
+	"(" ^ e1 ^ "," ^ e2 ^ ")"
 
 (*returns true if the set of variables forms a clique in the given graph*)
 let is_a_clique (vars: id3_set) (graph: edge_set): bool =
 	let rec helper edge_list graph =
 	match edge_list with
 	| head::tail ->
+		let (e1,e2) = head in
+		print_string ("Graph: " ^ (string_of_list (EdgeSet.elements graph) (string_of_edge) " ") ^ "\n");
+		print_string ("Does it contain: ("^ e1 ^ "," ^ e2 ^ ") \n");
 		if not (edge_set_contains head graph)
 		then false
 		else helper tail graph
@@ -568,6 +576,7 @@ let find_node_to_remove (set:edge_set): id3 =
 	match edges with
 	| (h,_)::tail ->
 		let neighbours = get_nodes_adjacent_to h set in
+		print_string ("\t" ^ h ^ ": " ^ (string_of_list  (Id3Set.elements neighbours) (fun a -> a) " ") ^ "\n");
 		if is_a_clique neighbours set
 		then h
 		else helper tail set
@@ -580,6 +589,7 @@ let remove_edges_containing (v:id3) (set:edge_set):edge_set =
 
 let rec perfect_elimination_ordering (set:edge_set): id3 list = 
 	let v = find_node_to_remove set in
+	print_string (v ^ "\n");
 	let new_set = remove_edges_containing v set in
 	if (EdgeSet.is_empty new_set)
 	then [v]
