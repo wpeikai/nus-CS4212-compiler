@@ -260,7 +260,9 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 				stmt_list_if @ idc3_create_temp_list1 @  ifstmt :: stmt_else_list_ir3 @ (GoTo3 label_int_next) :: label_if :: stmt_if_list_ir3 @ [label_next], localvars_0 @ localvars_1 @ localvars_2 @ localvars_7
 			| WhileStmt (bool_while_exp, stmt_jlite_list) ->
 				(* Convert the boolean expression *)
-				let _, bool_while_exp_ir3, stmt_list_boolean_exp, localvars_0 = convert_jlite_expr bool_while_exp counter_var counter_label p md_decl_ in
+				let bool_type_1, bool_while_exp_ir3, stmt_list_boolean_exp, localvars_0 = convert_jlite_expr bool_while_exp counter_var counter_label p md_decl_ in
+
+				let idc3_create_temp_list1, new_expr1, localvars_7 = create_temp_idc3 bool_while_exp_ir3 bool_type_1 counter_var in
 
 				(* Create the labels *)
 				let if_loop = create_label counter_label  in
@@ -270,14 +272,14 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 
 				(* Create the if statements *)
 				(* When loop is entered *)
-				let if_stmt_start = IfStmt3 (bool_while_exp_ir3, if_loop) in
+				let if_stmt_start = IfStmt3 ((Idc3Expr new_expr1), if_loop) in
 				(* At then end of the loop *)
-				let if_stmt_end = IfStmt3 (bool_while_exp_ir3, if_loop) in
+				let if_stmt_end = IfStmt3 ((Idc3Expr new_expr1), if_loop) in
 
 				(* Convert the statements*)
 				let stmt_ir3_list, localvars_1 = convert_stmts_list stmt_jlite_list counter_var counter_label p md_decl_ in
 
-				stmt_list_boolean_exp @  if_stmt_start :: (GoTo3 end_loop) :: label_if_loop :: stmt_ir3_list @ if_stmt_end :: [label_end_loop], localvars_0 @ localvars_1
+				stmt_list_boolean_exp @ idc3_create_temp_list1 @  if_stmt_start :: (GoTo3 end_loop) :: label_if_loop :: stmt_ir3_list @ if_stmt_end :: [label_end_loop], localvars_0 @ localvars_1 @ localvars_7
 			| ReadStmt var_read ->
 				let _, t = convert_jlite_typed_var_id var_read in
 				let type_read_stmt, exp_read_stmt_ir3, ir3_stmt_list, localvars_0 = convert_jlite_expr (TypedExp(Var var_read, t)) counter_var counter_label p md_decl_ in
