@@ -381,7 +381,6 @@ let ir3_program_to_arm (program_ir3:ir3_program):arm_program =
 	let (cdata3_list, main_md_decl3, md_decl3_list) = program_ir3 in
 	let data_instr_list, text_instr_list = convert_md_decl3_list (main_md_decl3 :: md_decl3_list) program_ir3 in
 	liveness_analysis stmt_table;
-	print_all_stmt_node stmt_table;
 	PseudoInstr (".data") ::
 	PseudoInstr ("") ::
 	data_instr_list @
