@@ -588,13 +588,27 @@ let remove_edges_containing (v:id3) (set:edge_set):edge_set =
 	EdgeSet.filter (partition_function v) set
 
 let rec perfect_elimination_ordering (set:edge_set): id3 list = 
-	let v = find_node_to_remove set in
-	print_string (v ^ "\n");
-	let new_set = remove_edges_containing v set in
-	if (EdgeSet.is_empty new_set)
-	then [v]
-	else v::(perfect_elimination_ordering new_set)
-
+	print_string ("####################################################\n");
+	print_string ("Cardinal: " ^ (string_of_int (EdgeSet.cardinal set)) ^ "\n");
+	let n = EdgeSet.cardinal set in
+	match n with
+	| 0 ->
+		[]
+	| 2 ->
+		begin
+			let (e1, e2) = (List.hd (EdgeSet.elements set)) in
+			e1::[e2]
+		end
+	| _ ->
+		begin
+		let v = find_node_to_remove set in
+		print_string (v ^ "\n");
+		let new_set = remove_edges_containing v set in
+		print_string ("New Graph: " ^ (string_of_list (EdgeSet.elements new_set) (string_of_edge) " ") ^ "\n");
+		print_string ("Cardinal: " ^ (string_of_int (EdgeSet.cardinal new_set)) ^ "\n");
+		v::(perfect_elimination_ordering new_set)
+		end
+		
 type md_key = id3
 type md_struct =
 	{
