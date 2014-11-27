@@ -263,34 +263,35 @@ let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (progr
 					| RelationalOp op -> 
 						let bef0, aft0, var_used0 = convert_id3_var id3_0 color_table md  "a1" in
 						let bef1, aft1, var_used1 = convert_idc3 idc3_1 color_table md "a1" in
-						let bef2, aft2, var_used2reg = convert_operand idc3_2 color_table md "a2" in
+						let bef2, aft2, var_used2op = convert_operand idc3_2 color_table md "a2" in
 						let arm_op_instructions =
 							begin
 								match op with
 								| "==" -> 	
-									MOV ("eq", false, "a2", (number_op 1)) :: 
-									MOV ("ne", false, "a2", (number_op 0)) :: []
+									MOV ("eq", false, var_used0, (number_op 1)) :: 
+									MOV ("ne", false, var_used0, (number_op 0)) :: []
 								| "!=" -> 	
-									MOV ("eq", false, "a2", (number_op 0)) :: 
-									MOV ("ne", false, "a2", (number_op 1)) :: []
+									MOV ("eq", false, var_used0, (number_op 0)) :: 
+									MOV ("ne", false, var_used0, (number_op 1)) :: []
 								| ">" -> 	
-									MOV ("gt", false, "a2", (number_op 1)) :: 
-									MOV ("lt", false, "a2", (number_op 0)) :: []
+									MOV ("gt", false, var_used0, (number_op 1)) :: 
+									MOV ("lt", false, var_used0, (number_op 0)) :: []
 								| ">=" -> 
-									MOV ("ge", false, "a2", (number_op 1)) :: 
-									MOV ("le", false, "a2", (number_op 0)) :: []
+									MOV ("ge", false, var_used0, (number_op 1)) :: 
+									MOV ("le", false, var_used0, (number_op 0)) :: []
 								| "<" -> 
-									MOV ("gt", false, "a2", (number_op 0)) :: 
-									MOV ("lt", false, "a2", (number_op 1)) :: []
+									MOV ("gt", false, var_used0, (number_op 0)) :: 
+									MOV ("lt", false, var_used0, (number_op 1)) :: []
 								| "<=" -> 
-									MOV ("ge", false, "a2", (number_op 0)) :: 
-									MOV ("le", false, "a2", (number_op 1)) :: []
+									MOV ("ge", false, var_used0, (number_op 0)) :: 
+									MOV ("le", false, var_used0, (number_op 1)) :: []
 								| _ -> failwith "#59"
 							end in
 						[],
 							bef0 @
 							bef1 @
 							bef2 @
+							[CMP ("", var_used1, var_used2op)] @
 							arm_op_instructions @
 							aft0 @
 							aft1 @
