@@ -705,14 +705,20 @@ type md_key = id3
 type md_struct =
 	{
 		id: md_key;
-		stmts_t: stmt_table;
 		colored_t: colored_table;
-		all_var: id3_set;
+		md: md_decl3;
+	}
+
+let create_md_struct id_md color_table md_dec =
+	{
+		id= id_md;
+		colored_t= color_table;
+		md= md_dec;
 	}
 
 (* Hashtable of methods *)
 type md_table = 
-	(md_key, stmt_table) Hashtbl.t
+	(md_key, md_struct) Hashtbl.t
 
 (*creates a list of statement nodes, with correct successors given the program *)
 let rec create_updated_stmt_node_list_from_mthd md: stmt_node list =
@@ -738,22 +744,6 @@ let stmt_table_and_stmt_list_from_md md : stmt_table * stmt_node list=
 		filled_table, nodes_list
 	end
 
-(* create a hash table of statement where the unique id of a statement is the key *)
-let create_md_table (p:ir3_program): md_table= 
-	let rec helper (table:md_table) 
-                   (md_list: md_decl3 list)
-                   :md_table =
-		match md_list with
-		| head::tail -> 
-			let stmt_t, _ = stmt_table_and_stmt_list_from_md head in
-			begin
-				Hashtbl.add table head.id3 stmt_t;
-				helper table tail
-			end
-		| [] -> table
-	(* Initial table size so that Ocaml do not increase size too often *)
-	in let cdata3_list, main_md, methd_list = p
-	in (helper (Hashtbl.create 100) (main_md::methd_list))
 
 let create_graph_color_from_stmt_table stmt_table: colored_table =
 	(* Create the edge set *)
@@ -800,3 +790,22 @@ let new_stmt_table_from_md md (nb_registers_available:int): md_decl3 * colored_t
 	liveness_analysis new_stmt_tab;
 	(* Get the final color table which size should be less than the nb of registers *)
 	new_md, (create_graph_color_from_stmt_table new_stmt_tab)
+
+
+(* create a hash table of statement where the unique id of a statement is the key *)
+let create_md_table (p:ir3_program) (nb_reg_available:int): md_table= 
+	let rec helper (table:md_table) 
+                   (md_list: md_decl3 list)
+                   :md_table =
+		match md_list with
+		| head::tail -> 
+			let new_md_decl, color_graph = new_stmt_table_from_md head nb_reg_available in
+			let md_structure = create_md_struct head.id3 color_graph new_md_decl in
+			begin
+				Hashtbl.add table md_structure.id md_structure;
+				helper table tail
+			end
+		| [] -> table
+	(* Initial table size so that Ocaml do not increase size too often *)
+	in let cdata3_list, main_md, methd_list = p
+	in (helper (Hashtbl.create 100) (main_md::methd_list))
