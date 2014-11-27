@@ -669,7 +669,7 @@ let perfect_elimination_ordering (e_set:edge_set) (variables: id3 list) : id3 li
 		output_vertices := !output_vertices @ [v];
 		let f  (init:id3_set list)  (elt:id3_set)= (process_s v e_set elt) @ init in 
 		sigma_list := List.fold_left f [] (!sigma_list);
-		print_string (string_of_int ((List.length (!sigma_list))) ^ "\n");
+		(* print_string (string_of_int ((List.length (!sigma_list))) ^ "\n"); *)
 		(* (List.hd (!sigma_list)); *)
 		is_sigma_list_empty := ((List.length (!sigma_list)) == 0);
 		end
@@ -798,17 +798,19 @@ let create_md_table (p:ir3_program): md_table=
 	(* Initial table size so that Ocaml do not increase size too often *)
 	in let cdata3_list, main_md, methd_list = p
 	in (helper (Hashtbl.create 100) (main_md::methd_list))
-(* 
-type md_struct =
-	{
-		id: md_key;
-		colored_t: colored_table;
-		md: md_decl3;
-	}
- *)
 
-let print_md_struc md_key md_structure =
-	print_stmt_list md_structure.stmt_node_list md_structure.colored_tab 
+let print_graph_color color_graph:unit =
+	let f k v = print_string (k ^ "   ->    " ^ (string_of_int v) ^ "\n"); in
+	Hashtbl.iter f color_graph
 
-let print_md_table table =
-	Hashtbl.iter print_md_struc table
+
+let print_md_struc md_key md_structure:unit =
+	begin
+	print_graph_color md_structure.colored_tab;
+	(* print_stmt_list md_structure.stmt_node_list md_structure.colored_tab; *)
+	end
+
+
+
+let print_md_table table:unit =
+	Hashtbl.iter print_md_struc table;;
