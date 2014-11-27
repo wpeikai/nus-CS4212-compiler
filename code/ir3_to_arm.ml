@@ -337,7 +337,7 @@ let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (progr
 			| FieldAccess3 (id3_1, id3_2) ->
 				let bef0, aft0, var_used0 = convert_id3_var id3_0 color_table md  "a1" in
 
-				let bef1, aft1, var_used1 = convert_id3_var id3_0 color_table md  "a2" in
+				let bef1, aft1, var_used1 = convert_id3_var id3_1 color_table md  "a2" in
 
 				let field_offset = (get_field_offset id3_1 id3_2 md program_ir3)
 
