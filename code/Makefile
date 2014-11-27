@@ -87,7 +87,7 @@ jlite_toir3.cmo: jlite_toir3.ml jlite_structs.cmo ir3_structs.cmo jlite_annotate
 ir3_structs.cmo: ir3_structs.ml jlite_structs.cmo
 	$(OC) $<
 
-jlite_main.cmo: jlite_main.ml ir3_to_arm.cmo jlite_toir3.cmo
+jlite_main.cmo: jlite_main.ml ir3_to_arm.cmo jlite_toir3.cmo optimize_arm.ml
 	$(OC) $<
 
 optimize_arm.cmo: optimize_arm.ml jlite_structs.cmo ir3_structs.cmo arm_structs.cmo

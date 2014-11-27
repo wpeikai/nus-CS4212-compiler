@@ -98,33 +98,36 @@ let rec get_basic_blocks
               instrs_in = []; 
               instrs_out = []
             } in ([], new_blk)
-          | ".asciz", Some current_blk -> 
-            current_blk.instrs <- List.append current_blk.instrs [p_instruction];
-            (blocks, current_blk)
           | pseudo, Some current_blk ->
+            if contains_substring pseudo ".asciz" then 
             begin
-            if String.contains pseudo ':' then
-              let strlen = String.length pseudo in
-              let label = String.sub pseudo 1 (strlen - 2) in
-              let blk_id = fresh_blk () in
-              let new_blk = {
-                id = blk_id;
-                label = label;
-                instrs = [p_instruction];
-                instrs_in = []; 
-                instrs_out = [];
-              } in (List.append blocks [current_blk], new_blk)
-            else
-            (* just random pseudo stuff, make new block *)
-              let blk_id = fresh_blk () in
-              let new_blk = {
-                id = blk_id;
-                label = "PseudoInstr" ^ (string_of_int blk_id);
-                instrs = [p_instruction];
-                instrs_in = []; 
-                instrs_out = [];
-              } in (List.append blocks [current_blk], new_blk)
+              current_blk.instrs <- List.append current_blk.instrs [p_instruction];
+              (blocks, current_blk)
             end
+            else 
+              begin
+              if String.contains pseudo ':' then
+                let strlen = String.length pseudo in
+                let label = String.sub pseudo 1 (strlen - 2) in
+                let blk_id = fresh_blk () in
+                let new_blk = {
+                  id = blk_id;
+                  label = label;
+                  instrs = [p_instruction];
+                  instrs_in = []; 
+                  instrs_out = [];
+                } in (List.append blocks [current_blk], new_blk)
+              else
+              (* just random pseudo stuff, make new block *)
+                let blk_id = fresh_blk () in
+                let new_blk = {
+                  id = blk_id;
+                  label = "PseudoInstr" ^ (string_of_int blk_id);
+                  instrs = [p_instruction];
+                  instrs_in = []; 
+                  instrs_out = [];
+                } in (List.append blocks [current_blk], new_blk)
+              end
         end
       | BL _ | B _
       | LDMFD _ | STMFD _ 
@@ -341,7 +344,7 @@ let redundant_ldr_str1 blk update_flag : (block * bool) =
       | _ -> failwith "#30: len and instrs mismatch"
     in let (new_instrs, new_flag) = helper instrs update_flag in 
       blk.instrs <- new_instrs;
-      print_string (blk.label ^ "\t" ^ (string_of_bool new_flag) ^ "\n");
+      print_string (blk.label ^ "\t#2\t" ^ (string_of_bool new_flag) ^ "\n");
       (blk, new_flag)
 
 (* Check 3 instructions at a time *)
@@ -439,6 +442,7 @@ let redundant_ldr_str_2 blk update_flag =
     in 
     let (new_instrs, new_flag) = helper instrs update_flag in 
       blk.instrs <- new_instrs;
+      print_string (blk.label ^ "\t#1\t" ^ (string_of_bool new_flag) ^ "\n");
       (blk, new_flag)
       (* blk.instrs <- helper instrs; blk *)
 
@@ -448,14 +452,15 @@ let redundant_ldr_str_2 blk update_flag =
   | b::bs -> *)
     let rec loop_redundancy blk : block = 
       let (blk_1, flag1) = redundant_ldr_str1 blk false in
-      (* let (blk_2, flag2) = redundant_ldr_str_2 blk_1 false in *)
-      (* if flag1 == false && flag2 == false then *)
-      if flag1 == false then
-        (* blk_2 *)
-        blk_1
+      let (blk_2, flag2) = redundant_ldr_str_2 blk_1 false in
+      if flag1 == false && flag2 == false then
+      (* if flag1 == false then *)
+        (* print_string("\n"); *)
+        blk_2
+        (* blk_1 *)
       else
-        loop_redundancy blk_1
-        (* loop_redundancy blk_2 *)
+        (* loop_redundancy blk_1 *)
+        loop_redundancy blk_2
     (* in List.append [helper b] (loop_redundancy bs) *)
 
 (* Algebraic Simplification *)
@@ -496,7 +501,7 @@ let rec apply_peephole blks =
 (* OPTIMIZE DAT ARM PROGRAM *)
 let optimize_arm (instructions : arm_program) =
   let blks = get_basic_blocks instructions [] None in
-  (* print_all_block_instrs blks; *)
+  print_all_block_instrs blks;
   let peephole_blocks = apply_peephole blks in
     blocks_to_arm peephole_blocks
     (* blocks_to_arm blks *)
@@ -515,6 +520,10 @@ let test_instrs2 =
   :: LDR ("", "", "v1", Reg ("a1"))
   :: STR ("", "", "a1", Reg ("v1"))
   :: STR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
+  :: STR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
+  :: STR ("", "", "a1", (RegPreIndexed ("fp", -124 , false)))
+  :: LDR ("", "", "v2", (RegPreIndexed ("fp", -999 , false)))
+  :: LDR ("", "", "a2", (RegPreIndexed ("fp", -124 , false)))
   :: LDR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
   :: LDR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
   :: LDR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
@@ -533,7 +542,7 @@ let test_instrs2 =
 (* let test_blocks = get_basic_blocks test_instrs [] None;; *)
 (* let test_blocks0 = get_basic_blocks test_instrs0 [] None;; *)
 (* let test_blocks1 = get_basic_blocks test_instrs1 [] None;; *)
-let test_blocks2 = make_blocks test_instrs2;;
+(* let test_blocks2 = make_blocks test_instrs2;;
  (* test_instrs2 [] None;; *)
 
 (* print_string ("Test instrs set 0");;
@@ -542,13 +551,13 @@ print_string ("Num of blocks: " ^ (string_of_int (List.length (test_blocks0))));
 print_len_block_instrs_head (test_blocks0);;
 print_block_instrs (List.hd (test_blocks0));; *)
 
-(* 
+
 print_string ("\n\n~~~~~~ Test instrs set 1 ~~~~~~~");;
 (* print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs1) ^ "\n");; *)
 print_string ("Num of blocks: " ^ (string_of_int (List.length (test_blocks1))));; (* flush std_out;; *)
 print_len_block_instrs_head (test_blocks1);;
 print_block_instrs (List.hd (test_blocks1));;
- *)
+
 
 print_string ("\n\n~~~~~~ Test instrs set 2 ~~~~~~~");;
 (* print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs2) ^ "\n");; *)
@@ -559,7 +568,7 @@ print_string ("******* PEEPHOLE ******");;
 (* print_block_instrs (List.hd (test_blocks2));; *)
 print_string ("\n\nPeephole: rm redundant load/store (on block1)\n");;
 let peephole_all_blks = apply_peephole test_blocks2;;
-print_all_block_instrs peephole_all_blks;;
+print_all_block_instrs peephole_all_blks;; *)
 (* print_string ("\t~~ 1 - LD/STR ~~");;
 let peephole1_block = redundant_ldr_str1 (List.hd test_blocks2);;
 print_block_instrs peephole1_block;;
