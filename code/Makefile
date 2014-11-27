@@ -8,9 +8,11 @@ GG = ./g++
 ZZ = ./z.exe
 ZZIR3 = ./zir3.exe
 
-OBJS = arm_structs.cmo jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo jlite_toir3.cmo liveness.cmo ir3_to_arm.cmo 
-OCAML_OBJECTS = $(OBJS) jlite_main.cmo
-OCAML_OBJECTS_IR3 = $(OBJS) jlite_main_ir3.cmo
+OBJS_COMMON = arm_structs.cmo jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo 
+OBJS_OPTIM = $(OBJS_COMMON) jlite_toir3.cmo liveness.cmo ir3_to_arm.cmo 
+OBJS_SIMPLE = $(OBJS_COMMON) jlite_toir3_non_optim.cmo ir3_to_arm_non_optim.cmo jlite_main_non_optim.cmo
+OCAML_OBJECTS = $(OBJS_OPTIM) jlite_main.cmo
+OCAML_OBJECTS_IR3 = $(OBJS_OPTIM) jlite_main_ir3.cmo
 TEST_DIR = test/
 
 JLITE_FILES_TO_TEST = $(patsubst %.output, %.test, $(wildcard $(TEST_DIR)*.output))
@@ -18,9 +20,17 @@ JLITE_FILES_TO_TEST = $(patsubst %.output, %.test, $(wildcard $(TEST_DIR)*.outpu
 
 all:  $(patsubst %.jlite, %.ir3, $(wildcard $(TEST_DIR)*.jlite)) $(patsubst %.jlite, %.sim, $(wildcard $(TEST_DIR)*.jlite))  
 
+noptim:  $(patsubst %.jlite, %.noptim, $(wildcard $(TEST_DIR)*.jlite))  
 
 test: $(JLITE_FILES_TO_TEST)
 
+%.noptim: %.noptim_exe
+	$(ADB) push $^ /data/local/tmp/$(TEST_DIR) 1> /dev/null 2>&1; \
+	$(ADB) shell ./data/local/tmp/$^ 1> $@;  # Run the executable in adb and exit
+	touch $@
+		
+%.noptim_exe: %.S
+	$(GG) $(CXXFLAGS) $< -o $@
 
 %.sim: %.exe
 	$(ADB) push $^ /data/local/tmp/$(TEST_DIR) 1> /dev/null 2>&1; \
@@ -33,6 +43,9 @@ test: $(JLITE_FILES_TO_TEST)
 %.exe: %.s
 	$(GG) $(CXXFLAGS) $< -o $@
 	
+%.S: %.jlite z_noptim.exe 
+	$(ZZ) $< > $@
+
 %.s: %.jlite z.exe 
 	$(ZZ) $< > $@
 
@@ -40,6 +53,9 @@ test: $(JLITE_FILES_TO_TEST)
 	$(ZZIR3) $< > $@
 	
 z.exe: $(OCAML_OBJECTS)
+	$(OO) $@ $+
+
+z_noptim.exe: $(OBJS_SIMPLE)
 	$(OO) $@ $+
 
 zir3.exe: $(OCAML_OBJECTS_IR3)

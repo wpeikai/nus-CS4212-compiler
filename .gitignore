@@ -12,3 +12,4 @@ jlite_parser.ml
 jlite_lexer.ml
 *.swp
 *.sim
+*.noptim
