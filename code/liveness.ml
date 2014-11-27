@@ -316,26 +316,26 @@ let rec string_of_list_of_int (l: int list):string =
 		(string_of_int head) ^ " " ^ (string_of_list_of_int tail)
 	| [] ->
 		 ""
-let print_stmt_node (table: stmt_table) (i:int): bool =
-	match (Hashtbl.find_all table i) with
-	| n::tail ->
-		print_string ((string_of_int i) ^ ": " ^ (string_of_ir3_stmt n.stmt) ^ "\n");
-		print_string ("\tPredecessors: " ^ (string_of_list n.pred string_of_int " ") ^ "\n" );
-		print_string ("\tSuccessors: " ^ (string_of_list n.succ string_of_int " ") ^ "\n" );
-		print_string ("\tdef: " ^ (string_of_list (Id3Set.elements  n.def) (fun a -> a) " ") ^ "\n" );
-		print_string ("\tuse: " ^ (string_of_list (Id3Set.elements  n.use) (fun a -> a) " ") ^ "\n" );
-		print_string ("\tLive IN: " ^ (string_of_list (Id3Set.elements  n.live_in) (fun a -> a) " ") ^ "\n" );
-		print_string ("\tLive OUT: " ^ (string_of_list (Id3Set.elements  n.live_out) (fun a -> a) " ") ^ "\n" );
-		true
-	| [] ->
-		false
 
-let print_stmt_table (table: stmt_table): unit =
-	let rec helper (table:stmt_table) (i:int): unit =
-		if (print_stmt_node table i)
-		then helper table (i-1)
-		else ()
-	in helper table (Hashtbl.length table)
+let print_id3_color (v:id3) color_graph:string =
+	let color = Hashtbl.find color_graph v in
+	("\t" ^ v ^ "  -> " ^ (string_of_int color) ^ "\n")
+
+let print_node node color_graph :unit =
+	let format_id3 e = print_id3_color e color_graph in
+	begin
+	print_string ((string_of_int node.id) ^ ": " ^ (string_of_ir3_stmt node.stmt) ^ "\n");
+	print_string ("\tPredecessors: " ^ (string_of_list node.pred string_of_int " ") ^ "\n" );
+	print_string ("\tSuccessors: " ^ (string_of_list node.succ string_of_int " ") ^ "\n" );
+	print_string ("\tdef:\n" ^ (string_of_list (Id3Set.elements  node.def) (format_id3) " ") ^ "\n" );
+	print_string ("\tuse:\n" ^ (string_of_list (Id3Set.elements  node.use) (format_id3) " ") ^ "\n" );
+	print_string ("\tLive IN: \n" ^ (string_of_list (Id3Set.elements  node.live_in) (format_id3) " ") ^ "\n" );
+	print_string ("\tLive OUT: \n" ^ (string_of_list (Id3Set.elements  node.live_out) (format_id3) " ") ^ "\n" );
+	end
+
+let print_stmt_list (stmt_l: stmt_node list) (color_graph): unit =
+	let f node = print_node node color_graph in
+	List.iter f stmt_l;;
 
 let f v1 v2 (e_set:edge_set) =
 	EdgeSet.add (v1, v2) e_set
@@ -587,7 +587,7 @@ let find_node_to_remove (set:edge_set): id3 =
 let remove_edges_containing (v:id3) (set:edge_set):edge_set =
 	EdgeSet.filter (partition_function v) set
 
-let rec perfect_elimination_ordering (set:edge_set): id3 list = 
+let rec perfect_elimination_ordering_4 (set:edge_set): id3 list = 
 	print_string ("####################################################\n");
 	print_string ("Cardinal: " ^ (string_of_int (EdgeSet.cardinal set)) ^ "\n");
 	let n = EdgeSet.cardinal set in
@@ -609,21 +609,93 @@ let rec perfect_elimination_ordering (set:edge_set): id3 list =
 		v::(perfect_elimination_ordering new_set)
 		end
 		
+let rec perfect_elimination_ordering_2 (set:edge_set): id3 list = 
+	let v = find_node_to_remove set in
+	print_string (v ^ "\n");
+	let new_set = remove_edges_containing v set in
+	if (EdgeSet.is_empty new_set)
+	then [v]
+	else v::(perfect_elimination_ordering_2 new_set)
+
+let find_remove_from_set (i_set:id3_set): id3 * id3_set =
+	let element_chosen = Id3Set.min_elt i_set in
+	let new_i_set = Id3Set.remove element_chosen i_set in
+	element_chosen, new_i_set
+
+
+let get_all_nodes e_set : id3_set = 
+	let f elt init = 
+		let a, b = elt in 
+		let new_init = Id3Set.add a init in
+		Id3Set.add b init
+	in
+	EdgeSet.fold f e_set Id3Set.empty
+
+let is_edged (e_set:edge_set) (f1:id3) (f2:id3)  :bool=
+
+	let f elt init = ((is_linked elt f1) && (is_linked elt f2)) || init in
+	EdgeSet.fold f e_set false
+
+let process_s (v:id3)(e_set:edge_set)  (i_set:id3_set): id3_set list = 
+
+	let linked_id3_set, not_linked_id3_set =  Id3Set.partition (is_edged e_set v) i_set
+	in let new_S =
+
+				if Id3Set.is_empty not_linked_id3_set
+				then []
+				else [not_linked_id3_set]
+	in
+	if (Id3Set.is_empty linked_id3_set)
+	then new_S
+	else [linked_id3_set] @ new_S
+
+
+let perfect_elimination_ordering (e_set:edge_set) (variables: id3 list) : id3 list =
+	(* let all_nodes = get_all_nodes e_set in *)
+	let all_nodes = Id3Set.of_list variables in
+
+	let sigma_list = ref [all_nodes] in
+	let is_sigma_list_empty = ref ((List.length !sigma_list) == 0) in
+	let output_vertices = ref [] in
+	begin
+	while (not !is_sigma_list_empty) do
+		let v, new_i_set = find_remove_from_set (List.hd (!sigma_list)) in
+		begin
+			sigma_list :=
+				if (Id3Set.is_empty new_i_set)
+				then List.tl (!sigma_list)
+				else new_i_set :: (List.tl (!sigma_list))
+			;
+		output_vertices := !output_vertices @ [v];
+		let f  (init:id3_set list)  (elt:id3_set)= (process_s v e_set elt) @ init in 
+		sigma_list := List.fold_left f [] (!sigma_list);
+		print_string (string_of_int ((List.length (!sigma_list))) ^ "\n");
+		(* (List.hd (!sigma_list)); *)
+		is_sigma_list_empty := ((List.length (!sigma_list)) == 0);
+		end
+	done;
+	!output_vertices
+	end
+
+
+
 type md_key = id3
 type md_struct =
 	{
 		id: md_key;
-		colored_t: colored_table;
+		colored_tab: colored_table;
 		md: md_decl3;
 		stmt_tab: stmt_table;
+		stmt_node_list: stmt_node list;
 	}
 
-let create_md_struct id_md color_table md_dec stmt_tab =
+let create_md_struct id_md color_table md_dec stmt_tab new_stmt_list =
 	{
 		id= id_md;
-		colored_t= color_table;
+		colored_tab= color_table;
 		md= md_dec;
 		stmt_tab= stmt_tab;
+		stmt_node_list= new_stmt_list;
 	}
 
 (* Hashtable of methods *)
@@ -655,11 +727,11 @@ let stmt_table_and_stmt_list_from_md md : stmt_table * stmt_node list=
 	end
 
 
-let create_graph_color_from_stmt_table stmt_table: colored_table =
+let create_graph_color_from_stmt_table stmt_table variables: colored_table =
 	(* Create the edge set *)
 	let md_edge_set = create_graph_from_stmt_table stmt_table in
 	(* Create the stack variables correctly ordered*)
-	let stack_var_list = perfect_elimination_ordering md_edge_set in
+	let stack_var_list = perfect_elimination_ordering md_edge_set variables in
 	(* Color = int *)
 	(* Color the stack_var_list *)
 	(* Return a hash table : variable -> color *)
@@ -673,14 +745,18 @@ then add the load and store statements,
 then reanalyze the liveness,
 then recolor the graph, 
 and store the hash table of the colored/registers  *)
-let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table =
+let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_node list) =
+	(* print_string (md.id3 ^ "\n"); *)
 	let nb_registers_available = 7 in
 	(* Get the stmt table from md *)
 	let stmt_tab, stmt_list = stmt_table_and_stmt_list_from_md md in
 	(* Analyze the stmt table such as initiaze changed, add predecessors, successors,
 	and define the live_in and live_out *)
 	liveness_analysis stmt_tab;
-	let color_graph = create_graph_color_from_stmt_table stmt_tab in
+	let decl_variables = md.localvars3 @ md.params3 in
+	let f init (_, v) = v :: init in
+	let variables = List.fold_left f [] decl_variables in 
+	let color_graph = create_graph_color_from_stmt_table stmt_tab variables in
 	(* Then color a new table depending of the numbers of registers available *)
 	(* Let s start with 5 *)
 	let new_color_table = choose_spilled_vars color_graph nb_registers_available in
@@ -696,12 +772,15 @@ let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table =
 		  ir3stmts= new_ir3_stmt_list; 
  		} in
 	(* Recreate a new stmt table from md *)
-	let new_stmt_tab, _ = stmt_table_and_stmt_list_from_md md in
+	let new_stmt_tab, new_stmt_list = stmt_table_and_stmt_list_from_md md in
 	(* Redo the analysis taking account the new load and str statements *)
 	liveness_analysis new_stmt_tab;
 	(* Get the final color table which size should be less than the nb of registers *)
-	new_md, new_stmt_tab, (create_graph_color_from_stmt_table new_stmt_tab)
+	new_md, new_stmt_tab, (create_graph_color_from_stmt_table new_stmt_tab variables), new_stmt_list
 
+let create_new_md_struct md =
+	let new_md_decl, stmt_tab, color_graph, new_stmt_list = new_stmt_table_from_md md in
+	create_md_struct new_md_decl.id3 color_graph new_md_decl stmt_tab new_stmt_list
 
 (* create a hash table of statement where the unique id of a statement is the key *)
 let create_md_table (p:ir3_program): md_table= 
@@ -710,8 +789,7 @@ let create_md_table (p:ir3_program): md_table=
                    :md_table =
 		match md_list with
 		| head::tail -> 
-			let new_md_decl, stmt_tab, color_graph = new_stmt_table_from_md head in
-			let md_structure = create_md_struct head.id3 color_graph new_md_decl stmt_tab in
+			let md_structure = create_new_md_struct head in
 			begin
 				Hashtbl.add table md_structure.id md_structure;
 				helper table tail
@@ -730,7 +808,7 @@ type md_struct =
  *)
 
 let print_md_struc md_key md_structure =
-	print_stmt_table md_structure.stmt_tab
+	print_stmt_list md_structure.stmt_node_list md_structure.colored_tab 
 
 let print_md_table table =
 	Hashtbl.iter print_md_struc table

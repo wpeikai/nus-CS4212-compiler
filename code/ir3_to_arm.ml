@@ -388,6 +388,3 @@ let ir3_program_to_arm (program_ir3:ir3_program):arm_program =
 	PseudoInstr ("\n.global main") ::
    	text_instr_list @
 	[PseudoInstr ("\n")] (* Add a newline at the end *)
-
-
-
