@@ -94,8 +94,6 @@ let number_op (i:int): operand2_type=
 
 let color_to_register (color:int): string =
 	let letter = if color >= 0 then "v" else "a" in (letter ^ (string_of_int color))	
-
-
 let convert_id3_var id3_0 color_table md  preferred_reg: arm_program * arm_program * reg =
 	let reg1 = try [], [], color_to_register (Hashtbl.find color_table id3_0) with Not_found ->
 		[LDR ("", "", preferred_reg, (RegPreIndexed ("fp", - get_offset id3_0 md , false)))],
@@ -148,7 +146,7 @@ let rec push_arguments_on_stack (n:int) (idc3_list: idc3 list) (md:md_decl3) col
 	then match idc3_list with 
 		| head :: tail -> 
 			let reg_to_store = ("a" ^ (string_of_int (n+1))) in
-			let bef0, aft0, var_used0 = convert_idc3 head color_table md reg_to_store in
+		let bef0, aft0, var_used0 = convert_idc3 head color_table md reg_to_store in
 			let arm_instr =
 				if var_used0 == reg_to_store
 				then []
@@ -175,6 +173,21 @@ let rec push_arguments_on_stack (n:int) (idc3_list: idc3 list) (md:md_decl3) col
 			| [] -> []
 	
 
+let rec helper_2 color_set current_color =
+	let is_same_color (c:int):bool = (c == current_color) in
+	if ColorSet.exists is_same_color color_set
+	then helper_2 color_set (current_color+1)
+	else current_color
+
+let convert_def_use_t_color_set node color_table:color_set =
+	let def_use = Id3Set.union node.def node.use in
+	let f elt init = ColorSet.add (Hashtbl.find color_table elt) init in
+	Id3Set.fold f def_use ColorSet.empty
+
+
+let find_new_color node color_table =
+	let color_used = convert_def_use_t_color_set node color_table in
+	helper_2 color_used 1
 
 (* Convert an ir3 statement to arm instructions *)
 let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (program_ir3:ir3_program):arm_program * arm_program = 
@@ -506,8 +519,21 @@ let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (progr
 	| ReturnVoidStmt3 ->
 		[], MOV ("", false, "a1", number_op 0) :: 
 		[B ("", label_exit_methd md)]
+	| LoadStmt3 i ->
+		let color_i = Hashtbl.find color_table i in
+		if color_i > 0
+		then [],
+				[LDR ("", "", (color_to_register color_i), (RegPreIndexed ("fp", - get_offset i md , false)))]
+		else [], []
+	| StrStmt3 i ->
+		let color_i = Hashtbl.find color_table i in
+		if color_i > 0
+		then [], [STR ("", "", (color_to_register color_i), (RegPreIndexed ("fp", - get_offset i md , false)))]
+		else [], []
+
 	| _ ->
 		failwith "#51: Statement not yet implemented"
+
 
 let rec convert_ir3_stmt_node_list (stmts: stmt_node list) color_table (md:md_decl3) (program_ir3:ir3_program) : arm_program * arm_program =
 		match stmts with
