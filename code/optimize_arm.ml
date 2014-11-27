@@ -19,6 +19,8 @@ type block =
   }
 
 (* -------- Build Basic Blocks of ARM program --------- *)
+let errorcount = ref 0
+let fresh_error () = (errorcount:=!errorcount+1; !errorcount)
 
 let linecount = ref 0
 let fresh_line () = (linecount:=!linecount+1; !linecount)
@@ -173,10 +175,6 @@ let rec update_block_list_in
 
 (* TO DO >>>>> Add in/out links *)
 let rec update_blks_in_out blks =
-  (* go through each block *)
-  (* retrieve branch instructions && last instruction (and their line #'s) && their blk label *)
-  (* if last instruction is not branch, it continues down to next block *)
-  (* put this all into a list *)
   match blks with
   | [] -> []
   | b::bs ->
@@ -209,9 +207,7 @@ let make_blocks arm_instrs =
   let basic_blks = get_basic_blocks arm_instrs [] None in
   update_blks_in_out basic_blks
 
-
 (* Get block instructions *)
-
 
 (* Print one block's instructions *)
 let print_block_instrs blk =
@@ -225,19 +221,6 @@ let print_block_instrs blk =
 (* print length of one block's instructions *)
 let get_block_instrs_len blk = List.length (blk.instrs)
 
-(* Print first block's instructions length *)
-(* let print_len_block_instrs_head blks =
-  let len = get_block_instrs_len (List.hd blks) in
-  print_string ("\nhead instrs len:" ^ string_of_int len ^ "\n");; *)
-
-(* Print first block's instructions in block list *)
-(* let print_block_instrs_head blks =
-  let blk = List.hd blks in
-  let rec helper blk_i =
-    match blk_i with
-    | [] -> []
-    | (line_id, i)::is -> i :: (helper is)
-  in print_string ("**head block insts \n"^ (string_of_arm_prog (helper (blk.instrs))) ^ "\n\n");; *)
 
 let print_all_block_instrs blks = 
   List.map print_block_instrs blks
@@ -261,10 +244,10 @@ let blocks_to_arm blks =
 (* ~~~~~~ PEEPHOLE ~~~~~~ *)
 
 (* 1 -- Remove redundant loads and stores *)
-let remove_redundant_ldr_str blk =
+(* Check 2 instructions at a time *)
+let redundant_ldr_str1 blk =
   let instrs = blk.instrs in
-  if (List.length instrs) == 0 then
-    blk (* DEFINITION SHOULD BE REMOVING THIS BLOCK :D *)
+  if (List.length instrs) == 0 then blk (* DEFINITION SHOULD BE REMOVING THIS BLOCK :D *)
   else
     let rec helper instrs =
       let len = List.length instrs in
@@ -273,55 +256,207 @@ let remove_redundant_ldr_str blk =
       | 1, _ -> instrs
       | _, i::is ->
         begin
-        match i, (List.hd is) with
-        | (ld1, LDR (_,_,rd1,addr_type1)), (ld2, STR (_,_,rd2,addr_type2)) ->
-          begin
-          match addr_type1, addr_type2 with
-          | Reg r1, Reg r2 ->
-            if (rd1 = r2) && (rd2 = r1) then
-              List.append [i] (helper (List.tl is))
-            else i :: helper is
-          | _ -> i :: helper is
-          end
-        | (ld1, STR (cond,_,rd1,addr_type1)), (ld2, LDR (_,_,rd2,addr_type2)) ->
-          begin
-          match addr_type1, addr_type2 with
-          | Reg r1, Reg r2 ->
-            if (rd1 = r2) && (rd2 = r1) then
-              List.append [i] (helper (List.tl is))
-            else i :: helper is
-          | RegPreIndexed (r1,off1,flag1), RegPreIndexed (r2,off2,flag2) ->
+          match i, (List.hd is) with
+          | (ln1, LDR (_,_,rd1,addr_type1)), (ln2, STR (_,_,rd2,addr_type2)) ->
             begin
-            if (rd1 = rd2) && (r1 = r2) && (off1 == off2) then
-              helper (List.tl is)
-            else
-              if (r1 = r2) && (off1 == off2) then
-                List.append [(ld1, MOV (cond, flag1, rd2, RegOp rd1))] (helper (List.tl is))
-              else
-                i :: helper is 
+            match addr_type1, addr_type2 with
+            | Reg r1, Reg r2 ->
+              if (rd1 = r2) && (rd2 = r1) then
+                List.append [i] (helper (List.tl is))
+              else i :: helper is
+            | _ -> i :: helper is
             end
-          | RegPostIndexed (r1,off1), RegPostIndexed (r2,off2) ->
+          | (ln1, STR (cond,_,rd1,addr_type1)), (ln2, LDR (_,_,rd2,addr_type2)) ->
             begin
-            if (rd1 = rd2) && (r1 = r2) && (off1 == off2) then
-              helper (List.tl is)
-            else
-              if (r1 = r2) && (off1 == off2) then
-                List.append [(ld1, MOV (cond, false, rd2, RegOp rd1))] (helper (List.tl is))
+            match addr_type1, addr_type2 with
+            | Reg r1, Reg r2 ->
+              if (rd1 = r2) && (rd2 = r1) then
+                List.append [i] (helper (List.tl is))
+              else i :: helper is
+            | RegPreIndexed (r1,off1,flag1), RegPreIndexed (r2,off2,flag2) ->
+              begin
+              if (rd1 = rd2) && (r1 = r2) && (off1 == off2) then
+                helper (List.tl is)
               else
-                i :: helper is 
+                if (r1 = r2) && (off1 == off2) then
+                  List.append [(ln1, MOV (cond, flag1, rd2, RegOp rd1))] (helper (List.tl is))
+                else
+                  i :: helper is 
+              end
+            | RegPostIndexed (r1,off1), RegPostIndexed (r2,off2) ->
+              begin
+              if (rd1 = rd2) && (r1 = r2) && (off1 == off2) then
+                helper (List.tl is)
+              else
+                if (r1 = r2) && (off1 == off2) then
+                  List.append [(ln1, MOV (cond, false, rd2, RegOp rd1))] (helper (List.tl is))
+                else
+                  i :: helper is 
+              end
+            | _ -> i :: helper is
             end
+          | (ln1, LDR (_,_,rd1,addr_type1)), (ln2, LDR (_,_,rd2,addr_type2)) ->
+            if (rd1 = rd2) && (addr_type1 = addr_type2) then
+              List.append [i] (helper (List.tl is))
+            else i :: helper is 
+          | (ln1, STR (_,_,rd1,addr_type1)), (ln2, STR (_,_,rd2,addr_type2)) ->
+            if (rd1 = rd2) && (addr_type1 = addr_type2) then
+              List.append [i] (helper (List.tl is))
+            else i :: helper is 
+          | (ln1, MOV (_,_,rd1,addr_type1)), (ln2, MOV (_,_,rd2,addr_type2)) ->
+            if (rd1 = rd2) && (addr_type1 = addr_type2) then
+              List.append [i] (helper (List.tl is))
+            else i :: helper is 
           | _ -> i :: helper is
-          end
-        | (ld1, LDR (_,_,rd1,addr_type1)), (ld2, LDR (_,_,rd2,addr_type2)) ->
-          if (rd1 = rd2) && (addr_type1 = addr_type2) then
-            List.append [i] (helper (List.tl is))
-          else i :: helper is 
-        | (ld1, STR (_,_,rd1,addr_type1)), (ld2, STR (_,_,rd2,addr_type2)) ->
-          if (rd1 = rd2) && (addr_type1 = addr_type2) then
-            List.append [i] (helper (List.tl is))
-          else i :: helper is 
-        | _ -> i :: helper is
         end
+      | _ -> failwith "#30: len and instrs mismatch"
+    in blk.instrs <- helper instrs; blk
+
+(* Check 3 instructions at a time *)
+let redundant_ldr_str_2 blk =
+  let instrs = blk.instrs in
+  if (List.length instrs) == 0 then blk (* DEFINITION SHOULD BE REMOVING THIS BLOCK :D *)
+  else
+    let rec helper instrs =
+      let len = List.length instrs in
+      match len, instrs with
+      | 0, _ -> []
+      | 1, _ -> instrs
+      | 2, _ -> instrs
+      | _, i1::is ->
+        let i2 = List.hd is in
+        let i3 = List.hd (List.tl is) in
+        let iter_count = fresh_error () in
+          (* print_string ((string_of_int iter_count)^ "  I'm here!! \n") ; *)
+        begin
+          match i1, i2, i3 with
+          | (ln1,STR (cond,_,rd1,at1)), (ln2,LDR (_,_,rd2,at2)), (ln3,LDR (_,_,rd3,at3)) ->
+            print_string ((string_of_int iter_count)^ "  I'm here!! STR LDR STR \n") ;
+            print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n");
+            begin
+              match at1, at2, at3 with
+              | Reg r1, Reg r2, Reg r3 -> 
+                if (r1 = r3) && (r2 <> r3) && (rd1 <> rd2) then
+                  let new_i3 = (ln3, MOV (cond, false, rd3, RegOp r1)) in 
+                  let new_is = List.tl (List.tl is) in
+                    List.append [i1; i2; new_i3] (helper new_is)
+                  else
+                    i1 :: helper is
+              | RegPostIndexed (r1,off1), RegPostIndexed (r2,off2), RegPostIndexed (r3,off3) -> 
+                if (r1 = r3) && (off1 == off3) && (off1 != off2) then
+                  let new_i3 = (ln3, MOV (cond, false, rd3, RegOp r1)) in
+                  let new_is = List.tl (List.tl is) in
+                    List.append [i1; i2; new_i3] (helper new_is)
+                  else
+                    i1 :: helper is
+              | RegPreIndexed (r1,off1,f1), RegPreIndexed (r2,off2,_), RegPreIndexed (r3,off3,_) -> 
+                if (r1 = r3) && (off1 == off3) && (off1 != off2) then
+                  let new_i3 = (ln3, MOV (cond, f1, rd3, RegOp r1)) in 
+                  let new_is = List.tl (List.tl is) in
+                    List.append [i1; i2; new_i3] (helper new_is)
+                  else
+                    i1 :: helper is
+              | _ -> i1 :: helper is
+            end
+          | (ln1,MOV (_,_,rd1,op1)), (ln2,STR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
+            print_string ((string_of_int iter_count) ^ "  I'm here!! MOV STR MOV\n");
+            print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n");
+            begin
+              match op1, op3 with
+              | RegOp r1, RegOp r3 -> 
+                if (r1 = r3) && (rd1 = rd3) && (rd1 <> rd2) then
+                  List.append [i1; i2] (helper is)
+                else i1 :: helper is
+              | ImmedOp op1, ImmedOp op3 ->
+                (* print_string ("\tInside of ImmedOp now\n"); *)
+                if (op1 = op3) && (rd1 = rd3) then
+                  (* begin *)
+                  (* print_string ("\tInside of if\n"); *)
+                  List.append [i1; i2] (helper (List.tl (List.tl is)))
+                  (* end *)
+                else i1 :: helper is
+              | _ -> i1 :: helper is
+            end
+          | (ln1,MOV (_,_,rd1,op1)), (ln2,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
+            print_string ((string_of_int iter_count) ^ "  I'm here!! MOV LDR MOV\n") ;
+            begin
+              match op1, op3 with
+              | RegOp r1, RegOp r3 -> 
+                if (r1 = r3) && (rd1 = rd3) && (rd1 <> rd2) then
+                  List.append [i1; i2] (helper is)
+                else i1 :: helper is
+              | ImmedOp op1, ImmedOp op3 ->
+                if (op1 = op3) && (rd1 = rd3) && (rd1 <> rd2) then
+                  List.append [i1; i2] (helper is)
+                else i1 :: helper is
+              (*|  RegPostIndexed (r1,off1), RegPostIndexed (r2,off2), RegPostIndexed (r3,off3) -> 
+                if (r1 = r3) && (off1 == off3) && (off1 != off2) then
+                  let new_i3 = (ln3, MOV (cond, false, rd3, RegOp r1)) in
+                  let new_is = List.tl (List.tl is) in
+                    List.append [i1; i2; new_i3] (helper new_is)
+                  else
+                    i1 :: helper is
+              | RegPreIndexed (r1,off1,f1), RegPreIndexed (r2,off2,_), RegPreIndexed (r3,off3,_) -> 
+                if (r1 = r3) && (off1 == off3) && (off1 != off2) then
+                  let new_i3 = (ln3, MOV (cond, f1, rd3, RegOp r1)) in 
+                  let new_is = List.tl (List.tl is) in
+                    List.append [i1; i2; new_i3] (helper new_is)
+                  else
+                    i1 :: helper is *)
+              | _ -> i1 :: helper is
+            end
+          | _ -> i1 :: helper is
+        end
+        (* begin
+          match i, (List.hd is) with
+          | (ln1, LDR (_,_,rd1,addr_type1)), (ln2, STR (_,_,rd2,addr_type2)) ->
+            begin
+            match addr_type1, addr_type2 with
+            | Reg r1, Reg r2 ->
+              if (rd1 = r2) && (rd2 = r1) then
+                List.append [i] (helper (List.tl is))
+              else i :: helper is
+            | _ -> i :: helper is
+            end
+          | (ln1, STR (cond,_,rd1,addr_type1)), (ln2, LDR (_,_,rd2,addr_type2)) ->
+            begin
+            match addr_type1, addr_type2 with
+            | Reg r1, Reg r2 ->
+              if (rd1 = r2) && (rd2 = r1) then
+                List.append [i] (helper (List.tl is))
+              else i :: helper is
+            | RegPreIndexed (r1,off1,flag1), RegPreIndexed (r2,off2,flag2) ->
+              begin
+              if (rd1 = rd2) && (r1 = r2) && (off1 == off2) then
+                helper (List.tl is)
+              else
+                if (r1 = r2) && (off1 == off2) then
+                  List.append [(ln2, MOV (cond, flag1, rd2, RegOp rd1))] (helper (List.tl is))
+                else
+                  i :: helper is 
+              end
+            | RegPostIndexed (r1,off1), RegPostIndexed (r2,off2) ->
+              begin
+              if (rd1 = rd2) && (r1 = r2) && (off1 == off2) then
+                helper (List.tl is)
+              else
+                if (r1 = r2) && (off1 == off2) then
+                  List.append [(ln1, MOV (cond, false, rd2, RegOp rd1))] (helper (List.tl is))
+                else
+                  i :: helper is 
+              end
+            | _ -> i :: helper is
+            end
+          | (ln1, LDR (_,_,rd1,addr_type1)), (ln2, LDR (_,_,rd2,addr_type2)) ->
+            if (rd1 = rd2) && (addr_type1 = addr_type2) then
+              List.append [i] (helper (List.tl is))
+            else i :: helper is 
+          | (ln1, STR (_,_,rd1,addr_type1)), (ln2, STR (_,_,rd2,addr_type2)) ->
+            if (rd1 = rd2) && (addr_type1 = addr_type2) then
+              List.append [i] (helper (List.tl is))
+            else i :: helper is 
+          | _ -> i :: helper is
+        end *)
       | _ -> failwith "#30: len and instrs mismatch"
     in blk.instrs <- helper instrs; blk
 
@@ -353,16 +488,17 @@ let rec apply_peephole blks =
   match blks with
   | [] -> []
   | b::bs ->
-    let b1 = remove_redundant_ldr_str b in
-    let b2 = algebraic_simplification b1 in
-      List.append [b2] (apply_peephole bs)
+    let b_1 = redundant_ldr_str1 b in
+    let b_2 = redundant_ldr_str_2 b_1 in
+    let b_3 = algebraic_simplification b_2 in
+      List.append [b] (apply_peephole bs)
 
 (* OPTIMIZE DAT ARM PROGRAM *)
 let optimize_arm (instructions : arm_program) =
   let blks = get_basic_blocks instructions [] None in
   (* print_all_block_instrs blks; *)
   let peephole_blocks = apply_peephole blks in
-  blocks_to_arm peephole_blocks
+    blocks_to_arm peephole_blocks
 
 
 (* TESTS *)
@@ -422,7 +558,7 @@ print_string ("\n\nPeephole: rm redundant load/store (on block1)\n");;
 let peephole_all_blks = apply_peephole test_blocks2;;
 print_all_block_instrs peephole_all_blks;;
 (* print_string ("\t~~ 1 - LD/STR ~~");;
-let peephole1_block = remove_redundant_ldr_str (List.hd test_blocks2);;
+let peephole1_block = redundant_ldr_str1 (List.hd test_blocks2);;
 print_block_instrs peephole1_block;;
 print_string ("\t~~ 2 - ALGEBRAIC ~~");;
 let peephole2_block = algebraic_simplification (List.hd test_blocks2);;
