@@ -559,7 +559,7 @@ let load_alive_params md_struct :arm_program =
 let convert_ir3_md_decl color_table (md_struct:md_struct) (program_ir3:ir3_program): arm_program * arm_program=
 	let data_instr_list, text_instr_list = convert_ir3_stmt_node_list md_struct.stmt_node_list color_table md_struct.md program_ir3 in
 	let store_params = store_params_instr 0 md_struct.md.params3 md_struct.md in
-	let load_params = load_alive_params md_struct in
+	let load_params_instr = load_alive_params md_struct in
 	data_instr_list,
 		(*Label with function name*)
 		PseudoInstr ("\n" ^ md_struct.md.id3 ^ ":") ::
@@ -570,6 +570,7 @@ let convert_ir3_md_decl color_table (md_struct:md_struct) (program_ir3:ir3_progr
 		(* allocate local variables*)
 		SUB ("", false, "sp", "fp", number_op (get_stack_space md_struct.md)) ::
 		store_params @
+		load_params_instr @
 		text_instr_list @
 		(* Put a L#exit label here *)
 		PseudoInstr ("\n" ^ label_exit_methd md_struct.md ^ ":") ::
