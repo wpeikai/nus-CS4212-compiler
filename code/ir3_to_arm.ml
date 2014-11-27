@@ -508,7 +508,7 @@ let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (progr
 		in [], a
 		
 	| Label3 label_0 -> 
-		[], [Label (string_of_int label_0)]
+		[], [PseudoInstr ("\n." ^ (string_of_int label_0) ^ ":")]
 	| GoTo3 label_0 -> 
 		[], [B ("", "." ^ (string_of_int label_0))]
 	| ReturnStmt3 id3_1 ->
