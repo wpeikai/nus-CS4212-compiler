@@ -240,12 +240,15 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 		match head with
 			| IfStmt (bool_exp_if, stmt_jlite_if, stmt_jlite_else) -> 
 				(* Convert the boolean expression *)
-				let _, bool_exp_if_ir3, stmt_list_if, localvars_0 = convert_jlite_expr bool_exp_if counter_var counter_label p md_decl_ in
+				let bool_type_1, bool_exp_if_ir3, stmt_list_if, localvars_0 = convert_jlite_expr bool_exp_if counter_var counter_label p md_decl_ in
+
+				let idc3_create_temp_list1, new_expr1, localvars_7 = create_temp_idc3 bool_exp_if_ir3 bool_type_1 counter_var in
+
 
 				(* Create the labels *)
 				let label_int_if = create_label counter_label in
 				let label_if = Label3 label_int_if in
-				let ifstmt = IfStmt3 (bool_exp_if_ir3, label_int_if) in
+				let ifstmt = IfStmt3 ((Idc3Expr new_expr1), label_int_if) in
 
 				let label_int_next = create_label counter_label  in
 				let label_next  = Label3 label_int_next in
@@ -254,7 +257,7 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 				let stmt_if_list_ir3, localvars_1 = convert_stmts_list stmt_jlite_if counter_var counter_label p md_decl_ in
 				let stmt_else_list_ir3, localvars_2 = convert_stmts_list stmt_jlite_else counter_var counter_label p md_decl_ in
 
-				stmt_list_if @  ifstmt :: stmt_else_list_ir3 @ (GoTo3 label_int_next) :: label_if :: stmt_if_list_ir3 @ [label_next], localvars_0 @ localvars_1 @ localvars_2
+				stmt_list_if @ idc3_create_temp_list1 @  ifstmt :: stmt_else_list_ir3 @ (GoTo3 label_int_next) :: label_if :: stmt_if_list_ir3 @ [label_next], localvars_0 @ localvars_1 @ localvars_2 @ localvars_7
 			| WhileStmt (bool_while_exp, stmt_jlite_list) ->
 				(* Convert the boolean expression *)
 				let _, bool_while_exp_ir3, stmt_list_boolean_exp, localvars_0 = convert_jlite_expr bool_while_exp counter_var counter_label p md_decl_ in
