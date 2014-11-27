@@ -354,8 +354,12 @@ let redundant_ldr_str_2 blk update_flag =
   else
     let rec helper instrs update_flag =
       let get_result i is flag = 
-        let (new_instrs, new_flag) = helper is flag in
-          (i @ new_instrs, flag)
+        if flag == true then
+          let (new_instrs, new_flag) = helper is true in
+            (i @ new_instrs, true)
+        else
+          let (new_instrs, new_flag) = helper is flag in
+            (i @ new_instrs, new_flag)
       in
       let len = List.length instrs in
       match len, instrs with
@@ -399,13 +403,14 @@ let redundant_ldr_str_2 blk update_flag =
                     (* i1 :: helper is *)
               | _ -> get_result [i1] is update_flag
             end
-          | (ln1,MOV (_,_,rd1,op1)), (ln2,STR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
+          (* | (ln1,MOV (_,_,rd1,op1)), (ln2,STR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) -> *)
+          | (ln1,MOV (_,_,rd1,op1)), (_, STR _), (ln3,MOV (_,_,rd3,op3)) ->
             (* print_string ((string_of_int iter_count) ^ "  I'm here!! MOV STR MOV\n"); *)
             (* print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n"); *)
             begin
               match op1, op3 with
               | RegOp r1, RegOp r3 -> 
-                if (r1 = r3) && (rd1 = rd3) && (rd1 <> rd2) then
+                if (r1 = r3) && (rd1 = rd3) then
                   (* List.append [i1; i2] (helper is) *)
                   get_result [i1; i2] is true
                 else get_result [i1] is update_flag
@@ -420,17 +425,20 @@ let redundant_ldr_str_2 blk update_flag =
                 else get_result [i1] is update_flag
               | _ -> get_result [i1] is update_flag
             end
-          | (ln1,MOV (_,_,rd1,op1)), (ln2,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
+          (* | (ln1,MOV (_,_,rd1,op1)), (ln2,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) -> *)
+          | (ln1,MOV (_,_,rd1,op1)), (_, LDR _), (ln3,MOV (_,_,rd3,op3)) ->
             (* print_string ((string_of_int iter_count) ^ "  I'm here!! MOV LDR MOV\n") ; *)
             begin
               match op1, op3 with
               | RegOp r1, RegOp r3 -> 
-                if (r1 = r3) && (rd1 = rd3) && (rd1 <> rd2) then
+                if (r1 = r3) && (rd1 = rd3) then
+                (* if (r1 = r3) && (rd1 = rd3) && (rd1 <> rd2) then *)
                   get_result [i1; i2] is true
                   (* List.append [i1; i2] (helper is) *)
                 else get_result [i1] is update_flag
               | ImmedOp op1, ImmedOp op3 ->
-                if (op1 = op3) && (rd1 = rd3) && (rd1 <> rd2) then
+                (* if (op1 = op3) && (rd1 = rd3) && (rd1 <> rd2) then *)
+                if (op1 = op3) && (rd1 = rd3) then
                   get_result [i1; i2] is true
                   (* List.append [i1; i2] (helper is) *)
                 else get_result [i1] is update_flag
