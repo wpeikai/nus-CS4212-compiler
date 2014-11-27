@@ -574,18 +574,17 @@ let get_nodes_adjacent_to (var:id3) (set:edge_set): id3_set =
 	let var_list = helper var (EdgeSet.elements set) in
 	let var_set = add_list_to_set var_list Id3Set.empty
 	in var_set
-(*
 
 let edge_set_contains (edge: id3 * id3) (graph: edge_set): bool =
-	let m = EdgeSet.length graph in
-	let n = EdgeSet.length (EdgeSet.diff graph (EdgeSet.singleton edge)) in
+	let m = EdgeSet.cardinal graph in
+	let n = EdgeSet.cardinal (EdgeSet.diff graph (EdgeSet.singleton edge)) in
 	not (m == n)
 
-let is_a_clique (vars: id3_set) (graph: edge_set): bool
+let is_a_clique (vars: id3_set) (graph: edge_set): bool =
 	let rec helper edge_list graph =
 	match edge_list with
 	| head::tail ->
-		if not edge_set_contains head
+		if not (edge_set_contains head graph)
 		then false
 		else helper tail graph
 	| [] ->
@@ -604,16 +603,18 @@ let find_node_to_remove (set:edge_set): id3 =
 		then h
 		else helper tail set
 	| _ -> failwith "#356 This should not happen in a chordal graph"
+	in helper (EdgeSet.elements set) set
+
+let remove_edges_containing (v:id3) (set:edge_set):edge_set =
+	EdgeSet.filter (partition_function v) set
 
 
 let rec perfect_elimination_ordering_2 (set:edge_set): id3 list = 
 	let v = find_node_to_remove set in
-	let new_set = remove_edges_containing v new_set in
+	let new_set = remove_edges_containing v set in
 	if (EdgeSet.is_empty new_set)
 	then [v]
 	else v::(perfect_elimination_ordering_2 new_set)
-
-*)
 (* 
 let create_register_table graph_table md =
 
