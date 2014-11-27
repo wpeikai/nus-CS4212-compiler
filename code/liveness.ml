@@ -551,7 +551,69 @@ let perfect_elimination_ordering (set:edge_set): id3 list =
 	in let initial_bool_set = bool_set_list_from_edge_set_list [set] 
 	in helper initial_bool_set []
 
+(*##########################################################################*)
 
+let rec add_list_to_set l s =
+	match l with
+	| head::tail ->
+		let new_set = Id3Set.union s (Id3Set.singleton head) in
+		add_list_to_set tail new_set
+	| [] ->
+		s
+
+let get_nodes_adjacent_to (var:id3) (set:edge_set): id3_set =
+	let rec helper (var: id3) (edges: (id3 * id3) list): id3 list = 
+		match edges with
+		| (n1, n2)::tail ->
+			if are_equal_id3 n1 var 
+			then n2::helper var tail
+			else helper var tail
+		| [] ->
+			[]
+	in 
+	let var_list = helper var (EdgeSet.elements set) in
+	let var_set = add_list_to_set var_list Id3Set.empty
+	in var_set
+(*
+
+let edge_set_contains (edge: id3 * id3) (graph: edge_set): bool =
+	let m = EdgeSet.length graph in
+	let n = EdgeSet.length (EdgeSet.diff graph (EdgeSet.singleton edge)) in
+	not (m == n)
+
+let is_a_clique (vars: id3_set) (graph: edge_set): bool
+	let rec helper edge_list graph =
+	match edge_list with
+	| head::tail ->
+		if not edge_set_contains head
+		then false
+		else helper tail graph
+	| [] ->
+		true
+	in 
+	let all_edges_set = cartesian_square vars in
+	let all_edges = EdgeSet.elements all_edges_set in
+	helper all_edges graph
+
+let find_node_to_remove (set:edge_set): id3 = 
+	let rec helper (edges:(id3 * id3) list) (set:edge_set): id3 = 
+	match edges with
+	| (h,_)::tail ->
+		let neighbours = get_nodes_adjacent_to h set in
+		if is_a_clique neighbours set
+		then h
+		else helper tail set
+	| _ -> failwith "#356 This should not happen in a chordal graph"
+
+
+let rec perfect_elimination_ordering_2 (set:edge_set): id3 list = 
+	let v = find_node_to_remove set in
+	let new_set = remove_edges_containing v new_set in
+	if (EdgeSet.is_empty new_set)
+	then [v]
+	else v::(perfect_elimination_ordering_2 new_set)
+
+*)
 (* 
 let create_register_table graph_table md =
 
