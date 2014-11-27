@@ -250,15 +250,14 @@ let union_list (l: (id3_set) list) :id3_set=
 (* Given a node of key k, we will extract all the ins of the predecessors to build the out *)
 let update_out (table: stmt_table) (k: stmt_key): id3_set=
 	let node = (Hashtbl.find table k) in
-	let succeId3Setors = node.succ in
-	let successors = (Hashtbl.find table k).succ in
+	let successors = node.succ in
 	let rec helper (succ: stmt_key list): id3_set list = 
 		match succ with
 		| head::tail ->
 			let n = (Hashtbl.find table head) in
 			n.live_in :: helper tail
 		| [] -> []
-	in let in_list = helper succeId3Setors
+	in let in_list = helper successors
 	in let return_out = match node.stmt with
 		   				| ReturnStmt3 var ->
 							Id3Set.singleton var
@@ -394,7 +393,7 @@ let create_graph_from_stmt_table (table:stmt_table):edge_set =
 			let live_out_edges = cartesian_square head.live_out in
 			let new_graph = EdgeSet.union graph live_in_edges in
 			let new_new_graph = EdgeSet.union new_graph live_out_edges in
-			(helper graph tail)
+			(helper new_new_graph tail)
 		| [] ->
 			graph
 	(* Initial table size so that Ocaml do not increase size too often *)
@@ -580,7 +579,6 @@ let rec bool_set_list_from_edge_set_list (set_seq: edge_set list): bool_set list
 	
 
 let create_new_set_seq (bool_set_seq: bool_set list) (removed_edges: edge_set) (var:id3): (bool_set list) = 
-	let edge_sequence = EdgeSet.elements removed_edges in
 	let rec helper (node_seq: id3 list) (bool_set_seq: bool_set list)=
 	match node_seq with
 	| head::tail ->
@@ -618,8 +616,6 @@ let create_new_set_seq (bool_set_seq: bool_set list) (removed_edges: edge_set) (
 	in helper adjacent_nodes_list bool_set_seq
 
 let perfect_elimination_ordering (set:edge_set): id3 list =
-	let set_sequence = [set] in
-	let var_sequence = [] in
 	let rec helper (bool_set_seq:bool_set list) (var_seq: id3 list): id3 list =
 		match bool_set_seq with
 		| head::tail ->
