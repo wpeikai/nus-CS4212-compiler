@@ -152,7 +152,7 @@ let rec push_arguments_on_stack (n:int) (idc3_list: idc3 list) (md:md_decl3) col
 			let arm_instr =
 				if var_used0 == reg_to_store
 				then []
-				else [MOV ("", false, var_used0, (RegOp reg_to_store))]
+				else [MOV ("", false, reg_to_store, (RegOp var_used0))]
 			in 
 			bef0 @ arm_instr @ (push_arguments_on_stack (n+1) tail md color_table)
 		| [] -> []
