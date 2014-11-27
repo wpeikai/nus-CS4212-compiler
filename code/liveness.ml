@@ -102,8 +102,8 @@ let rec find_label (node_list: stmt_node list) (label:label3): stmt_key =
 	| [] ->
 		failwith ("#The Label " ^ string_of_int label ^ " was not found here, this should not happen")
 
-(*find the succeId3Setors of a statement*)
-let find_succeId3Setors (node:stmt_node) (node_list: stmt_node list): stmt_node = 
+(*find the successors of a statement*)
+let find_successors (node:stmt_node) (node_list: stmt_node list): stmt_node = 
 	match node.stmt with
 	| GoTo3 label ->
 		node.succ <- (find_label node_list label) :: node.succ;
@@ -111,27 +111,27 @@ let find_succeId3Setors (node:stmt_node) (node_list: stmt_node list): stmt_node 
 	| IfStmt3 (_,label) ->
 		node.succ <- (find_label node_list label) :: (node.id - 1) :: node.succ;
 		node
-	| ReturnStmt3 _ -> (*No succeId3Setor *)
+	| ReturnStmt3 _ -> (*No successor *) 
 		node
-	| ReturnVoidStmt3 -> (*No succeId3Setor *)
+	| ReturnVoidStmt3 -> (*No successor *)
 		node
 	| _ -> (* Simple case*)
 		node.succ <- (node.id - 1) :: node.succ;
 		node
 
-(*find the succeId3Setors for every statement in a list of statement *)
-(*we search the succeId3Setors within the given list *)
-let find_all_succeId3Setors (node_list: stmt_node list): stmt_node list = 
+(*find the successors for every statement in a list of statement *)
+(*we search the successors within the given list *)
+let find_all_successors (node_list: stmt_node list): stmt_node list = 
 	let rec helper (partial_list: stmt_node list) (complete_list: stmt_node list): stmt_node list =
 		match partial_list with
 		| head::tail ->
-			(find_succeId3Setors head complete_list)::(helper tail complete_list)
+			(find_successors head complete_list)::(helper tail complete_list)
 		| [] ->
 			[]
 	in (helper node_list node_list)
 
 (* Determines the used variables in a statement *)
-(* I consider we dont have AId3SetignDeclStmt3 *)
+(* I consider we dont have AssignDeclStmt3 *)
  let def_vars (stmt:ir3_stmt): id3_set =
 	match stmt with
 	| AssignStmt3 (var, _)->
@@ -154,7 +154,7 @@ let rec used_vars_in_idc3_list (varid_list: idc3 list): id3_set =
 	| [] ->
 		Id3Set.empty
 
-(* returns the variables used in an ir3 expreId3Setion *)
+(* returns the variables used in an ir3 expression *)
 let rec used_vars_in_expr (expr:ir3_exp): id3_set =
 	match expr with
 	| BinaryExp3 (_, a, b) ->
@@ -209,28 +209,37 @@ let rec create_stmt_node_list (stmt_list: ir3_stmt list) (mthd:md_decl3): stmt_n
 	| [] ->
 		[]
 
-(* Given a statement k, it adds its id to all its succeId3Setors *)
-let add_predeceId3Setor (k:stmt_key) (node: stmt_node) (table:stmt_table): unit = 
-	let rec helper (k:stmt_key) (preds:stmt_key list) (table:stmt_table): unit =
-		match preds with
+(* Given a statement k, it adds its id to all its successors *)
+let add_predecessor (k:stmt_key) (node: stmt_node) (table:stmt_table): unit = 
+	let rec helper (k:stmt_key) (succ:stmt_key list) (table:stmt_table): unit =
+		match succ with
 		| head::tail ->
-			(Hashtbl.find table head).pred <- k :: (Hashtbl.find table head).pred;
+			begin
+				print_string (string_of_int k);
+				print_string "\n";
+				print_string (string_of_ir3_stmt node.stmt);
+				print_string "\n";
+				print_string "\n";
+
+			let temp = k :: (Hashtbl.find table head).pred in
+			(Hashtbl.find table head).pred <- temp;
 			helper k tail table
+			end
 		| [] -> 
 			()
 	in (helper k node.succ table)
 
-let find_predeceId3Setors (table: stmt_table): unit = 
+let find_predecessors (table: stmt_table): unit = 
 	let map_add (k:stmt_key) (node: stmt_node):unit =
-		add_predeceId3Setor k node table
+		add_predecessor k node table
 	in (Hashtbl.iter map_add table)
 
-(*creates a list of statement nodes, with correct succeId3Setors given the program *)
+(*creates a list of statement nodes, with correct successors given the program *)
 let rec create_updated_stmt_node_list ((_,main,mds):ir3_program): stmt_node list =
 	let rec helper (mds:md_decl3 list): stmt_node list =
 		match mds with
 		| head::tail ->
-			(find_all_succeId3Setors (create_stmt_node_list head.ir3stmts head))@(helper tail)
+			(find_all_successors (create_stmt_node_list head.ir3stmts head))@(helper tail)
 		| [] ->
 			[]
 	in (helper (main::mds)) 
@@ -251,7 +260,7 @@ let create_stmt_node_table (p:ir3_program): stmt_table =
 	in let table = Hashtbl.create table_size_init
 	in let filled_table = (helper table nodes)
 	in begin
-		find_predeceId3Setors filled_table;
+		find_predecessors filled_table;
 		filled_table
 	end
 
@@ -260,9 +269,9 @@ let filter (k:stmt_key) (n:stmt_node) (init:stmt_key list): stmt_key list=
 	| [] -> k :: init 
 	| _ -> init
 
-(* Find all the statements in the program which dont have suceId3Setors *)
-(* We need them for liveneId3Set analysis *)
-let find_stmts_without_succeId3Setors (table: stmt_table): stmt_key list =
+(* Find all the statements in the program which dont have sucessors *)
+(* We need them for liveness analysis *)
+let find_stmts_without_successors (table: stmt_table): stmt_key list =
 	Hashtbl.fold filter table []
 
 let compute_in_from_out (out: id3_set) (use: id3_set) (def: id3_set): id3_set=
@@ -271,10 +280,11 @@ let compute_in_from_out (out: id3_set) (use: id3_set) (def: id3_set): id3_set=
 let union_list (l: (id3_set) list) :id3_set=
 	List.fold_left Id3Set.union Id3Set.empty l
 
-(* Given a node of key k, we will extract all the ins of the predeceId3Setors to build the out *)
+(* Given a node of key k, we will extract all the ins of the predecessors to build the out *)
 let update_out (table: stmt_table) (k: stmt_key): id3_set=
 	let node = (Hashtbl.find table k) in
 	let succeId3Setors = node.succ in
+	let successors = (Hashtbl.find table k).succ in
 	let rec helper (succ: stmt_key list): id3_set list = 
 		match succ with
 		| head::tail ->
@@ -322,7 +332,7 @@ let reset_bools (table:stmt_table): unit =
 	in Hashtbl.iter f table
 
 let liveness_analysis (table: stmt_table): unit = 
-	let terminals = find_stmts_without_succeId3Setors table in
+	let terminals = find_stmts_without_successors table in
 	let rec helper (stmt_list:stmt_key list): unit =
 		if visit_terminals stmt_list table
 		then 
@@ -422,3 +432,11 @@ let create_all_graphs (table:stmt_table):graph_table =
 	(* Initial table size so that Ocaml do not increase size too often *)
 	in let table = (Hashtbl.create 1000)
 	in (helper table stmt_list)
+
+(* 
+let create_register_table graph_table md =
+
+
+
+let create_all_registers_table (all_graphs) =
+ *)

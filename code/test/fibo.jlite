@@ -35,5 +35,6 @@ class Fibo {
 				return f.fib(n-2) + f.fib(n-1);
 			}
 		}
+		return 0;
 	}
 }

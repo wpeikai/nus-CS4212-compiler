@@ -1,5 +1,5 @@
-OC = ocamlc -c
-OO = ocamlc -o
+OC = ocamlc -g -c
+OO = ocamlc -g -o
 OLEX = ocamllex
 OYACC = ocamlyacc
 CXXFLAGS = -g
