@@ -124,8 +124,11 @@ let find_successors (node:stmt_node) (node_list: stmt_node list): stmt_node =
 let find_all_successors (node_list: stmt_node list): stmt_node list = 
 	let rec helper (partial_list: stmt_node list) (complete_list: stmt_node list): stmt_node list =
 		match partial_list with
+		| head::[] ->
+			[head]
 		| head::tail ->
 			(find_successors head complete_list)::(helper tail complete_list)
+
 		| [] ->
 			[]
 	in (helper node_list node_list)
@@ -215,12 +218,6 @@ let add_predecessor (k:stmt_key) (node: stmt_node) (table:stmt_table): unit =
 		match succ with
 		| head::tail ->
 			begin
-				print_string (string_of_int k);
-				print_string "\n";
-				print_string (string_of_ir3_stmt node.stmt);
-				print_string "\n";
-				print_string "\n";
-
 			let temp = k :: (Hashtbl.find table head).pred in
 			(Hashtbl.find table head).pred <- temp;
 			helper k tail table
