@@ -553,6 +553,7 @@ let perfect_elimination_ordering (set:edge_set): id3 list =
 
 (*##########################################################################*)
 
+(* Inria webpage saus such a function already exists *)
 let rec add_list_to_set l s =
 	match l with
 	| head::tail ->
@@ -560,7 +561,7 @@ let rec add_list_to_set l s =
 		add_list_to_set tail new_set
 	| [] ->
 		s
-
+(* Returns a set of nodes adjacent to the given node *)
 let get_nodes_adjacent_to (var:id3) (set:edge_set): id3_set =
 	let rec helper (var: id3) (edges: (id3 * id3) list): id3 list = 
 		match edges with
@@ -575,11 +576,13 @@ let get_nodes_adjacent_to (var:id3) (set:edge_set): id3_set =
 	let var_set = add_list_to_set var_list Id3Set.empty
 	in var_set
 
+(* returns true if graph contains edge *)
 let edge_set_contains (edge: id3 * id3) (graph: edge_set): bool =
 	let m = EdgeSet.cardinal graph in
 	let n = EdgeSet.cardinal (EdgeSet.diff graph (EdgeSet.singleton edge)) in
 	not (m == n)
 
+(*returns true if the set of variables forms a clique in the given graph*)
 let is_a_clique (vars: id3_set) (graph: edge_set): bool =
 	let rec helper edge_list graph =
 	match edge_list with
@@ -594,6 +597,7 @@ let is_a_clique (vars: id3_set) (graph: edge_set): bool =
 	let all_edges = EdgeSet.elements all_edges_set in
 	helper all_edges graph
 
+(* Find a node whose neighbours form a clique *)
 let find_node_to_remove (set:edge_set): id3 = 
 	let rec helper (edges:(id3 * id3) list) (set:edge_set): id3 = 
 	match edges with
@@ -605,9 +609,9 @@ let find_node_to_remove (set:edge_set): id3 =
 	| _ -> failwith "#356 This should not happen in a chordal graph"
 	in helper (EdgeSet.elements set) set
 
+(*returns a graph where all the edges containing v are removed *)
 let remove_edges_containing (v:id3) (set:edge_set):edge_set =
 	EdgeSet.filter (partition_function v) set
-
 
 let rec perfect_elimination_ordering_2 (set:edge_set): id3 list = 
 	let v = find_node_to_remove set in
