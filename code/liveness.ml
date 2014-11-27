@@ -779,9 +779,9 @@ let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_no
 	let color_graph = create_graph_color_from_stmt_table stmt_tab variables in
 	
 
-	print_stmt_list stmt_list color_graph;
+	(* print_stmt_list stmt_list color_graph; *)
 
-	print_string "\n\n\n*****2nd* version*************\n\n\n\n\n";
+	(* print_string "\n\n\n*****2nd* version*************\n\n\n\n\n"; *)
 
 	(* Then color a new table depending of the numbers of registers available *)
 	(* Let s start with 5 *)
@@ -807,11 +807,9 @@ let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_no
 	let cleaned_graph_color = clean_graph_color new_color_graph nb_registers_available in
 	new_md, new_stmt_tab, cleaned_graph_color, new_stmt_list
 
-
-
 let create_new_md_struct md =
 	let new_md_decl, stmt_tab, color_graph, new_stmt_list = new_stmt_table_from_md md in
-	print_stmt_list new_stmt_list color_graph;
+	(* print_stmt_list new_stmt_list color_graph; *)
 
 	create_md_struct new_md_decl.id3 color_graph new_md_decl stmt_tab new_stmt_list
 
@@ -835,7 +833,6 @@ let create_md_table (p:ir3_program): md_table=
 let print_graph_color color_graph:unit =
 	let f k v = print_string (k ^ "   ->    " ^ (string_of_int v) ^ "\n"); in
 	Hashtbl.iter f color_graph
-
 
 let print_md_struc md_key md_structure:unit =
 	begin

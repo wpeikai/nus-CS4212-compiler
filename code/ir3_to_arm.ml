@@ -92,164 +92,295 @@ let get_stack_local_vars_space (md:md_decl3): int =
 let number_op (i:int): operand2_type=
 	ImmedOp ("#" ^ (string_of_int i))
 
+let color_to_register (color:int): string =
+	let letter = if color >= 0 then "v" else "a" in (letter ^ (string_of_int color))	
+
+
+let convert_id3_var id3_0 color_table md  preferred_reg: arm_program * arm_program * reg =
+	let reg1 = try [], [], color_to_register (Hashtbl.find color_table id3_0) with Not_found ->
+		[LDR ("", "", preferred_reg, (RegPreIndexed ("fp", - get_offset id3_0 md , false)))],
+		[STR ("", "", preferred_reg, (RegPreIndexed ("fp", - get_offset id3_0 md , false)))],
+		preferred_reg
+	in reg1
+
 (* From a idc3 and the register, it gives all the instructions *)
-let convert_idc3 (var:idc3) (register:reg) (md:md_decl3): arm_program =
+let convert_operand (var:idc3) color_table (md:md_decl3) preferred_reg : arm_program * arm_program * operand2_type =
 	match var with
-	| IntLiteral3 i -> 
-		[MOV ("", false, register, (number_op i))]
+		| IntLiteral3 i -> 
+			[], [],  (number_op i)
+		| Var3 var_id3 -> 
+			let bef, aft, var_used = convert_id3_var  var_id3  color_table md  preferred_reg in
+			bef, aft, (RegOp var_used)
+		| BoolLiteral3 bool_id3 -> 
+			begin
+				match bool_id3 with
+				(* true = 1 *)
+				| true -> [], [], (number_op 1)
+				(* false = 0 *)
+				| false -> [], [], (number_op 0)
+			end
+		| _ -> failwith "#55"
+
+(* From a idc3 and the register, it gives all the instructions *)
+let convert_idc3 (var:idc3) color_table (md:md_decl3) preferred_reg : arm_program * arm_program * reg =
+	match var with
+	| IntLiteral3 i ->
+		[MOV ("", false, preferred_reg, (number_op i))], [], preferred_reg
 	| Var3 var_id3 -> 
-		[LDR ("", "", register, (RegPreIndexed ("fp", - get_offset var_id3 md , false)))]
+		let bef, aft, var_used = convert_id3_var  var_id3  color_table md  preferred_reg in
+		bef, aft, var_used
 	| BoolLiteral3 bool_id3 -> 
 		begin
 			match bool_id3 with
 			(* true = 1 *)
-			| true -> [MOV ("", false, register, (number_op 1))]
+			| true -> [MOV ("", false, preferred_reg, (number_op 1))], [], preferred_reg
 			(* false = 0 *)
-			| false -> [MOV ("", false, register, (number_op 0))]
+			| false -> [MOV ("", false, preferred_reg, (number_op 0))], [], preferred_reg
 		end
 	| _ -> failwith "#55"
 
-	
+
 (* Push all idc3 variables on idc3_list in the stack in the registers a1, a2, a3, a4 *)
-let rec push_arguments_on_stack (n:int) (idc3_list: idc3 list) (md:md_decl3) : arm_program=
+let rec push_arguments_on_stack (n:int) (idc3_list: idc3 list) (md:md_decl3) color_table: arm_program=
 	
 	if n < 4
 	(* 4 arguments only *)
 	then match idc3_list with 
 		| head :: tail -> 
-			(convert_idc3 head ("a" ^ (string_of_int (n+1))) md) @ (push_arguments_on_stack (n+1) tail md)
+			let reg_to_store = ("a" ^ (string_of_int (n+1))) in
+			let bef0, aft0, var_used0 = convert_idc3 head color_table md reg_to_store in
+			let arm_instr =
+				if var_used0 == reg_to_store
+				then []
+				else [MOV ("", false, var_used0, (RegOp reg_to_store))]
+			in 
+			bef0 @ arm_instr @ (push_arguments_on_stack (n+1) tail md color_table)
 		| [] -> []
 	else 
-	let sub_sp_instr = 
-		if n == 4
-		then [SUB ("", false, "sp", "sp", (number_op ((List.length idc3_list) * 4)))]
-		else []
-	in
-	(* If there are more than 4 arguments *)
-	match idc3_list with 
-		| head :: tail -> 
-			sub_sp_instr @
-			convert_idc3 head "v1" md @
-			STR ("", "", "v1", (RegPreIndexed ("sp", (4 * (n-4)), false))) :: 
-			push_arguments_on_stack (n+1) tail md
-		| [] -> []
-	
-let color_to_register (color:int): string =
-	let letter = if color >= 0 then "v" else "a" in (letter ^ (string_of_int color))	
+		let sub_sp_instr = 
+			if n == 4
+			then [SUB ("", false, "sp", "sp", (number_op ((List.length idc3_list) * 4)))]
+			else []
+		in
 
-(* Convert an ir3 expr to arm instructions *)
-let convert_ir3_expr (exp:ir3_exp) (md:md_decl3) (program_ir3:ir3_program) (color_table:colored_table) (dest_reg:string): arm_program=
-	match exp with
-	| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
-		let instructions1 = convert_idc3 idc3_1 "a1" mld in
-		let instructions2 = convert_idc3 idc3_2 "a2" md in 
-		let reg1 = color_to_register (Hashtbl.find color_table id3_0) in
-		let reg2 = color_to_register (Hashtbl.find color_table id3_0) in
-		begin
-			match ir3_op_1 with 
-			| AritmeticOp op ->
-				let arm_op_instructions =
-					begin
-						match op with
-						| "+" -> 
-							[ADD ("", false, "v1", "a1", (RegOp "a2"))]
-						| "-" ->
-							[SUB ("", false, "v1", "a1", (RegOp "a2"))]
-						| "*" -> 	
-							(* Improve multiplication *)
-							[MUL ("", false, "v1", "a1", "a2")] 						
-						| _ -> failwith "#57"
-					end
-				in instructions1 @ instructions2 @ arm_op_instructions
-			| RelationalOp op -> 
-				let comparative_inst = [CMP ("", "a1", (RegOp "a2"))]
-				in let arm_op_instructions =
-					begin
-						match op with
-						| "==" -> 	
-							MOV ("eq", false, "v1", (number_op 1)) :: 
-							MOV ("ne", false, "v1", (number_op 0)) :: []
-						| "!=" -> 	
-							MOV ("eq", false, "v1", (number_op 0)) :: 
-							MOV ("ne", false, "v1", (number_op 1)) :: []
-						| ">" -> 	
-							MOV ("gt", false, "v1", (number_op 1)) :: 
-							MOV ("lt", false, "v1", (number_op 0)) :: []
-						| ">=" -> 
-							MOV ("ge", false, "v1", (number_op 1)) :: 
-							MOV ("le", false, "v1", (number_op 0)) :: []
-						| "<" -> 
-							MOV ("gt", false, "v1", (number_op 0)) :: 
-							MOV ("lt", false, "v1", (number_op 1)) :: []
-						| "<=" -> 
-							MOV ("ge", false, "v1", (number_op 0)) :: 
-							MOV ("le", false, "v1", (number_op 1)) :: []
-						| _ -> failwith "#59"
-					end
-				in instructions1 @ instructions2 @ comparative_inst @ arm_op_instructions
-			| BooleanOp op -> 
-				let arm_op_instructions =
-					begin
-						match op with
-						| "&&" -> 
-							[AND ("", false, "v1", "a1", (RegOp "a2"))]
-						| "||" -> 
-							[ORR ("", false, "v1", "a1", (RegOp "a2"))]
-						| _ -> failwith "#61"
-					end
-				in let comparative_inst = CMP ("", "v1", (number_op 0)) :: MOV ("eq", false, "v1", (number_op 0)) :: MOV ("ne", false, "v1", (number_op 1)) :: []
-				in instructions1 @ instructions2 @ arm_op_instructions @ comparative_inst
-			| _ -> failwith "#54: Unknown binary operator"
-		end
-	| UnaryExp3 (ir3_op_1, idc3_0) ->
-		let instructions1 = convert_idc3 idc3_0 "a1" md
-		in 
-		begin
-			match ir3_op_1 with 
-			| UnaryOp op ->
-				let arm_op_instructions =
-					begin
-						match op with
-						| "-" -> 
-							MOV ("", false, "a2", (number_op 0)) ::
-							SUB ("", false, "v1", "a2", (RegOp "a1")) :: []
-						| "!" -> 
-							CMP ("", "a1", (number_op 1)) :: 
-							MOV ("eq", false, "v1", (number_op 0)) :: 
-							MOV ("ne", false, "v1", (number_op 1)) :: []
-						| _ -> failwith "#67"
-					end
-				in instructions1 @ arm_op_instructions
-			| _ -> failwith "#544: Unknown unary operator"
-		end
-	| Idc3Expr idc3_0 ->
-		convert_idc3 idc3_0 "v1" md
-	| FieldAccess3 (id3_1, id3_2) ->
-		LDR ("", "", "v2", (RegPreIndexed ("fp", - get_offset id3_1 md, false))) ::
-		LDR ("", "", "v1", (RegPreIndexed ("v2", get_field_offset id3_1 id3_2 md program_ir3,false))) :: 
-		[]
-	| ObjectCreate3 class_name ->
-		let var_list = class_var_list (ObjectT class_name) program_ir3
-		in let alloc_size = 4 * List.length var_list
-		in MOV ("", false, "a1", (number_op alloc_size)) ::
-		BL ("", "_Znwj(PLT)") ::
-		MOV ("", false, "v1", (RegOp "a1")) :: []	
-	| MdCall3 (id3_0, idc3_list) -> 
-		let idc3_list_length = (List.length idc3_list) in
-		push_arguments_on_stack 0 idc3_list md @ 
-		BL ("", id3_0 ^ "(PLT)") ::
-		if idc3_list_length > 4
-		then [ADD ("", false, "sp", "sp", number_op ((idc3_list_length-4)*4))] @ [MOV ("", false, "v1", (RegOp "a1"))]
-		else [MOV ("", false, "v1", (RegOp "a1"))]
-	| _ ->
-		failwith "#50: Expression not yet implemented"
+		(* If there are more than 4 arguments *)
+		match idc3_list with 
+			| head :: tail -> 
+				let bef0, aft0, var_used0 = convert_idc3 head color_table md  "v1" in
+				sub_sp_instr @
+				bef0 @
+				STR ("", "", var_used0, (RegPreIndexed ("sp", (4 * (n-4)), false))) :: 
+				aft0 @
+				push_arguments_on_stack (n+1) tail md color_table
+			| [] -> []
+	
+
 
 (* Convert an ir3 statement to arm instructions *)
-let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm_program * arm_program = 
-	match stmt with
-	| AssignStmt3 (id3_0, ir3_exp_0) -> (*TODO *)
-		let dest_reg = color_to_register (Hashtbl.find color_table id3_0) in
-		[], (convert_ir3_expr ir3_exp_0 md program_ir3 dest_reg)
+let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (program_ir3:ir3_program):arm_program * arm_program = 
+	match stmt_node.stmt with
+	| AssignStmt3 (id3_0, ir3_exp_0) ->
+	
+		begin
+		match ir3_exp_0 with
+			| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) ->
+				let bef0, aft0, var_used0 = convert_id3_var id3_0 color_table md  "a1" in
+				let bef1, aft1, var_used1 = convert_idc3 idc3_1 color_table md "a1" in
+				let bef2, aft2, var_used2reg = convert_operand idc3_2 color_table md "a2" in
+
+				begin
+					match ir3_op_1 with 
+					| AritmeticOp op ->
+						begin
+							match op with
+							| "+" -> 
+								[],
+									bef0 @
+									bef1 @
+									bef2 @
+									[ADD ("", false, var_used0, var_used1, var_used2reg)] @
+									aft0 @
+									aft1 @
+									aft2	
+							| "-" ->
+								[],
+									bef0 @
+									bef1 @
+									bef2 @
+								[SUB ("", false, var_used0, var_used1, var_used2reg)] @
+									aft0 @
+									aft1 @
+									aft2	
+							| "*" -> 	
+								(* Improve multiplication *)
+								begin 
+								match var_used2reg with 
+								|  RegOp reg -> 
+									[],
+										bef0 @
+										bef1 @
+										bef2 @
+										[MUL ("", false, var_used0, var_used1, reg)] 	@
+										aft0 @
+										aft1 @
+										aft2		
+								| ImmedOp s -> 
+									let bef3, aft3, var_used3 = convert_idc3 idc3_2 color_table md "a2" in
+									[], 
+										bef0 @
+										bef1 @
+										bef3 @
+										[MUL ("", false, var_used0, var_used1, var_used3)] 	@
+										aft0 @
+										aft1 @
+										aft3
+								end
+							| _ -> failwith "#57"
+						end
+					
+					| BooleanOp op -> 
+						let bef0, aft0, var_used0 = convert_id3_var id3_0 color_table md  "a1" in
+						let bef1, aft1, var_used1 = convert_idc3 idc3_1 color_table md "a1" in
+						let bef2, aft2, var_used2reg = convert_operand idc3_2 color_table md "a2" in
+
+						let arm_op_instructions =
+							begin
+								match op with
+								| "&&" -> 
+									[AND ("", false, var_used0, var_used1, var_used2reg)]
+								| "||" -> 
+									[ORR ("", false, var_used0, var_used1, var_used2reg)]
+								| _ -> failwith "#61"
+							end in
+						[],
+							bef0 @
+							bef1 @
+							bef2 @
+							arm_op_instructions 	@
+							aft0 @
+							aft1 @
+							aft2
+					| RelationalOp op -> 
+						let bef0, aft0, var_used0 = convert_id3_var id3_0 color_table md  "a1" in
+						let bef1, aft1, var_used1 = convert_idc3 idc3_1 color_table md "a1" in
+						let bef2, aft2, var_used2reg = convert_operand idc3_2 color_table md "a2" in
+						let arm_op_instructions =
+							begin
+								match op with
+								| "==" -> 	
+									MOV ("eq", false, "a2", (number_op 1)) :: 
+									MOV ("ne", false, "a2", (number_op 0)) :: []
+								| "!=" -> 	
+									MOV ("eq", false, "a2", (number_op 0)) :: 
+									MOV ("ne", false, "a2", (number_op 1)) :: []
+								| ">" -> 	
+									MOV ("gt", false, "a2", (number_op 1)) :: 
+									MOV ("lt", false, "a2", (number_op 0)) :: []
+								| ">=" -> 
+									MOV ("ge", false, "a2", (number_op 1)) :: 
+									MOV ("le", false, "a2", (number_op 0)) :: []
+								| "<" -> 
+									MOV ("gt", false, "a2", (number_op 0)) :: 
+									MOV ("lt", false, "a2", (number_op 1)) :: []
+								| "<=" -> 
+									MOV ("ge", false, "a2", (number_op 0)) :: 
+									MOV ("le", false, "a2", (number_op 1)) :: []
+								| _ -> failwith "#59"
+							end in
+						[],
+							bef0 @
+							bef1 @
+							bef2 @
+							arm_op_instructions @
+							aft0 @
+							aft1 @
+							aft2
+					| _ -> failwith "#54: Unknown binary operator"
+				end
+			| UnaryExp3 (ir3_op_1, idc3_0) ->
+				let bef0, aft0, var_used0 = convert_id3_var id3_0 color_table md  "a1" in
+				let bef2, aft2, var_used2reg = convert_operand idc3_0 color_table md "a2" in
+
+				begin
+					match ir3_op_1 with 
+					| UnaryOp op ->
+						let arm_op_instructions =
+							begin
+								match op with
+								| "-" -> 
+									MOV ("", false, "a3", (number_op 0)) ::
+									SUB ("", false, var_used0, "a3", var_used2reg) :: []
+								| "!" -> 
+									MOV ("eq", false, var_used0, var_used2reg) :: 
+									MOV ("ne", false, var_used0, var_used2reg) :: []
+								| _ -> failwith "#67"
+							end in
+						[],
+							bef0 @
+							bef2 @
+							arm_op_instructions 	@
+							aft0 @
+							aft2
+
+					| _ -> failwith "#544: Unknown unary operator"
+				end
+			| Idc3Expr idc3_0 ->
+				let bef0, aft0, var_used0 = convert_id3_var id3_0 color_table md  "a1" in
+				let bef2, aft2, var_used2reg = convert_operand idc3_0 color_table md "a2" in
+				let arm_op_instructions = 
+					[MOV ("", false, var_used0, var_used2reg)]
+				in 		[], 
+							bef0 @
+							bef2 @
+							arm_op_instructions 	@
+							aft0 @
+							aft2
+			| FieldAccess3 (id3_1, id3_2) ->
+				let bef0, aft0, var_used0 = convert_id3_var id3_0 color_table md  "a1" in
+
+				let bef1, aft1, var_used1 = convert_id3_var id3_0 color_table md  "a2" in
+
+				let field_offset = (get_field_offset id3_1 id3_2 md program_ir3)
+
+				in [],
+					bef0 @ 
+					bef1 @
+					LDR ("", "", var_used0, (RegPreIndexed (var_used1, field_offset, false))) ::
+					aft0 @
+					aft1
+			| ObjectCreate3 class_name ->
+				let bef0, aft0, var_used0 = convert_id3_var id3_0 color_table md  "a1" in
+
+				let var_list = class_var_list (ObjectT class_name) program_ir3
+				in let alloc_size = 4 * List.length var_list in
+				let arm_op_instructions = 
+					MOV ("", false, "a1", (number_op alloc_size)) ::
+					BL ("", "_Znwj(PLT)") ::
+					MOV ("", false, var_used0, (RegOp "a1")) :: []
+				in [],
+					bef0 @ 
+					arm_op_instructions @
+					aft0
+			| MdCall3 (id3_0_md, idc3_list) -> 
+				let bef0, aft0, var_used0 = convert_id3_var id3_0 color_table md  "a1" in
+
+				let idc3_list_length = (List.length idc3_list) in
+
+				let arm_op_instructions = 
+				if idc3_list_length > 4
+				then [ADD ("", false, "sp", "sp", number_op ((idc3_list_length-4)*4))] @ [MOV ("", false, var_used0, (RegOp "a1"))]
+				else [MOV ("", false, var_used0, (RegOp "a1"))]
+				in [],
+					bef0 @ 
+					(push_arguments_on_stack 0 idc3_list md color_table) @ 
+					[BL ("", id3_0_md ^ "(PLT)")] @
+					arm_op_instructions @
+					aft0
+
+			| _ ->
+				failwith "#50: Expression not yet implemented"
+		end
+
 	| PrintStmt3 idc3_0 ->
 		begin
 			(* Label fresh gives a new label *)
@@ -264,72 +395,126 @@ let convert_ir3_stmt (stmt:ir3_stmt) (md:md_decl3) (program_ir3:ir3_program):arm
 			| IntLiteral3 i -> 
 				(* Add a newline at the end of the string *)
 				Label label_string :: 
-				[PseudoInstr (".asciz \"" ^ i ^"\\n\"")],
+				[PseudoInstr (".asciz \"" ^ (string_of_int i) ^"\\n\"")],
 				LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) :: 
 				[BL ("", "printf(PLT)")]
 			| Var3 var_id3 -> 
-				(* Add a newline at the end of the string *)
-				let reg = color_to_register (Hashtbl.find color_table var_id3) in
+				let bef1, aft1, var_used1 = convert_id3_var var_id3 color_table md "a1" in
+
 				Label label_string :: 
 				[PseudoInstr (".asciz \"%i\\n\"")],
 				LDR ("", "", "a1", (LabelAddr ("=" ^ label_string))) ::	
-				MOV ("", "", "a2", (RegOp reg)) ::
+				MOV ("", false,  "a2", (RegOp var_used1)) ::
 				[BL ("", "printf(PLT)")]
 			| _ -> failwith "#69"
 		end
+
 	| AssignFieldStmt3 (ir3_exp_1, ir3_exp_2) ->
-		let (id3_1, id3_2) = begin match ir3_exp_1 with
-			| FieldAccess3 (a, b) ->
-				(a, b)
-			| _ -> 
-				failwith "Left Hand Side should be a field access"
-			end
-		in let idc3_1 = begin match ir3_exp_2 with
-			| Idc3Expr a ->
-				begin
-				match a with
-				| Var3 b ->
-					b
-				| _ ->
-					failwith "#270"
-				end
-			| _ -> 
-				failwith "Right hand side should be a variable"
-			end
-		in let var_offset_r = (get_offset idc3_1 md)
+		let (id3_1, id3_2) = 
+			begin match ir3_exp_1 with
+				| FieldAccess3 (a, b) ->
+					(a, b)
+				| _ -> 
+					failwith "Left Hand Side should be a field access"
+			end in
+		let id3_3 =
+		begin 
+			match ir3_exp_2 with
+				| Idc3Expr iwwww -> 
+					begin
+						match iwwww with
+						| Var3 i -> i
+						| _ -> failwith "444"
+					end
+				| _ -> failwith "444"
+		end 
+
+		in let var_offset_r = (get_offset id3_3 md)
 		in let var_offset_l = (get_offset id3_1 md)
 		in let field_offset = (get_field_offset id3_1 id3_2 md program_ir3)
 		in let reg_l = color_to_register (Hashtbl.find color_table id3_1)
-		in let reg_r = color_to_register (Hashtbl.find color_table idc3_1)
+		in let reg_r = color_to_register (Hashtbl.find color_table id3_3) in
+
+		let bef1, aft1, var_used1 = convert_id3_var id3_3 color_table md "a2" in
+		let bef2, aft2, var_used2 = convert_id3_var id3_1 color_table md "a1"
+
 		in [],
-		STR ("", "", reg_r, (RegPreIndexed (reg_l, field_offset, false))) :: []	
+			bef1 @ 
+			bef2 @
+			STR ("", "", var_used1, (RegPreIndexed (var_used2, field_offset, false))) ::
+			aft1 @
+			aft2
+
 	| IfStmt3 (ir3_expr_0, label_0) -> (*TODO*)
-		[],
-		convert_ir3_expr ir3_expr_0 md program_ir3 @
-		CMP ("", "v1", (number_op 1)) ::
-		[B ("eq", "." ^ (string_of_int label_0))]
+		let a = 
+			begin 
+				match ir3_expr_0 with
+					| Idc3Expr idc3_0 ->
+						let bef2, aft2, var_used2 = convert_operand idc3_0 color_table md "a1" in
+						let arm_op_instructions =
+							[MOV ("", false, "a2", (number_op 1))] @
+							[CMP ("", "a2", var_used2)] @ [B ("eq", "." ^ (string_of_int label_0))]
+						in
+							bef2 @
+							arm_op_instructions 	@
+							aft2
+					| BinaryExp3 (ir3_op_1, idc3_1, idc3_2) -> 
+						let arm_op_instructions =
+							begin 
+							match ir3_op_1 with
+								| RelationalOp op -> 
+									begin
+										match op with
+										| "==" -> 	
+											MOV ("eq", false, "a2", (number_op 1)) :: 
+											MOV ("ne", false, "a2", (number_op 0)) :: []
+										| "!=" -> 	
+											MOV ("eq", false, "a2", (number_op 0)) :: 
+											MOV ("ne", false, "a2", (number_op 1)) :: []
+										| _ -> failwith "4445"
+									end
+								| _ -> failwith "999"
+							end
+						in
+
+						let bef_instr1, after_instr1, var_used1 = convert_idc3 idc3_1 color_table md "a1" in
+						let bef_instr2, after_instr2, var_used2 = convert_operand idc3_2 color_table md "a2" 
+						in bef_instr1 @ bef_instr2 @ arm_op_instructions @ [CMP ("", var_used1, var_used2)]@  after_instr1 @ after_instr2 @ [B ("eq", "." ^ (string_of_int label_0))]
+					| UnaryExp3 (ir3_op_1, idc3_0) ->
+						let bef2, aft2, var_used2 = convert_operand idc3_0 color_table md "a1" in
+						let arm_op_instructions =
+							[MOV ("", false, "a2", (number_op 0))] @
+							[CMP ("", "a2", var_used2)] @ [B ("eq", "." ^ (string_of_int label_0))]
+						in
+							bef2 @
+							arm_op_instructions 	@
+							aft2
+			| _ -> failwith ("666   " ^ (string_of_int label_0))
+			end
+		in [], a
+		
 	| Label3 label_0 -> 
 		[], [PseudoInstr ("\n." ^ (string_of_int label_0) ^ ":")]
 	| GoTo3 label_0 -> 
 		[], [B ("", "." ^ (string_of_int label_0))]
 	| ReturnStmt3 id3_1 ->
-		let var_offset = (get_offset id3_1 md) in
-		let color = Hashtbl.find id3_1 in
-		let reg = color_to_register color
-		in [],
-		MOV ("", "", "a1", (RegOp reg)) :: 
-		[B ("", label_exit_methd md)]
+
+		let bef_instr, after_instr, var_used0 = convert_operand (Var3 id3_1) color_table md "a1" in
+		[],
+			bef_instr @
+			MOV ("", false, "a1", var_used0) :: 
+			[B ("", label_exit_methd md)]
 	| ReturnVoidStmt3 ->
 		[], MOV ("", false, "a1", number_op 0) :: 
 		[B ("", label_exit_methd md)]
 	| _ ->
 		failwith "#51: Statement not yet implemented"
 
-let rec convert_ir3_stmt_list (stmts: ir3_stmt list) (md:md_decl3) (program_ir3:ir3_program): arm_program * arm_program =
+let rec convert_ir3_stmt_node_list (stmts: stmt_node list) color_table (md:md_decl3) (program_ir3:ir3_program) : arm_program * arm_program =
 		match stmts with
 		| head::tail -> 
-			let data_instr_list, text_instr_list = convert_ir3_stmt head md program_ir3 in
-			let data_instr_tail_list, text_instr_tail_list = convert_ir3_stmt_list tail md program_ir3 in
+			let data_instr_list, text_instr_list = convert_ir3_stmt_node head color_table md program_ir3 in
+			let data_instr_tail_list, text_instr_tail_list = convert_ir3_stmt_node_list tail color_table md program_ir3 in
 			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
 		| [] -> [], []
 
@@ -353,30 +538,31 @@ let rec store_params_instr (n:int) (params_list: var_decl3 list) (md:md_decl3) :
 		| [] -> []
 
 
-let convert_ir3_md_decl (md:md_decl3) (program_ir3:ir3_program): arm_program * arm_program=
-	let data_instr_list, text_instr_list = convert_ir3_stmt_list md.ir3stmts md program_ir3 in
-	let store_params = store_params_instr 0 md.params3 md in
+let convert_ir3_md_decl color_table (md:md_struct) (program_ir3:ir3_program): arm_program * arm_program=
+	let data_instr_list, text_instr_list = convert_ir3_stmt_node_list md.stmt_node_list color_table md.md program_ir3 in
+	let store_params = store_params_instr 0 md.md.params3 md.md in
 	data_instr_list,
 		(*Label with function name*)
-		PseudoInstr ("\n" ^ md.id3 ^ ":") ::
+		PseudoInstr ("\n" ^ md.md.id3 ^ ":") ::
 		(*Store registers on the stack*)
 		STMFD ("fp" :: "lr" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: []) ::
 		(* sp = fp - 24 *)
 		ADD ("", false, "fp", "sp", number_op 24) ::
 		(* allocate local variables*)
-		SUB ("", false, "sp", "fp", number_op (get_stack_space md)) ::
+		SUB ("", false, "sp", "fp", number_op (get_stack_space md.md)) ::
 		store_params @
 		text_instr_list @
 		(* Put a L#exit label here *)
-		PseudoInstr ("\n" ^ label_exit_methd md ^ ":") ::
+		PseudoInstr ("\n" ^ label_exit_methd md.md ^ ":") ::
 		SUB ("", false, "sp", "fp", ImmedOp "#24") ::
 		[LDMFD ("fp" :: "pc" :: "v1" :: "v2" :: "v3" :: "v4" :: "v5" :: [])]
 
 (* Convert a list of md_decl3 *)
-let rec convert_md_decl3_list (mds:md_decl3 list) (program_ir3:ir3_program):arm_program *arm_program = 
+let rec convert_md_decl3_list (mds:md_struct list) (program_ir3:ir3_program):arm_program *arm_program = 
 	match mds with
 		| head::tail -> 
-			let data_instr_list, text_instr_list = convert_ir3_md_decl head program_ir3 in
+			let color_table = head.colored_tab in 
+			let data_instr_list, text_instr_list = convert_ir3_md_decl color_table head program_ir3 in
 			let data_instr_tail_list, text_instr_tail_list = convert_md_decl3_list tail program_ir3 in
 			data_instr_list @ data_instr_tail_list, text_instr_list @ text_instr_tail_list
 		| [] -> [], []
@@ -384,9 +570,11 @@ let rec convert_md_decl3_list (mds:md_decl3 list) (program_ir3:ir3_program):arm_
 (* Convert a ir3 program to arm program *)
 let ir3_program_to_arm (program_ir3:ir3_program):arm_program =
 	let method_hash_table = create_md_table program_ir3 in
-	print_md_table method_hash_table;
+	(* print_md_table method_hash_table; *)
 	let (cdata3_list, main_md_decl3, md_decl3_list) = program_ir3 in
-	let data_instr_list, text_instr_list = convert_md_decl3_list (main_md_decl3 :: md_decl3_list) program_ir3 in
+	let f k elt init = elt :: init in
+	let md_struct_list = Hashtbl.fold f method_hash_table [] in
+	let data_instr_list, text_instr_list = convert_md_decl3_list (md_struct_list) program_ir3 in
 	PseudoInstr (".data") ::
 	PseudoInstr ("") ::
 	data_instr_list @
