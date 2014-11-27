@@ -14,8 +14,8 @@ type block =
     id: int;
     label: label;
     mutable instrs: block_instr list;
-    mutable instrs_in: (block_instr * int * label) list;
-    mutable instrs_out: (block_instr * int * label) list
+    mutable instrs_in: (block_instr * label) list;
+    mutable instrs_out: (block_instr * label) list;
   }
 
 (* -------- Build Basic Blocks of ARM program --------- *)
@@ -154,11 +154,65 @@ let rec get_basic_blocks
       List.append blks next_blks
   | _ -> failwith "#23: get basic blocks error"
 
+let rec update_block_list_in
+  (blks: block list) 
+  (instr: block_instr)
+  (label_to: label)
+  (label_from: label)
+  : block list = 
+  match blks with
+  | [] -> []
+  | b::bs -> 
+    if b.label = label_to then 
+      begin
+        b.instrs_in <- List.append b.instrs_in [(instr, label_from)];
+        List.append [b] bs
+      end
+    else
+      List.append [b] (update_block_list_in blks instr label_to label_from)
+
 (* TO DO >>>>> Add in/out links *)
-(* let rec get_list_in_out_instrs blks =
+let rec update_blks_in_out blks =
   (* go through each block *)
-  (* retrieve branch instructions && last instruction && blk label *)
- *)
+  (* retrieve branch instructions && last instruction (and their line #'s) && their blk label *)
+  (* if last instruction is not branch, it continues down to next block *)
+  (* put this all into a list *)
+  match blks with
+  | [] -> []
+  | b::bs ->
+    if contains_substring b.label "Pseudo" then
+      List.append [b] (update_blks_in_out bs)
+    else
+      let rec helper instrs blk_list = 
+        match instrs with
+        | [] -> blk_list
+        | i::is -> 
+          begin
+            match i with
+            | (ln, B (cond, branch_label)) ->
+              b.instrs_out <- List.append b.instrs_out [(i, branch_label)];
+              (* find block with matching label & update *)
+              let updated_blks = update_block_list_in blk_list i branch_label b.label in
+                helper is updated_blks
+            | _ ->
+              (* add to following block 
+                if List.length is == 0 then *)
+              helper is blk_list
+          end
+        in helper b.instrs blks
+       (* go thru instrs *)
+
+
+    (* go through block instrs *)
+
+let make_blocks arm_instrs =
+  let basic_blks = get_basic_blocks arm_instrs [] None in
+  update_blks_in_out basic_blks
+
+
+(* Get block instructions *)
+
+
 (* Print one block's instructions *)
 let print_block_instrs blk =
   let blk_id = "\nBlock " ^ (string_of_int blk.id) ^ " -- " ^ blk.label ^ ":" in
@@ -306,7 +360,7 @@ let rec apply_peephole blks =
 (* OPTIMIZE DAT ARM PROGRAM *)
 let optimize_arm (instructions : arm_program) =
   let blks = get_basic_blocks instructions [] None in
-  print_all_block_instrs blks;
+  (* print_all_block_instrs blks; *)
   let peephole_blocks = apply_peephole blks in
   blocks_to_arm peephole_blocks
 
@@ -340,7 +394,8 @@ let test_instrs2 =
 (* let test_blocks = get_basic_blocks test_instrs [] None;; *)
 (* let test_blocks0 = get_basic_blocks test_instrs0 [] None;; *)
 (* let test_blocks1 = get_basic_blocks test_instrs1 [] None;; *)
-let test_blocks2 = get_basic_blocks test_instrs2 [] None;;
+(* let test_blocks2 = make_blocks test_instrs2;; *)
+ (* test_instrs2 [] None;; *)
 
 (* print_string ("Test instrs set 0");;
 print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs0) ^ "\n");;
@@ -356,14 +411,14 @@ print_len_block_instrs_head (test_blocks1);;
 print_block_instrs (List.hd (test_blocks1));;
  *)
 
-print_string ("\n\n~~~~~~ Test instrs set 2 ~~~~~~~");;
+(* print_string ("\n\n~~~~~~ Test instrs set 2 ~~~~~~~");;
 (* print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs2) ^ "\n");; *)
 print_string ("\nNum of blocks: " ^ (string_of_int (List.length (test_blocks2))));; (* flush std_out;; *)
 print_all_block_instrs (test_blocks2);;
 print_string ("******* PEEPHOLE ******");;
 (* print_len_block_instrs_head (test_blocks2);; *)
 (* print_block_instrs (List.hd (test_blocks2));; *)
-(* print_string ("\n\nPeephole: rm redundant load/store (on block1)\n");; *)
+print_string ("\n\nPeephole: rm redundant load/store (on block1)\n");;
 let peephole_all_blks = apply_peephole test_blocks2;;
 print_all_block_instrs peephole_all_blks;;
 (* print_string ("\t~~ 1 - LD/STR ~~");;
@@ -371,7 +426,7 @@ let peephole1_block = remove_redundant_ldr_str (List.hd test_blocks2);;
 print_block_instrs peephole1_block;;
 print_string ("\t~~ 2 - ALGEBRAIC ~~");;
 let peephole2_block = algebraic_simplification (List.hd test_blocks2);;
-print_block_instrs peephole1_block;; *)
+print_block_instrs peephole1_block;; *) *)
 
 
 
