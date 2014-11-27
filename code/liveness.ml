@@ -688,7 +688,6 @@ let perfect_elimination_ordering (e_set:edge_set) (variables: id3 list) : id3 li
 	end
 
 
-
 type md_key = id3
 type md_struct =
 	{
@@ -736,6 +735,16 @@ let stmt_table_and_stmt_list_from_md md : stmt_table * stmt_node list=
 		filled_table, nodes_list
 	end
 
+let clean_graph_color (color_table:colored_table) (max_register:int): colored_table = 
+	let new_table = (Hashtbl.create 1000) in
+	let fff (k:id3) (v:int) :unit =
+		begin
+			if (v <= max_register)
+			then begin (Hashtbl.add new_table k v) end
+			else begin (Hashtbl.add new_table k (-1)) end
+		end
+	in Hashtbl.iter fff color_table;
+	new_table
 
 let create_graph_color_from_stmt_table stmt_table variables: colored_table =
 	(* Create the edge set *)
@@ -757,7 +766,8 @@ then recolor the graph,
 and store the hash table of the colored/registers  *)
 let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_node list) =
 	(* print_string (md.id3 ^ "\n"); *)
-	let nb_registers_available = 4 in
+	(* TODOOOODODOODOD *)
+	let nb_registers_available = 7 in
 	(* Get the stmt table from md *)
 	let stmt_tab, stmt_list = stmt_table_and_stmt_list_from_md md in
 	(* Analyze the stmt table such as initiaze changed, add predecessors, successors,
@@ -772,7 +782,6 @@ let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_no
 	print_stmt_list stmt_list color_graph;
 
 	print_string "\n\n\n*****2nd* version*************\n\n\n\n\n";
-
 
 	(* Then color a new table depending of the numbers of registers available *)
 	(* Let s start with 5 *)
@@ -793,8 +802,12 @@ let new_stmt_table_from_md md : md_decl3 * stmt_table * colored_table * (stmt_no
 
 	(* Redo the analysis taking account the new load and str statements *)
 	liveness_analysis new_stmt_tab;
-	(* Get the final color table which size should be less than the nb of registers *)
-	new_md, new_stmt_tab, (create_graph_color_from_stmt_table new_stmt_tab variables), new_stmt_list
+	
+	let new_color_graph = create_graph_color_from_stmt_table new_stmt_tab variables in
+	let cleaned_graph_color = clean_graph_color new_color_graph nb_registers_available in
+	new_md, new_stmt_tab, cleaned_graph_color, new_stmt_list
+
+
 
 let create_new_md_struct md =
 	let new_md_decl, stmt_tab, color_graph, new_stmt_list = new_stmt_table_from_md md in
@@ -829,8 +842,6 @@ let print_md_struc md_key md_structure:unit =
 	print_graph_color md_structure.colored_tab;
 	print_stmt_list md_structure.stmt_node_list md_structure.colored_tab;
 	end
-
-
 
 let print_md_table table:unit =
 	Hashtbl.iter print_md_struc table;;
