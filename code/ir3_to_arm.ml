@@ -390,9 +390,6 @@ let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (progr
 					[BL ("", id3_0_md ^ "(PLT)")] @
 					arm_op_instructions @
 					aft0
-
-			| _ ->
-				failwith "#50: Expression not yet implemented"
 		end
 
 	| PrintStmt3 idc3_0 ->
@@ -442,12 +439,7 @@ let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (progr
 					end
 				| _ -> failwith "444"
 		end 
-
-		in let var_offset_r = (get_offset id3_3 md)
-		in let var_offset_l = (get_offset id3_1 md)
-		in let field_offset = (get_field_offset id3_1 id3_2 md program_ir3)
-		in let reg_l = color_to_register (Hashtbl.find color_table id3_1)
-		in let reg_r = color_to_register (Hashtbl.find color_table id3_3) in
+		in let field_offset = (get_field_offset id3_1 id3_2 md program_ir3) in
 
 		let bef1, aft1, var_used1 = convert_id3_var id3_3 color_table md "a2" in
 		let bef2, aft2, var_used2 = convert_id3_var id3_1 color_table md "a1"
@@ -464,10 +456,9 @@ let convert_ir3_stmt_node (stmt_node:stmt_node) color_table (md:md_decl3) (progr
 			begin 
 				match ir3_expr_0 with
 					| Idc3Expr idc3_0 ->
-						let bef2, aft2, var_used2 = convert_operand idc3_0 color_table md "a1" in
+						let bef2, aft2, var_used2 = convert_idc3 idc3_0 color_table md "a1" in
 						let arm_op_instructions =
-							[MOV ("", false, "a2", (number_op 1))] @
-							[CMP ("", "a2", var_used2)] @ [B ("eq", "." ^ (string_of_int label_0))]
+							[CMP ("", var_used2, (number_op 1))] @ [B ("eq", "." ^ (string_of_int label_0))]
 						in
 							bef2 @
 							arm_op_instructions 	@
@@ -619,7 +610,6 @@ let rec convert_md_decl3_list (mds:md_struct list) (program_ir3:ir3_program):arm
 let ir3_program_to_arm (program_ir3:ir3_program):arm_program =
 	let method_hash_table = create_md_table program_ir3 in
 	(* print_md_table method_hash_table; *)
-	let (cdata3_list, main_md_decl3, md_decl3_list) = program_ir3 in
 	let f k elt init = elt :: init in
 	let md_struct_list = Hashtbl.fold f method_hash_table [] in
 	let data_instr_list, text_instr_list = convert_md_decl3_list (md_struct_list) program_ir3 in
@@ -630,6 +620,3 @@ let ir3_program_to_arm (program_ir3:ir3_program):arm_program =
 	PseudoInstr ("\n.global main") ::
    	text_instr_list @
 	[PseudoInstr ("\n")] (* Add a newline at the end *)
-
-
-(* EOF *)
