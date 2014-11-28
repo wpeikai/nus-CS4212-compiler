@@ -225,7 +225,8 @@ let rec update_blk_links_final blks =
 let make_blocks arm_instrs =
   let basic_blks = get_basic_blocks arm_instrs [] None in
   (* update_blk_links_final (update_blks_in_out basic_blks) *)
-  update_blks_in_out basic_blks
+  basic_blks
+  (* update_blks_in_out basic_blks *)
 
 (* Print block in/out instructions *)
 let print_block_instrs_in blk =
@@ -411,7 +412,7 @@ let redundant_ldr_str_2 blk update_flag =
               | _ -> get_result [i1] is update_flag
             end
           (* | (ln1,MOV (_,_,rd1,op1)), (ln2,STR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) -> *)
-          | (ln1,MOV (_,_,rd1,op1)), (_, STR _), (ln3,MOV (_,_,rd3,op3)) ->
+          (* | (ln1,MOV (_,_,rd1,op1)), (_, STR _), (ln3,MOV (_,_,rd3,op3)) ->
             (* print_string ((string_of_int iter_count) ^ "  I'm here!! MOV STR MOV\n"); *)
             (* print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n"); *)
             begin
@@ -425,19 +426,50 @@ let redundant_ldr_str_2 blk update_flag =
                   get_result [i1; i2] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
               | _ -> get_result [i1] is update_flag
-            end
+            end *)
           (* | (ln1,MOV (_,_,rd1,op1)), (ln2,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) -> *)
-          | (ln1,MOV (_,_,rd1,op1)), (_, LDR _), (ln3,MOV (_,_,rd3,op3)) ->
+          | (ln1,MOV (_,_,rd1,op1)), (_,STR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
             (* print_string ((string_of_int iter_count) ^ "  I'm here!! MOV LDR MOV\n") ; *)
             begin
-              match op1, op3 with
-              | RegOp r1, RegOp r3 -> 
-                if (r1 = r3) && (rd1 = rd3) then
-                  get_result [i1; i2] is true
+              match op1, at2, op3 with
+              | RegOp r1, Reg str_reg, RegOp r3 -> 
+                if (rd1 = rd3) && (r1 = r3) && (rd1 <> str_reg) then
+                  get_result [i2; i3] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
-              | ImmedOp op1, ImmedOp op3 ->
-                if (op1 = op3) && (rd1 = rd3) then
-                  get_result [i1; i2] is true
+              | RegOp r1, RegPreIndexed (str_reg,_,_), RegOp r3 -> 
+                if (rd1 = rd3) && (r1 = r3) && (rd1 <> str_reg) then
+                  get_result [i2; i3] (List.tl (List.tl is)) true
+                else get_result [i1] is update_flag
+              | RegOp r1, RegPostIndexed (str_reg,_), RegOp r3 -> 
+                if (rd1 = rd3) && (r1 = r3) && (rd1 <> str_reg) then
+                  get_result [i2; i3] (List.tl (List.tl is)) true
+                else get_result [i1] is update_flag
+              | ImmedOp op1, Reg str_reg, ImmedOp op3 ->
+                if (rd1 = rd3) && (rd1 <> str_reg) then
+                  get_result [i1; i2] (List.tl (List.tl is)) true
+                else get_result [i1] is update_flag
+              | _ -> get_result [i1] is update_flag
+            end
+          | (ln1,MOV (_,_,rd1,op1)), (_,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
+            (* print_string ((string_of_int iter_count) ^ "  I'm here!! MOV LDR MOV\n") ; *)
+            begin
+              match op1, at2, op3 with
+              | RegOp r1, Reg ldr_reg, RegOp r3 -> 
+                if (rd1 = rd3) && (r1 = r3) && (rd1 <> ldr_reg) then
+                  get_result [i2; i3] (List.tl (List.tl is)) true
+                  (* get_result [i2; i3] is true *)
+                else get_result [i1] is update_flag
+              | RegOp r1, RegPreIndexed (ldr_reg,_,_), RegOp r3 -> 
+                if (rd1 = rd3) && (r1 = r3) && (rd1 <> ldr_reg) then
+                  get_result [i2; i3] (List.tl (List.tl is)) true
+                else get_result [i1] is update_flag
+              | RegOp r1, RegPostIndexed (ldr_reg,_), RegOp r3 -> 
+                if (rd1 = rd3) && (r1 = r3) && (rd1 <> ldr_reg) then
+                  get_result [i2; i3] (List.tl (List.tl is)) true
+                else get_result [i1] is update_flag
+              | ImmedOp op1, Reg ldr_reg, ImmedOp op3 ->
+                if (rd1 = rd3) && (rd1 <> ldr_reg) then
+                  get_result [i2; i3] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
               | _ -> get_result [i1] is update_flag
             end
