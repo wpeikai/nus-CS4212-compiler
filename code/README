@@ -2,7 +2,7 @@
 ~~                     NUS Semester 1 2014/15                ~~
 ~~                          Project 3                        ~~
 ~~                                                           ~~
-~~            By: Antoine Creux                              ~~
+~~            By: Antoine Creux (A0123427)                   ~~
 ~~                Virgile Quitin                             ~~
 ~~                Weston Vial  (A0126732J)                   ~~
 ~~                                                           ~~
@@ -17,25 +17,47 @@
      jlite_main_non_optim.ml  Non-optimized version of IR3 to ARM generation
      ir3_to_arm_non_optim.ml
      test/                    Test example Jlite prgrams
+     adb                      Symbolic link to sdk/adt-bundle-linux-x86_64-20140702/sdk/platform-tools/adb
+
+     g++                      Symbolic to optimize_arm.ml     
 
 
 ** Instructions:
-  1. Set up g++, etc as directed in the assignment handout. 
+  1. Set up adb device and g++ compiler as directed in the assignment handout. 
+  2. Set up g++ and adb symbolic links in this folder
+      (ln -s TARGET sym_name)
 
-  2. Make the Android toolchain as specified in the project assignment document.
+  3. Make the Android toolchain as specified in the project assignment document.
      This has to be done every time the computer is rebooted.
 
-  3. Launch the Android emulator via 'sh launch_emu.ml'. Our emulator was for
-     Android v4.4 and named Compiler.
+  4. Launch the Android emulator.
   
-  4. Use 'make' to run the compiler. It runs the compiler to parse and generate
-     the ARM machine code files from files with the '.jlite' extension found in
-     the test folder. Each file is then executed on the emulator using adb shell
-     from the Android SDK.
+  5. Run `make` to compile all Ocaml files, and run the jlite files in test
+     This will run the optimized compiler version.
 
-     make             Optimized compiler
-     make noptim      Unoptimized compiler
+     A `z.exe` program will be created which enables to compile any jlite file into arm instructions such as `./z.exe file0.jlite > `file0.s`
+
+     You can also run `make file0.s` to get `file0.s`
+
+     You can run `make file0.output` to get the output when the jlite program will run on Android device.
+
+
+  6. Run `make nonoptim` to have a non optimized version of our compiler
+     It will create `z_noptim.exe` which will behaves as `z.exe`
+
+  7. Run `make test` to test the compilation.
+    It will compare the output of all jlite files `test/%.jlite` named `test/%.sim` to the correct version named `test/%.output`
+
+
+
+    All make instructions are:
+
+     make             Optimized compiler and run all the jlite files on the Android device
+     make noptim      Unoptimized compiler and run all the jlite files on the Android device
      make clean       Clean
+     make test        Launch the test
+     make z.exe       Compile from Jlite to ARM in an optimized way
+     make z_noptim.exe       Compile from Jlite to ARM in a non optimized way
 
      NOTE: In order for the compiler to work, the emulator (and thus the
            computer) must be online.
