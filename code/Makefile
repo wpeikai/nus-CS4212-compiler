@@ -9,7 +9,7 @@ ZZ = ./z.exe
 ZZIR3 = ./zir3.exe
 
 OBJS_COMMON = arm_structs.cmo jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo 
-OBJS_OPTIM = $(OBJS_COMMON) jlite_toir3.cmo liveness.cmo ir3_to_arm.cmo 
+OBJS_OPTIM = $(OBJS_COMMON) jlite_toir3.cmo liveness.cmo ir3_to_arm.cmo optimize_arm.cmo
 OBJS_SIMPLE = $(OBJS_COMMON) jlite_toir3_non_optim.cmo ir3_to_arm_non_optim.cmo jlite_main_non_optim.cmo
 OCAML_OBJECTS = $(OBJS_OPTIM) jlite_main.cmo
 OCAML_OBJECTS_IR3 = $(OBJS_OPTIM) jlite_main_ir3.cmo
@@ -81,7 +81,10 @@ jlite_toir3.cmo: jlite_toir3.ml jlite_structs.cmo ir3_structs.cmo jlite_annotate
 ir3_structs.cmo: ir3_structs.ml jlite_structs.cmo
 	$(OC) $<
 
-jlite_main.cmo: jlite_main.ml ir3_to_arm.cmo jlite_toir3.cmo
+jlite_main.cmo: jlite_main.ml ir3_to_arm.cmo jlite_toir3.cmo optimize_arm.ml
+	$(OC) $<
+
+optimize_arm.cmo: optimize_arm.ml jlite_structs.cmo ir3_structs.cmo arm_structs.cmo
 	$(OC) $<
 
 jlite_main_ir3.cmo: jlite_main_ir3.ml ir3_to_arm.cmo jlite_toir3.cmo

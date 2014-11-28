@@ -1,0 +1,14 @@
+Please read the REAMDE file to get the instructions.
+
+The optimized compiler is built on the Liveness analysis we have studied in class.
+It computes the IN and OUT for each statements.
+Then, we color the graph using the Lex-BFS algorithm (http://en.wikipedia.org/wiki/Lexicographic_breadth-first_search).
+If there are not enough register, we spill some variables until the numbers of colors necessary equals the number of registers allocated.
+
+Finally, for each variable spilled, we add a Load and a Store statements as necessary, and we redo a liveness analysis and graph coloring, so that the variales spilled may be assigned to a new register. (Some will be assigned to a new register and won't be spilled, some will stay spilled)
+
+Then, during the final compilation of all statements, if a variable is assigned to a register, we use it.
+If the variable is spilled, we use "a1" or "a2" as a temporary register.
+If a Load or Store statement is found, we use the register assigned if the variable has one, otherwise, we simply delete the statement as ww will do the Load/Store statements for each statement where the variable is used.
+
+Finally, based on the ARM instructions, we do many peephole optimizations such as deleting dead code or combine operations to gain performance.
