@@ -1,0 +1,42 @@
+~~~~~~~~~~~~~~~~~~ CS 4212 - Compiler Design ~~~~~~~~~~~~~~~~~~
+~~                     NUS Semester 1 2014/15                ~~
+~~                          Project 3                        ~~
+~~                                                           ~~
+~~            By: Antoine Creux                              ~~
+~~                Virgile Quitin                             ~~
+~~                Weston Vial  (A0126732J)                   ~~
+~~                                                           ~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+** Included:
+  code/
+     MakeFile
+     jlite_main.ml ... jlite_toir3.ml     From previous assignments
+     ir3_to_arm.ml            Optimized version of IR3 to ARM generation
+     optimize_arm.ml          ARM-specific optimizations
+     jlite_main_non_optim.ml  Non-optimized version of IR3 to ARM generation
+     ir3_to_arm_non_optim.ml
+     test/                    Test example Jlite prgrams
+
+
+** Instructions:
+  1. Set up g++, etc as directed in the assignment handout. 
+
+  2. Make the Android toolchain as specified in the project assignment document.
+     This has to be done every time the computer is rebooted.
+
+  3. Launch the Android emulator via 'sh launch_emu.ml'. Our emulator was for
+     Android v4.4 and named Compiler.
+  
+  4. Use 'make' to run the compiler. It runs the compiler to parse and generate
+     the ARM machine code files from files with the '.jlite' extension found in
+     the test folder. Each file is then executed on the emulator using adb shell
+     from the Android SDK.
+
+     make             Optimized compiler
+     make noptim      Unoptimized compiler
+     make clean       Clean
+
+     NOTE: In order for the compiler to work, the emulator (and thus the
+           computer) must be online.
+

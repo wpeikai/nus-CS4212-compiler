@@ -45,7 +45,7 @@ let contains_substring s1 s2 =
     false
   with Exit -> true
 
-(* --> Get all prilimary basic blocks *)
+(* Get all prilimary basic blocks *)
 let rec get_basic_blocks 
   (instrs: arm_program)
   (blocks: block list)
@@ -131,7 +131,7 @@ let rec get_basic_blocks
         end
       | BL _ | B _
       | LDMFD _ | STMFD _ 
-      | MOV _ | CMP _
+      | MOV _ | MVN _ | CMP _
       | LDR _ | STR _  
       | SUB _ | AND _
       | ORR _ | MUL _
@@ -159,85 +159,7 @@ let rec get_basic_blocks
       List.append blks next_blks
   | _ -> failwith "#23: get basic blocks error"
 
-let rec update_block_list_in
-  (blks: block list) 
-  (instr: block_instr)
-  (label_to: label)
-  (label_from: label)
-  : block list = 
-  match blks with
-  | [] -> []
-  | b::bs -> 
-    if b.label = label_to then 
-      begin
-        b.instrs_in <- List.append b.instrs_in [(instr, label_from)];
-        List.append [b] bs
-      end
-    else
-      List.append [b] (update_block_list_in blks instr label_to label_from)
-
-let rec update_blks_in_out blks =
-  match blks with
-  | [] -> []
-  | b::bs ->
-    if contains_substring b.label "Pseudo" then
-      [b] @ update_blks_in_out bs
-    else
-      let rec helper instrs blk_list = 
-        match instrs with
-        | [] -> blk_list
-        | i::is -> 
-          begin
-            match i with
-            | (ln, B (cond, branch_label)) ->
-              (* find block with matching label & update *)
-              b.instrs_out <- b.instrs_out @ [(i, branch_label)];
-              let updated_blks = update_block_list_in blk_list i branch_label b.label in
-                helper is updated_blks
-            | _ -> helper is blk_list
-          end
-        in helper b.instrs blks
-
-let rec update_blk_links_final blks =
-  match blks with
-  | [] -> []
-  | b::[] -> blks
-  | b::bs ->
-    match b, List.hd bs with
-    | b1, b2 ->
-      let last_instr_b1 = last b1.instrs in
-        begin
-          match last_instr_b1 with
-          | (ln, B ("", label)) ->
-            (* print_string ("I'm in~~\n"); *)
-            [b1] @ (update_blk_links_final bs)
-          | _ ->
-            (* print_string ("I'm in~~\n"); *)
-            (* gotta add in/out links *)
-            let out_instr = (last_instr_b1, b2.label) in
-            let in_instr = (last_instr_b1, b1.label) in
-              b1.instrs_out <- b1.instrs_out @ [out_instr];
-              b2.instrs_in <- b2.instrs_in @ [in_instr];
-              [b1] @ (update_blk_links_final (b2 :: List.tl bs))
-        end
-    (* | _ -> failwith "#55191: You shouldn't be here. Run away young one... run before the debuggers find you." *)
-
-let make_blocks arm_instrs =
-  let basic_blks = get_basic_blocks arm_instrs [] None in
-  (* update_blk_links_final (update_blks_in_out basic_blks) *)
-  basic_blks
-  (* update_blks_in_out basic_blks *)
-
-(* Print block in/out instructions *)
-let print_block_instrs_in blk =
-  let blk_id = "\nBlock " ^ (string_of_int blk.id) ^ " -- " ^ blk.label ^ ":\n" in
-  let rec helper blk_in =
-    match blk_in with
-    | [] -> []
-    | ((ln, i), in_label)::is -> i :: (helper is)
-  in print_string (blk_id ^ (string_of_arm_prog (helper (blk.instrs_in))) ^ "\n\n");;
-
-let print_all_block_instrs_in blks = List.map print_block_instrs_in blks
+let make_blocks arm_instrs = get_basic_blocks arm_instrs [] None
 
 (* Print one block's instructions *)
 let print_block_instrs blk =
@@ -265,8 +187,6 @@ let blocks_to_arm blks =
   in 
   let blks_instrs = helper blks in
     List.map block_instr_to_arm blks_instrs
-
-
 
 
 (* ~~~~~~ PEEPHOLE ~~~~~~ *)
@@ -552,23 +472,6 @@ let redundant_3_instrs blk update_flag =
                   end
               | _ -> get_result [i1] is update_flag
             end
-          (* | (ln1,MOV (_,_,rd1,op1)), (ln2,STR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) -> *)
-          (* | (ln1,MOV (_,_,rd1,op1)), (_, STR _), (ln3,MOV (_,_,rd3,op3)) ->
-            (* print_string ((string_of_int iter_count) ^ "  I'm here!! MOV STR MOV\n"); *)
-            (* print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n"); *)
-            begin
-              match op1, op3 with
-              | RegOp r1, RegOp r3 -> 
-                if (r1 = r3) && (rd1 = rd3) then
-                  get_result [i1; i2] is true
-                else get_result [i1] is update_flag
-              | ImmedOp op1, ImmedOp op3 ->
-                if (op1 = op3) && (rd1 = rd3) then
-                  get_result [i1; i2] (List.tl (List.tl is)) true
-                else get_result [i1] is update_flag
-              | _ -> get_result [i1] is update_flag
-            end *)
-          (* | (ln1,MOV (_,_,rd1,op1)), (ln2,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) -> *)
           | (ln1,MOV (_,_,rd1,op1)), (_,STR _), (ln3,MOV (_,_,rd3,op3)) ->
             (* print_string ((string_of_int iter_count)^ "\tMOV STR MOV\tinc flag: " ^ (string_of_bool update_flag) ^ "\n") ; *)
             (* print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n"); *)
@@ -582,14 +485,6 @@ let redundant_3_instrs blk update_flag =
                 if (rd1 = rd3) && (r1 = r3) then
                   get_result [i1; i2] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
-              (* | RegOp r1, RegPreIndexed (str_reg,_,_), RegOp r3 -> 
-                if (rd1 = rd3) && (r1 = r3) && (rd1 <> str_reg) then
-                  get_result [i2; i3] (List.tl (List.tl is)) true
-                else get_result [i1] is update_flag
-              | RegOp r1, RegPostIndexed (str_reg,_), RegOp r3 -> 
-                if (rd1 = rd3) && (r1 = r3) && (rd1 <> str_reg) then
-                  get_result [i2; i3] (List.tl (List.tl is)) true
-                else get_result [i1] is update_flag *)
               | _ -> get_result [i1] is update_flag
             end
 
@@ -602,35 +497,8 @@ let redundant_3_instrs blk update_flag =
                 if (rd1 = rd3) && (r1 = r3) && (rd2 = r3) then
                   get_result [i2; i3] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
-             (*  | ImmedOp op1, ImmedOp op3 ->
-                if (rd1 = rd3) && (op1 = op3) then
-                  get_result [i1; i2] (List.tl (List.tl is)) true
-                else get_result [i1] is update_flag *)
               | _ -> get_result [i1] is update_flag
             end
-(*           | (ln1,MOV (_,_,rd1,op1)), (_,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
-            (* print_string ((string_of_int iter_count) ^ "  I'm here!! MOV LDR MOV\n") ; *)
-            begin
-              match op1, at2, op3 with
-              | RegOp r1, Reg ldr_reg, RegOp r3 -> 
-                if (rd1 = rd3) && (r1 = r3) && (rd1 <> ldr_reg) then
-                  get_result [i2; i3] (List.tl (List.tl is)) true
-                  (* get_result [i2; i3] is true *)
-                else get_result [i1] is update_flag
-              | RegOp r1, RegPreIndexed (ldr_reg,_,_), RegOp r3 -> 
-                if (rd1 = rd3) && (r1 = r3) && (rd1 <> ldr_reg) then
-                  get_result [i2; i3] (List.tl (List.tl is)) true
-                else get_result [i1] is update_flag
-              | RegOp r1, RegPostIndexed (ldr_reg,_), RegOp r3 -> 
-                if (rd1 = rd3) && (r1 = r3) && (rd1 <> ldr_reg) then
-                  get_result [i2; i3] (List.tl (List.tl is)) true
-                else get_result [i1] is update_flag
-              | ImmedOp op1, Reg ldr_reg, ImmedOp op3 ->
-                if (rd1 = rd3) && (rd1 <> ldr_reg) then
-                  get_result [i2; i3] (List.tl (List.tl is)) true
-                else get_result [i1] is update_flag
-              | _ -> get_result [i1] is update_flag
-            end *)
           | _ -> get_result [i1] is update_flag
         end
       | _ -> failwith "#30: len and instrs mismatch"
@@ -680,9 +548,24 @@ let algebraic_simplification blk =
     in blk.instrs <- helper instrs; blk
 
 (* Redudant Strings *)
-let redundant_strings blks = 
+let redundant_strings blks =
+  let rec get_str blks = 
+    match blks with
+    | [] -> None
+    | b::bs ->
+      if List.length b.instrs == 2 then
+        begin
+          match b.instrs with
+          | (l1, (Label lbl))::(l2, (PseudoInstr pseudo))::is -> 
+            if contains_substring pseudo ".asciz" then Some pseudo
+            else get_str bs
+          | _ -> get_str bs
+        end
+      else get_str bs
+  in
   let rec get_matching_str_labels blks label ls m_str =
     match blks with
+    (* eventually delete these blocks. *)
     | [] -> []
     | b::bs ->
       begin
@@ -692,14 +575,14 @@ let redundant_strings blks =
           let check_str instrs = 
             match List.length instrs, instrs with
             | 2, (l1, (Label lbl))::(l2, (PseudoInstr pseudo))::is ->
-              if m_str = pseudo then ["="^lbl]
+              if m_str = pseudo then ["=" ^ lbl]
               else []
             | _, _ -> []
           in let new_ls = ls @ (check_str b.instrs) in
             get_matching_str_labels bs label new_ls m_str
       end
   in
-  let rec replace_labels blks label ls =
+  let rec replace_labels blks label ls = 
     match blks with
     | [] -> []
     | b::bs ->
@@ -716,51 +599,12 @@ let redundant_strings blks =
         end
       in b.instrs <- update_label b.instrs;
         b :: replace_labels bs label ls
-  in blks
+  in blks 
 
 
-(*let flow_of_control blks : block list = 
-  let rec find_asciz b asciz_str blks = 
-    if List.length b.instrs > 1 then
-      match List.hd b.instrs, List.hd (List.tl b.instrs) with
-      | (_, Label label), (_, PseudoInstr pseudo) ->
-(*        if contains_substring pseudo ".asciz" then *)
-        if asciz_str = pseudo then 
-          let rec finder blks =
-            begin
-              match blks with
-              | [] -> []
-              | b::bs ->
-                if b.label = label then
-                  (* continue on to next block *)
-                  b :: finder bs
-                else 
-                  let rec gothroughinstrs instrs = 
-                    match instrs with
-                    | [] -> []
-                    | (ln, LDR (_,_,_,LabelAddr (addr))) ->
-                      if string_contains label addr then
-
-                    | _ -> continue searching
-            end
-           (* go through each block and check if there's BL's
-              with references to the label *)
-          (* check against the one of the in coming block *)
-          
-      | (_, PseudoInstr pseudo) ->
-        if contains_substring pseudo ".asciz" then
-          (* do that stuff *)
-        else (* go to next block *)
-      | _ -> yada(* go to next block *)
-    else (* go to the next blk *)
-    in let update label bs = 
-    
-    match List.head b.instrs with
-    | _ -> yada (* go to next block *)
-  in
-  match blks with
-  | [] -> 
-*)
+  (* delete blocks... later *)
+  (* ADD CODE HERE *)
+  (* blks *)
 
 
 (* Apply peephole opts to all blocks *)
@@ -779,79 +623,5 @@ let optimize_arm (instructions : arm_program) =
   (* print_all_block_instrs_in blks; *)
   let peephole_blocks = apply_peephole blks in
     blocks_to_arm peephole_blocks
-
-
-
-
-
-
-
-
-
-
-(* ----------- TESTS ----------- *)
-
-(* let test_instrs = [Label "hello"];; *)
-(* let test_instrs0 = Label "hello" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: Label "bye":: [];; *)
-(* let test_instrs1 = Label "hello" :: ADD ("", false, "a1", "a0", RegOp ("v1")) :: LDR ("", "", "v1", Reg ("a1")) :: [];; *)
-let test_instrs2 = 
-     PseudoInstr (".data")
-  :: PseudoInstr (".test")
-  :: Label "hello" 
-  :: ADD ("", false, "a1", "a0", RegOp ("v1"))
-  :: LDR ("", "", "v1", Reg ("a1"))
-  :: STR ("", "", "a1", Reg ("v1"))
-  :: STR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
-  :: STR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
-  :: STR ("", "", "a1", (RegPreIndexed ("fp", -124 , false)))
-  :: LDR ("", "", "v2", (RegPreIndexed ("fp", -999 , false)))
-  :: LDR ("", "", "a2", (RegPreIndexed ("fp", -124 , false)))
-  :: LDR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
-  :: LDR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
-  :: LDR ("", "", "v2", (RegPreIndexed ("fp", -3 , false)))
-  :: SUB ("", false, "a1", "a0", ImmedOp "#0")
-  :: SUB ("", false, "a1", "a0", ImmedOp "#0")
-  :: PseudoInstr "\n.L1exit:"
-  :: AND ("", false, "a1", "a0", RegOp ("v1"))
-  :: STR ("", "", "v1", (RegPreIndexed ("fp", -5 , false)))
-  :: LDR ("", "", "v2", (RegPreIndexed ("fp", -5 , false)))
-  :: ORR ("", false, "a1", "a0", RegOp ("v1"))
-  :: BL ("", "printf(PLT)") (* only storing last instr *)
-  :: ORR ("", false, "a1", "a0", RegOp ("v1"))
-  :: Label "bye"
-  :: B ("", "bye")
-  :: [];;
-
-(* let test_blocks = get_basic_blocks test_instrs [] None;; *)
-(* let test_blocks0 = get_basic_blocks test_instrs0 [] None;; *)
-(* let test_blocks1 = get_basic_blocks test_instrs1 [] None;; *)
-(* let test_blocks2 = make_blocks test_instrs2;;
-(* print_string ("Test instrs set 0");;
-print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs0) ^ "\n");;
-print_string ("Num of blocks: " ^ (string_of_int (List.length (test_blocks0))));; (* flush std_out;; *)
-print_len_block_instrs_head (test_blocks0);;
-print_block_instrs (List.hd (test_blocks0));; *)
-
-(* print_string ("\n\n~~~~~~ Test instrs set 2 ~~~~~~~");; *)
-(* print_string ("\n****Input instrs:" ^ (string_of_arm_prog test_instrs2) ^ "\n");; *)
-print_string ("\nNum of blocks: " ^ (string_of_int (List.length (test_blocks2))));; (* flush std_out;; *)
-print_all_block_instrs test_blocks2;;
-print_string ("******* IN LINKS ******");;
-print_all_block_instrs_in test_blocks2;;
-
-print_string ("******* PEEPHOLE ******");;
-(* print_len_block_instrs_head (test_blocks2);; *)
-(* print_block_instrs (List.hd (test_blocks2));; *)
-print_string ("\n\nPeephole: rm redundant load/store (on block1)\n");;
-let peephole_all_blks = apply_peephole test_blocks2;;
-print_all_block_instrs peephole_all_blks;; *)
-(* print_string ("\t~~ 1 - LD/STR ~~");;
-let peephole1_block = redundant_2_instrs (List.hd test_blocks2);;
-print_block_instrs peephole1_block;;
-print_string ("\t~~ 2 - ALGEBRAIC ~~");;
-let peephole2_block = algebraic_simplification (List.hd test_blocks2);;
-print_block_instrs peephole1_block;; *)
-
-
 
 (* EOF *)

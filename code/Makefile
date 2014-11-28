@@ -8,17 +8,11 @@ GG = ./g++
 ZZ = ./z.exe
 ZZIR3 = ./zir3.exe
 
-<<<<<<< HEAD
 OBJS_COMMON = arm_structs.cmo jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo 
 OBJS_OPTIM = $(OBJS_COMMON) jlite_toir3.cmo liveness.cmo ir3_to_arm.cmo optimize_arm.cmo
 OBJS_SIMPLE = $(OBJS_COMMON) jlite_toir3_non_optim.cmo ir3_to_arm_non_optim.cmo jlite_main_non_optim.cmo
 OCAML_OBJECTS = $(OBJS_OPTIM) jlite_main.cmo
 OCAML_OBJECTS_IR3 = $(OBJS_OPTIM) jlite_main_ir3.cmo
-=======
-OBJS = jlite_lexer.cmo jlite_parser.cmo jlite_structs.cmo ir3_structs.cmo jlite_annotatedtyping.cmo jlite_toir3.cmo ir3_to_arm.cmo arm_structs.cmo optimize_arm.cmo
-OCAML_OBJECTS = $(OBJS) jlite_main.cmo
-OCAML_OBJECTS_IR3 = $(OBJS) jlite_main_ir3.cmo
->>>>>>> Compiles and works with test files. Update makeFile to include optimize_arm.ml
 TEST_DIR = test/
 
 JLITE_FILES_TO_TEST = $(patsubst %.output, %.test, $(wildcard $(TEST_DIR)*.output))
