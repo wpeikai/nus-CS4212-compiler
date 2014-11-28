@@ -257,36 +257,36 @@ let redundant_2_instrs blk update_flag : (block * bool) =
             if (rd1 = rd2) then
               get_result [List.hd is] (List.tl is) true
             else get_result [i] is update_flag
-          | (ln1, MOV (_,_,rd1,addr_type1)), (ln2, MOV (c,s,rd2,addr_type2)) ->
-            if (rd1 = rd2) then
+          | (ln1, MOV (c1,_,rd1,addr_type1)), (ln2, MOV (c2,s,rd2,addr_type2)) ->
+            if (rd1 = rd2  && (c1 = "") && (c2 = "")) then
               get_result [List.hd is] (List.tl is) true
             else 
               begin
                 match addr_type2 with
                 | RegOp rn2 -> 
-                  if rd1 = rn2 then
-                    get_result [(ln1, MOV (c,s,rd2,addr_type1))] (List.tl is) true
+                  if rd1 = rn2 && (c1 = "") && (c2 = "") then
+                    get_result [(ln1, MOV (c2,s,rd2,addr_type1))] (List.tl is) true
                   else get_result [i] is update_flag
                 | _ -> get_result [i] is update_flag
               end
             (* get_result [i] is update_flag *)
-          | (ln1, MOV (_,_,rd1,op_type1)), (ln2, STR (cond,suffix,rd2,addr_type2)) ->
+          | (ln1, MOV (c1,_,rd1,op_type1)), (ln2, STR (c2,suffix,rd2,addr_type2)) ->
             begin
               match op_type1 with
               | RegOp r1 ->
-                if (rd1 = rd2) then
-                  get_result [(ln1, STR (cond, suffix, r1, addr_type2))] (List.tl is) true
+                if (rd1 = rd2)  && (c1 = "") then
+                  get_result [(ln1, STR (c2, suffix, r1, addr_type2))] (List.tl is) true
                 else get_result [i] is update_flag
               | _ -> get_result [i] is update_flag
             end
-          | (ln1, MOV (_,_,rd_mov,mov_addr_typ)), (ln2, next_instr) ->
+          | (ln1, MOV (c_mov,_,rd_mov,mov_addr_typ)), (ln2, next_instr) ->
             begin
               match next_instr with
               | AND (cond,s,rd_op,rn_op_1,op_type) ->
                 begin
                   match op_type with
                   | RegOp rn_op_2 ->
-                    if rn_op_2 = rd_mov then
+                    if rn_op_2 = rd_mov && (c_mov = "") then
                       get_result [(ln2, AND (cond,s,rd_op,rn_op_1,mov_addr_typ))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -295,7 +295,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                 begin
                   match op_type with
                   | RegOp rn_op_2 ->
-                    if rn_op_2 = rd_mov then
+                    if rn_op_2 = rd_mov && (c_mov = "") then
                       get_result [(ln2, ORR (cond,s,rd_op,rn_op_1,mov_addr_typ))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -304,7 +304,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                 begin
                   match op_type with
                   | RegOp rn_op_2 ->
-                    if rn_op_2 = rd_mov then
+                    if rn_op_2 = rd_mov && (c_mov = "") then
                       get_result [(ln2, ADD (cond,s,rd_op,rn_op_1,mov_addr_typ))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -313,7 +313,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                 begin
                   match op_type with
                   | RegOp rn_op_2 ->
-                    if rn_op_2 = rd_mov then
+                    if rn_op_2 = rd_mov && (c_mov = "") then
                       get_result [(ln2, SUB (cond,s,rd_op,rn_op_1,mov_addr_typ))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -322,7 +322,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                 begin
                   match mov_addr_typ with
                   | RegOp rn_mov ->
-                    if r_mul_2 = rn_mov then
+                    if r_mul_2 = rn_mov && (c_mov = "") then
                       get_result [(ln2, MUL (cond,s,rd_mul,r_mul_1,rd_mov))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -331,21 +331,21 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                 begin
                   match cmp_op_type with
                   | RegOp rn_cmp ->
-                    if rn_cmp = rd_mov then
+                    if rn_cmp = rd_mov && (c_mov = "") then
                       get_result [(ln2, CMP (cond,rd_cmp,(RegOp rd_mov)))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
                 end
               | _ -> get_result [i] is update_flag
             end
-          | (ln1, first_instr), (ln2, MOV (_,_,rd_mov,mov_addr_typ)) ->
+          | (ln1, first_instr), (ln2, MOV (c_mov,_,rd_mov,mov_addr_typ)) ->
             begin
               match first_instr with
               | ORR (cond,s,rd_op,rn_op_1,op_type) ->
                 begin
                   match mov_addr_typ with
                   | RegOp rn_mov ->
-                    if rd_op = rn_mov then
+                    if rd_op = rn_mov && (c_mov = "") then
                       get_result [(ln1, ORR (cond,s,rd_mov,rn_op_1,op_type))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -354,7 +354,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                 begin
                   match mov_addr_typ with
                   | RegOp rn_mov ->
-                    if rd_op = rn_mov then
+                    if rd_op = rn_mov && (c_mov = "") then
                       get_result [(ln1, AND (cond,s,rd_mov,rn_op_1,op_type))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -363,7 +363,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                 begin
                   match mov_addr_typ with
                   | RegOp rn_mov ->
-                    if rd_op = rn_mov then
+                    if rd_op = rn_mov && (c_mov = "") then
                       get_result [(ln1, ADD (cond,s,rd_mov,rn_op_1,op_type))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -372,7 +372,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                 begin
                   match mov_addr_typ with
                   | RegOp rn_mov ->
-                    if rd_op = rn_mov then
+                    if rd_op = rn_mov && (c_mov = "") then
                       get_result [(ln1, SUB (cond,s,rd_mov,rn_op_1,op_type))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -381,7 +381,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                 begin
                   match mov_addr_typ with
                   | RegOp rn_mov ->
-                    if rd_mul = rn_mov then
+                    if rd_mul = rn_mov && (c_mov = "") then
                       get_result [(ln1, MUL (cond,s,rd_mov,r_mul_1,r_mul_2))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -390,7 +390,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                 begin
                   match mov_addr_typ with
                   | RegOp rn_mov ->
-                    if rd_cmp = rn_mov then
+                    if rd_cmp = rn_mov && (c_mov = "") then
                       get_result [(ln1, CMP (cond,rd_mov,cmp_op_type))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
@@ -472,29 +472,29 @@ let redundant_3_instrs blk update_flag =
                   end
               | _ -> get_result [i1] is update_flag
             end
-          | (ln1,MOV (_,_,rd1,op1)), (_,STR _), (ln3,MOV (_,_,rd3,op3)) ->
+          | (ln1,MOV (c1,_,rd1,op1)), (_,STR _), (ln3,MOV (c2,_,rd3,op3)) ->
             (* print_string ((string_of_int iter_count)^ "\tMOV STR MOV\tinc flag: " ^ (string_of_bool update_flag) ^ "\n") ; *)
             (* print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n"); *)
             begin
               match op1, op3 with
               | ImmedOp op1, ImmedOp op3 ->
-                if (rd1 = rd3) && (op1 = op3) then
+                if (rd1 = rd3) && (op1 = op3) && (c1 == "") && (c2 == "") then
                   get_result [i1; i2] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
               | RegOp r1, RegOp r3 -> 
-                if (rd1 = rd3) && (r1 = r3) then
+                if (rd1 = rd3) && (r1 = r3) && (c1 == "") && (c2 == "") then
                   get_result [i1; i2] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
               | _ -> get_result [i1] is update_flag
             end
 
-          | (ln1,MOV (_,_,rd1,op1)), (_,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
+          | (ln1,MOV (c1,_,rd1,op1)), (_,LDR (_,_,rd2,at2)), (ln3,MOV (c2,_,rd3,op3)) ->
             (* print_string ((string_of_int iter_count)^ "\tMOV LDR MOV\tinc flag: " ^ (string_of_bool update_flag) ^ "\n") ; *)
             (* print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n"); *)
             begin
               match op1, op3 with
               | RegOp r1, RegOp r3 -> 
-                if (rd1 = rd3) && (r1 = r3) && (rd2 = r3) then
+                if (rd1 = rd3) && (r1 = r3) && (rd2 = r3) && (c1 == "") && (c2 == "") then
                   get_result [i2; i3] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
               | _ -> get_result [i1] is update_flag
