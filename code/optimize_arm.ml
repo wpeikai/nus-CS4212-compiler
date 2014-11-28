@@ -386,7 +386,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
                 end
-              | CMP (cond,rd_cmp,cmp_op_type) ->
+(*               | CMP (cond,rd_cmp,cmp_op_type) ->
                 begin
                   match mov_addr_typ with
                   | RegOp rn_mov ->
@@ -394,7 +394,7 @@ let redundant_2_instrs blk update_flag : (block * bool) =
                       get_result [(ln1, CMP (cond,rd_mov,cmp_op_type))] (List.tl is) true
                     else get_result [i] is update_flag
                   | _ -> get_result [i] is update_flag
-                end
+                end *)
               | _ -> get_result [i] is update_flag
             end
           | _ -> get_result [i] is update_flag
