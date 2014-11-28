@@ -273,7 +273,7 @@ let blocks_to_arm blks =
 
 (* 1 -- Remove redundant loads and stores *)
 (* Check 2 instructions at a time *)
-let redundant_ldr_str1 blk update_flag : (block * bool) =
+let redundant_2_instrs blk update_flag : (block * bool) =
   let instrs = blk.instrs in
   if (List.length instrs) == 0 then (blk, false) (* DEFINITION SHOULD BE REMOVING THIS BLOCK :D *)
   else
@@ -350,6 +350,65 @@ let redundant_ldr_str1 blk update_flag : (block * bool) =
                 else get_result [i] is update_flag
               | _ -> get_result [i] is update_flag
             end
+          | (ln1, MOV (_,_,rd_mov,mov_op_typ)), (ln2, next_instr) ->
+            begin
+              match next_instr with
+              | AND (cond,s,rd_op,rn_op_1,op_type) ->
+                begin
+                  match op_type with
+                  | RegOp rn_op_2 ->
+                    if rn_op_2 = rd_mov then
+                      get_result [(ln2, AND (cond,s,rd_op,rn_op_1,mov_op_typ))] (List.tl is) true
+                    else get_result [i] is update_flag
+                  | _ -> get_result [i] is update_flag
+                end
+              | ORR (cond,s,rd_op,rn_op_1,op_type) ->
+                begin
+                  match op_type with
+                  | RegOp rn_op_2 ->
+                    if rn_op_2 = rd_mov then
+                      get_result [(ln2, ORR (cond,s,rd_op,rn_op_1,mov_op_typ))] (List.tl is) true
+                    else get_result [i] is update_flag
+                  | _ -> get_result [i] is update_flag
+                end
+              | ADD (cond,s,rd_op,rn_op_1,op_type) ->
+                begin
+                  match op_type with
+                  | RegOp rn_op_2 ->
+                    if rn_op_2 = rd_mov then
+                      get_result [(ln2, ADD (cond,s,rd_op,rn_op_1,mov_op_typ))] (List.tl is) true
+                    else get_result [i] is update_flag
+                  | _ -> get_result [i] is update_flag
+                end
+              | SUB (cond,s,rd_op,rn_op_1,op_type) ->
+                begin
+                  match op_type with
+                  | RegOp rn_op_2 ->
+                    if rn_op_2 = rd_mov then
+                      get_result [(ln2, SUB (cond,s,rd_op,rn_op_1,mov_op_typ))] (List.tl is) true
+                    else get_result [i] is update_flag
+                  | _ -> get_result [i] is update_flag
+                end
+              | MUL (cond,s,rd_mul,r_mul_1,r_mul_2) ->
+                begin
+                  match mov_op_typ with
+                  | RegOp rn_mov ->
+                    if r_mul_2 = rn_mov then
+                      get_result [(ln2, MUL (cond,s,rd_mul,r_mul_1,rd_mov))] (List.tl is) true
+                    else get_result [i] is update_flag
+                  | _ -> get_result [i] is update_flag
+                end
+              | CMP (cond,rd_cmp,cmp_op_type) ->
+                begin
+                  match cmp_op_type with
+                  | RegOp rn_cmp ->
+                    if rn_cmp = rd_mov then
+                      get_result [(ln2, CMP (cond,rd_cmp,(RegOp rd_mov)))] (List.tl is) true
+                    else get_result [i] is update_flag
+                  | _ -> get_result [i] is update_flag
+                end
+              | _ -> get_result [i] is update_flag
+            end
           | _ -> get_result [i] is update_flag
         end
       | _ -> failwith "#30: len and instrs mismatch"
@@ -359,7 +418,7 @@ let redundant_ldr_str1 blk update_flag : (block * bool) =
       (blk, new_flag)
 
 (* Check 3 instructions at a time *)
-let redundant_ldr_str_2 blk update_flag =
+let redundant_3_instrs blk update_flag =
   let instrs = blk.instrs in
   if (List.length instrs) == 0 then (blk, false) (* DEFINITION SHOULD BE REMOVING THIS BLOCK :D *)
   else
@@ -380,35 +439,49 @@ let redundant_ldr_str_2 blk update_flag =
       | _, i1::is ->
         let i2 = List.hd is in
         let i3 = List.hd (List.tl is) in
-        (* let iter_count = fresh_error () in *)
+        let iter_count = fresh_error () in
           (* print_string ((string_of_int iter_count)^ "  I'm here!! \n") ; *)
         begin
           match i1, i2, i3 with
-          | (ln1,STR (cond,_,rd1,at1)), (ln2,LDR (_,_,rd2,at2)), (ln3,LDR (_,_,rd3,at3)) ->
-            (* print_string ((string_of_int iter_count)^ "  I'm here!! STR LDR STR \n") ; *)
+          | (ln1,STR (_,_,rd1,at1)), (ln2,LDR _), (ln3,LDR (cond,_,rd3,at3)) ->
+            (* print_string ((string_of_int iter_count)^ "\tSTR LDR LDR\tinc flag: " ^ (string_of_bool update_flag) ^ "\n") ; *)
             (* print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n"); *)
             begin
-              match at1, at2, at3 with
-              | Reg r1, Reg r2, Reg r3 -> 
-                if (r1 = r3) && (r2 <> r3) && (rd1 <> rd2) then
-                  let new_i3 = (ln3, MOV (cond, false, rd3, RegOp r1)) in 
+              match at1, at3 with
+              | Reg r1, Reg r3 ->
+                if (r1 = r3) && (rd1 = rd3) then
+                  let new_i3 = (ln3, MOV (cond, false, rd3, RegOp rd1)) in 
                   let new_is = List.tl (List.tl is) in
+                    (* print_string ("\t" ^ blk.label ^ "\t\treg reg true\n\n"); *)
                     get_result [i1; i2; new_i3] new_is true
-                  else get_result [i1] is update_flag
-              | RegPostIndexed (r1,off1), RegPostIndexed (r2,off2), RegPostIndexed (r3,off3) -> 
-                if (r1 = r3) && (off1 == off3) && (off1 != off2) then
-                  let new_i3 = (ln3, MOV (cond, false, rd3, RegOp r1)) in
+                else
+                  begin
+                  (* print_string ("\t" ^ blk.label ^ "\t\treg reg no changes\n\n"); *)
+                  get_result [i1] is update_flag
+                  end
+              | RegPreIndexed (r1,off1,_), RegPreIndexed (r3,off3,_) ->
+                if (r1 = r3) && (off1 == off3) then
+                  let new_i3 = (ln3, MOV (cond, false, rd3, RegOp rd1)) in 
                   let new_is = List.tl (List.tl is) in
+                    (* print_string ("\t" ^ blk.label ^ "\t\tpre-reg pre-reg true\n\n"); *)
                     get_result [i1; i2; new_i3] new_is true
-                  else get_result [i1] is update_flag
-              | RegPreIndexed (r1,off1,f1), RegPreIndexed (r2,off2,_), RegPreIndexed (r3,off3,_) -> 
-                if (r1 = r3) && (off1 == off3) && (off1 != off2) then
-                  let new_i3 = (ln3, MOV (cond, f1, rd3, RegOp r1)) in 
+                else 
+                (* get_result [i1] is update_flag *)
+                  begin
+                  (* print_string ("\t" ^ blk.label ^ "\t\tpre-reg pre-reg no changes\n\n"); *)
+                  get_result [i1] is update_flag
+                  end
+              | RegPostIndexed (r1,off1), RegPostIndexed (r3,off3) ->
+                if (r1 = r3) && (off1 == off3) then
+                  let new_i3 = (ln3, MOV (cond, false, rd3, RegOp rd1)) in 
                   let new_is = List.tl (List.tl is) in
+                    (* print_string ("\t" ^ blk.label ^ "\t\tpost-reg post-reg true\n\n"); *)
                     get_result [i1; i2; new_i3] new_is true
-                    (* List.append [i1; i2; new_i3] (helper new_is) *)
-                  else get_result [i1] is update_flag
-                    (* i1 :: helper is *)
+                else
+                  begin
+                  (* print_string ("\t" ^ blk.label ^ "\t\tpost-reg post-reg no changes\n\n"); *)
+                  get_result [i1] is update_flag 
+                  end
               | _ -> get_result [i1] is update_flag
             end
           (* | (ln1,MOV (_,_,rd1,op1)), (ln2,STR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) -> *)
@@ -428,29 +501,46 @@ let redundant_ldr_str_2 blk update_flag =
               | _ -> get_result [i1] is update_flag
             end *)
           (* | (ln1,MOV (_,_,rd1,op1)), (ln2,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) -> *)
-          | (ln1,MOV (_,_,rd1,op1)), (_,STR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
-            (* print_string ((string_of_int iter_count) ^ "  I'm here!! MOV LDR MOV\n") ; *)
+          | (ln1,MOV (_,_,rd1,op1)), (_,STR _), (ln3,MOV (_,_,rd3,op3)) ->
+            (* print_string ((string_of_int iter_count)^ "\tMOV STR MOV\tinc flag: " ^ (string_of_bool update_flag) ^ "\n") ; *)
+            (* print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n"); *)
             begin
-              match op1, at2, op3 with
-              | RegOp r1, Reg str_reg, RegOp r3 -> 
-                if (rd1 = rd3) && (r1 = r3) && (rd1 <> str_reg) then
-                  get_result [i2; i3] (List.tl (List.tl is)) true
+              match op1, op3 with
+              | ImmedOp op1, ImmedOp op3 ->
+                if (rd1 = rd3) && (op1 = op3) then
+                  get_result [i1; i2] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
-              | RegOp r1, RegPreIndexed (str_reg,_,_), RegOp r3 -> 
+              | RegOp r1, RegOp r3 -> 
+                if (rd1 = rd3) && (r1 = r3) then
+                  get_result [i1; i2] (List.tl (List.tl is)) true
+                else get_result [i1] is update_flag
+              (* | RegOp r1, RegPreIndexed (str_reg,_,_), RegOp r3 -> 
                 if (rd1 = rd3) && (r1 = r3) && (rd1 <> str_reg) then
                   get_result [i2; i3] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
               | RegOp r1, RegPostIndexed (str_reg,_), RegOp r3 -> 
                 if (rd1 = rd3) && (r1 = r3) && (rd1 <> str_reg) then
                   get_result [i2; i3] (List.tl (List.tl is)) true
-                else get_result [i1] is update_flag
-              | ImmedOp op1, Reg str_reg, ImmedOp op3 ->
-                if (rd1 = rd3) && (rd1 <> str_reg) then
-                  get_result [i1; i2] (List.tl (List.tl is)) true
-                else get_result [i1] is update_flag
+                else get_result [i1] is update_flag *)
               | _ -> get_result [i1] is update_flag
             end
+
           | (ln1,MOV (_,_,rd1,op1)), (_,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
+            (* print_string ((string_of_int iter_count)^ "\tMOV LDR MOV\tinc flag: " ^ (string_of_bool update_flag) ^ "\n") ; *)
+            (* print_string ("\t" ^ blk.label ^ "\t\tline: " ^ (string_of_int ln1) ^ "\n\n"); *)
+            begin
+              match op1, op3 with
+              | RegOp r1, RegOp r3 -> 
+                if (rd1 = rd3) && (r1 = r3) && (rd2 = r3) then
+                  get_result [i2; i3] (List.tl (List.tl is)) true
+                else get_result [i1] is update_flag
+             (*  | ImmedOp op1, ImmedOp op3 ->
+                if (rd1 = rd3) && (op1 = op3) then
+                  get_result [i1; i2] (List.tl (List.tl is)) true
+                else get_result [i1] is update_flag *)
+              | _ -> get_result [i1] is update_flag
+            end
+(*           | (ln1,MOV (_,_,rd1,op1)), (_,LDR (_,_,rd2,at2)), (ln3,MOV (_,_,rd3,op3)) ->
             (* print_string ((string_of_int iter_count) ^ "  I'm here!! MOV LDR MOV\n") ; *)
             begin
               match op1, at2, op3 with
@@ -472,7 +562,7 @@ let redundant_ldr_str_2 blk update_flag =
                   get_result [i2; i3] (List.tl (List.tl is)) true
                 else get_result [i1] is update_flag
               | _ -> get_result [i1] is update_flag
-            end
+            end *)
           | _ -> get_result [i1] is update_flag
         end
       | _ -> failwith "#30: len and instrs mismatch"
@@ -484,12 +574,20 @@ let redundant_ldr_str_2 blk update_flag =
       (* blk.instrs <- helper instrs; blk *)
 
 let rec loop_redundancy blk : block = 
-  let (blk_1, flag1) = redundant_ldr_str1 blk false in
-  let (blk_2, flag2) = redundant_ldr_str_2 blk_1 false in
+  let (blk_1, flag1) = redundant_2_instrs blk false in
+  let (blk_2, flag2) = redundant_3_instrs blk_1 false in
+  (* let (blk_2, flag2) = redundant_3_instrs blk false in *)
   if flag1 == false && flag2 == false then
+  (* if flag1 == false then *)
+    (* blk_1 *)
+  (* if flag2 == false then *)
     blk_2
   else
+    begin
+    (* print_string ("Looping...\n"); *)
+    (* loop_redundancy blk_1 *)
     loop_redundancy blk_2
+    end
 
 (* Algebraic Simplification *)
 let algebraic_simplification blk =
@@ -649,7 +747,7 @@ print_string ("\n\nPeephole: rm redundant load/store (on block1)\n");;
 let peephole_all_blks = apply_peephole test_blocks2;;
 print_all_block_instrs peephole_all_blks;; *)
 (* print_string ("\t~~ 1 - LD/STR ~~");;
-let peephole1_block = redundant_ldr_str1 (List.hd test_blocks2);;
+let peephole1_block = redundant_2_instrs (List.hd test_blocks2);;
 print_block_instrs peephole1_block;;
 print_string ("\t~~ 2 - ALGEBRAIC ~~");;
 let peephole2_block = algebraic_simplification (List.hd test_blocks2);;
