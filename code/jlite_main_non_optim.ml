@@ -8,10 +8,9 @@ open Printf
 open Jlite_annotatedtyping
 
 open Ir3_structs
-open Jlite_toir3
-open Ir3_to_arm
+open Jlite_toir3_non_optim
+open Ir3_to_arm_non_optim
 open Arm_structs
-open Optimize_arm
 
 let source_files = ref []
 
@@ -37,13 +36,10 @@ let process file_name prog  =
 		(* print_string (Jlite_structs.string_of_jlite_program prog); *)
 		let typedprog= (Jlite_annotatedtyping.type_check_jlite_program prog) in
 		(* print_string (Jlite_structs.string_of_jlite_program typedprog); *)
-		let ir3prog = Jlite_toir3.jlite_program_to_IR3 typedprog in
+		let ir3prog = Jlite_toir3_non_optim.jlite_program_to_IR3 typedprog in
 		(* print_string (Ir3_structs.string_of_ir3_program ir3prog); *)
-		let armprog = Ir3_to_arm.ir3_program_to_arm ir3prog in
-		(*print_string (Arm_structs.string_of_arm_prog armprog);
-    print_string ("\n\n ~~~~~~~~ OPTIMIZIED VERSION ~~~~~~~~ \n\n"); *)
-		let opt_armprog = Optimize_arm.optimize_arm armprog in
-		print_string (Arm_structs.string_of_arm_prog opt_armprog);
+		let armprog = Ir3_to_arm_non_optim.ir3_program_to_arm ir3prog in
+		print_string (Arm_structs.string_of_arm_prog armprog);
 	end
 	
 let _ = 

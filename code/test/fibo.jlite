@@ -1,0 +1,39 @@
+class Main {
+	void main () {
+		Fibo f;
+		Int res;
+		f = new Fibo();
+		res = f.fib(5);
+		println("Fibo 5 is");
+		println(res);
+		res = f.fib(7);
+		println("Fibo 7 is");
+		println(res);
+		res = f.fib(11);
+		println("Fibo 11 is");
+		println(res);
+		res = f.fib(32);
+		println("Fibo 32 is");
+		println(res);
+		return;
+	}
+}
+
+class Fibo { 
+	
+	Int fib (Int n) {
+		Fibo f;
+		if (n==0){
+			return 0;
+		}
+		else{
+			if (n==1){
+				return 1;
+			}
+			else{
+				f = new Fibo();
+				return f.fib(n-2) + f.fib(n-1);
+			}
+		}
+	}
+}

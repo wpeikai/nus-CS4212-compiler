@@ -1,0 +1,23 @@
+class Test00 {
+	void main()
+	{
+		C c;
+		D d;
+		c = new C();
+		d = new D();
+		d.a = c.b;
+	}
+}
+
+class C {
+ Int a;
+ Int b;
+ Int c;
+}
+
+class D {
+ Int a;
+ Int b;
+ Int c;
+}
+

@@ -88,54 +88,39 @@ let rec convert_jlite_expr (exp_jlite: jlite_exp) (counter_var:int ref) (counter
 					(* Create the labels *)
 					let label_int_if = create_label counter_label in
 					let label_if = Label3 label_int_if in
-
-
-					let idc3_create_temp_list1, new_expr1, localvars_7 = create_temp_idc3 new_exp_binary_1 type_binary_1 counter_var in
-					let idc3_create_temp_list2, new_expr2, localvars_8 = create_temp_idc3 new_exp_binary_2 type_binary_2 counter_var in
-
-
-					let ifstmt = IfStmt3 (((Idc3Expr new_expr1)), label_int_if) in
+					let ifstmt = IfStmt3 (new_exp_binary_1, label_int_if) in
 
 					let label_int_next = create_label counter_label  in
 					let label_next  = Label3 label_int_next in
 
 					let stmt_list_create_temp_false, id3_expr, localvars_2 = create_temp_id3 (Idc3Expr (BoolLiteral3 false)) BoolT counter_var in 
 
-					let stmt_list_create_temp_true = AssignStmt3 (id3_expr, (Idc3Expr new_expr2)) in
+					let stmt_list_create_temp_true = AssignStmt3 (id3_expr, new_exp_binary_2) in
 
 					let if_else_stmt = ifstmt :: stmt_list_create_temp_false @ (GoTo3 label_int_next) :: label_if :: stmt_list_create_temp_true :: [label_next] in
 
-					type_ir3, Idc3Expr (Var3 id3_expr), stmt_list_1 @ stmt_list_2 @ idc3_create_temp_list1 @ idc3_create_temp_list2 @ if_else_stmt, localvars_0 @ localvars_1 @ localvars_2 @ localvars_7 @ localvars_8
+					type_ir3, Idc3Expr (Var3 id3_expr), stmt_list_1 @ stmt_list_2 @ if_else_stmt, localvars_0 @ localvars_1 @ localvars_2
 				| BooleanOp "||" -> 
 					(* Create the labels *)
 					let label_int_if = create_label counter_label in
 					let label_if = Label3 label_int_if in
-
-
-
-
-					let idc3_create_temp_list1, new_expr1, localvars_7 = create_temp_idc3 new_exp_binary_1 type_binary_1 counter_var in
-					let idc3_create_temp_list2, new_expr2, localvars_8 = create_temp_idc3 new_exp_binary_2 type_binary_2 counter_var in
-
-
-					let ifstmt = IfStmt3 ((Idc3Expr new_expr1), label_int_if) in
+					let ifstmt = IfStmt3 (new_exp_binary_1, label_int_if) in
 
 					let label_int_next = create_label counter_label  in
 					let label_next  = Label3 label_int_next in
 
 					let stmt_list_create_temp_true, id3_expr, localvars_2 = create_temp_id3 (Idc3Expr (BoolLiteral3 true)) BoolT counter_var in 
 
-					let stmt_list_create_temp_false = AssignStmt3 (id3_expr, (Idc3Expr new_expr2)) in
+					let stmt_list_create_temp_false = AssignStmt3 (id3_expr, new_exp_binary_2) in
 
 					let if_else_stmt = ifstmt :: stmt_list_create_temp_false :: (GoTo3 label_int_next) :: label_if :: stmt_list_create_temp_true @ [label_next] in
-					type_ir3, Idc3Expr (Var3 id3_expr), stmt_list_1 @ stmt_list_2 @ idc3_create_temp_list1 @ idc3_create_temp_list2  @ if_else_stmt, localvars_0 @ localvars_1 @ localvars_2 @ localvars_7 @ localvars_8
-				
+					type_ir3, Idc3Expr (Var3 id3_expr), stmt_list_1 @ stmt_list_2 @ if_else_stmt, localvars_0 @ localvars_1 @ localvars_2
 				| _ -> 
 					(* Normal case *)
 					let stmt_list_create_temp_1, idc3_var1, localvars_2 = create_temp_idc3 new_exp_binary_1 type_binary_1 counter_var in
 					let stmt_list_create_temp_2, idc3_var2, localvars_3 = create_temp_idc3 new_exp_binary_2 type_binary_2 counter_var in
 
-					type_ir3, BinaryExp3 ((convert_jlite_op operator_jlite), idc3_var1, idc3_var2), stmt_list_1 @ stmt_list_2 @ stmt_list_create_temp_1 @ stmt_list_create_temp_2, localvars_0 @ localvars_1 @ localvars_2 @ localvars_3 
+					type_ir3, BinaryExp3 ((convert_jlite_op operator_jlite), idc3_var1, idc3_var2), stmt_list_1 @ stmt_list_2 @ stmt_list_create_temp_1 @ stmt_list_create_temp_2, localvars_0 @ localvars_1 @ localvars_2 @ localvars_3
 				end
 			| FieldAccess (jexp, vid) ->
 				(* print_string "\n\n"; *)
@@ -240,15 +225,12 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 		match head with
 			| IfStmt (bool_exp_if, stmt_jlite_if, stmt_jlite_else) -> 
 				(* Convert the boolean expression *)
-				let bool_type_1, bool_exp_if_ir3, stmt_list_if, localvars_0 = convert_jlite_expr bool_exp_if counter_var counter_label p md_decl_ in
-
-				let idc3_create_temp_list1, new_expr1, localvars_7 = create_temp_idc3 bool_exp_if_ir3 bool_type_1 counter_var in
-
+				let _, bool_exp_if_ir3, stmt_list_if, localvars_0 = convert_jlite_expr bool_exp_if counter_var counter_label p md_decl_ in
 
 				(* Create the labels *)
 				let label_int_if = create_label counter_label in
 				let label_if = Label3 label_int_if in
-				let ifstmt = IfStmt3 ((Idc3Expr new_expr1), label_int_if) in
+				let ifstmt = IfStmt3 (bool_exp_if_ir3, label_int_if) in
 
 				let label_int_next = create_label counter_label  in
 				let label_next  = Label3 label_int_next in
@@ -257,12 +239,10 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 				let stmt_if_list_ir3, localvars_1 = convert_stmts_list stmt_jlite_if counter_var counter_label p md_decl_ in
 				let stmt_else_list_ir3, localvars_2 = convert_stmts_list stmt_jlite_else counter_var counter_label p md_decl_ in
 
-				stmt_list_if @ idc3_create_temp_list1 @  ifstmt :: stmt_else_list_ir3 @ (GoTo3 label_int_next) :: label_if :: stmt_if_list_ir3 @ [label_next], localvars_0 @ localvars_1 @ localvars_2 @ localvars_7
+				stmt_list_if @  ifstmt :: stmt_else_list_ir3 @ (GoTo3 label_int_next) :: label_if :: stmt_if_list_ir3 @ [label_next], localvars_0 @ localvars_1 @ localvars_2
 			| WhileStmt (bool_while_exp, stmt_jlite_list) ->
 				(* Convert the boolean expression *)
-				let bool_type_1, bool_while_exp_ir3, stmt_list_boolean_exp, localvars_0 = convert_jlite_expr bool_while_exp counter_var counter_label p md_decl_ in
-
-				let idc3_create_temp_list1, new_expr1, localvars_7 = create_temp_idc3 bool_while_exp_ir3 bool_type_1 counter_var in
+				let _, bool_while_exp_ir3, stmt_list_boolean_exp, localvars_0 = convert_jlite_expr bool_while_exp counter_var counter_label p md_decl_ in
 
 				(* Create the labels *)
 				let if_loop = create_label counter_label  in
@@ -272,14 +252,14 @@ let rec convert_stmts_list (stmts_list: jlite_stmt list) (counter_var:int ref) (
 
 				(* Create the if statements *)
 				(* When loop is entered *)
-				let if_stmt_start = IfStmt3 ((Idc3Expr new_expr1), if_loop) in
+				let if_stmt_start = IfStmt3 (bool_while_exp_ir3, if_loop) in
 				(* At then end of the loop *)
-				let if_stmt_end = IfStmt3 ((Idc3Expr new_expr1), if_loop) in
+				let if_stmt_end = IfStmt3 (bool_while_exp_ir3, if_loop) in
 
 				(* Convert the statements*)
 				let stmt_ir3_list, localvars_1 = convert_stmts_list stmt_jlite_list counter_var counter_label p md_decl_ in
 
-				stmt_list_boolean_exp @ idc3_create_temp_list1 @  if_stmt_start :: (GoTo3 end_loop) :: label_if_loop :: stmt_ir3_list @ if_stmt_end :: [label_end_loop], localvars_0 @ localvars_1 @ localvars_7
+				stmt_list_boolean_exp @  if_stmt_start :: (GoTo3 end_loop) :: label_if_loop :: stmt_ir3_list @ if_stmt_end :: [label_end_loop], localvars_0 @ localvars_1
 			| ReadStmt var_read ->
 				let _, t = convert_jlite_typed_var_id var_read in
 				let type_read_stmt, exp_read_stmt_ir3, ir3_stmt_list, localvars_0 = convert_jlite_expr (TypedExp(Var var_read, t)) counter_var counter_label p md_decl_ in

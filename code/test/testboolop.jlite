@@ -1,0 +1,17 @@
+class TestBoolOp {
+	void main()
+	{
+		Int a;
+		Bool b;
+		Int c;
+		c = 1 + 1;
+		a = c + 2;
+		b = a == c;
+		b = a != c;
+		b = a > c;
+		b = a >= c;
+		b = a < c;
+		b = a <= c;
+		b = !false;
+	}
+}
