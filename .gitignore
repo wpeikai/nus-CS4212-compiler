@@ -1,6 +1,7 @@
 Assignment\ 3\ Resources/*
 code/g++
 code/adb
+*.S
 *.cmo
 *.cmi
 *.exe
