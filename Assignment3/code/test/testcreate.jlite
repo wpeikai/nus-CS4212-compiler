@@ -1,0 +1,13 @@
+class Test00 {
+	void main()
+	{
+		C c;
+		c = new C();
+	}
+}
+
+class C {
+ Int a;
+ Int b;
+ Int c;
+}

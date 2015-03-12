@@ -1,0 +1,5 @@
+#!/bin/bash
+
+./g++ $1 -o out
+./adb push out /data/local/tmp
+./adb shell ./data/local/tmp/out

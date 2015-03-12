@@ -1,0 +1,50 @@
+class Test00 {
+	void main()
+	{
+		Int a;
+		Int b;
+		Int c;
+		Bool d;
+		Bool e;
+		c = 1 + 1;
+		a = c + 2;
+		b = c * 2;
+		b = c - 2;
+		b = c + 2;
+		b = c;
+		d = true;
+		d = false;
+		d = c == 2; // d = True
+		d = c == a; // d = False
+		e = (!d);  // e = True
+		println("QQQQQQ");
+		println(a);
+		println(c);
+		println(23);
+	}
+}
+
+class Compute {
+
+   Bool computedSquares;
+   Int chachedValue;
+
+   void square(){
+   		Int a;
+     	a = 1 +1;
+   }
+   
+   // Int add(Int a, Int b){
+   //  return a+b;
+   // }
+   
+   // Int addSquares(Int a, Int b){
+   //  if(computedSquares){
+   //    return chachedValue;
+   //  }
+   //  else{
+   //    computedSquares = true;
+   //    return add(square(a),square(b));
+   //  }
+   // }
+}

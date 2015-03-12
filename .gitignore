@@ -1,3 +1,16 @@
+Assignment\ 3\ Resources/*
+code/g++
+code/adb
+*.S
 *.cmo
-*.out
 *.cmi
+*.exe
+*.out
+*.s
+*.ir3
+jlite_parser.mli
+jlite_parser.ml
+jlite_lexer.ml
+*.swp
+*.sim
+*.noptim

@@ -1,0 +1,9 @@
+class Test00 {
+	void main()
+	{
+		Int a0;
+        a0 = 1 + 2 +3 + 4 + 5+ 6 + 7 +8 +9 +10 +11;
+		println(a0);
+		return;
+	}
+}

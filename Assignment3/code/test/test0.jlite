@@ -1,0 +1,9 @@
+class Test00 {
+	void main()
+	{
+		Int a;
+		Int b;
+		Int c;
+		c = 1 + 1;
+	}
+}
