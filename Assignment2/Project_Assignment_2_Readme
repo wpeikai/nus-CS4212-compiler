@@ -1,0 +1,51 @@
+# Assigment 2 Compiler Design
+
+## Part 1
+
+
+### Type checking
+
+For MdCall, we have to find the methods in the class definition that matches the name and the type of the parameters ( in case overloading functions does not have the same return).
+
+For MdCall, we have to match the prefix of the call with the pattern `class.method` or `method` for methods of the same class.
+
+### Method overloading
+
+We check the name of the method and the types of the parameters.
+We change the mutable attribute ir3id to ease the second part.
+
+### Disinct names
+
+Params checking is done in method type checking.
+We add a function if the classes have distinct names.
+
+### Shadowing policy
+
+We use type_check_var_decl_list on {params} union {local_vars} to make sure that local variables and params do not overlap.
+
+## Part 2
+
+### Converting classes to record
+
+For any variable, if the var name does not belong to the local variables or to the params, we assume it is a class attribute, so we prefix the variable name with `this.` 
+
+### Method invocation
+
+To avoid overlap methods names, we add a unique identifier at the end of the method name.
+Indeed, we can have:
+class named A with a method named B_C and class named A_B with a method named C.
+So concating the method and the class names is not enough
+
+### Boolean short-circuiting
+
+With the boolean short-circuiting method, we do not use `&&` or `||` anymore.
+We evaluate the left branch, and depending on the result, we may need to evaluate the second part of the binary expression.
+So we substitute this strategy with a simple if/else statement, by adding a temporary variable.
+
+# To run tests
+
+`./run.sh`
+
+Outputs are in assign2_testcases_output.
+
+Mu custom tests are sample1, sample2 and sample3 jlite files in assign2_testcases.

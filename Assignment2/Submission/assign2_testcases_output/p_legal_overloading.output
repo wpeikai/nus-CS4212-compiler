@@ -1,0 +1,41 @@
+Parsing...
+assign2_testcases/p_legal_overloading.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class Main{
+}
+
+class Compute{
+}
+
+=======  CMtd3 ======= 
+
+void main(Main this,Int i,Int a,Int b,Int d){
+  Int t1;
+  Int t2;
+  Compute help;
+  help=new Compute();
+  Int _zz0=2;
+  t1=[add_Compute_0(help,_zz0)];
+}
+
+Int add_Compute_0(Compute this,Int a){
+  Int _zz3=0;
+  Int _zz4=[a,_zz3](+);
+  Return _zz4;
+}
+
+Int add_Compute_1(Compute this,String a){
+  Int _zz2=0;
+  Return _zz2;
+}
+
+String add_Compute_2(Compute this,Int x,Int y){
+  String _zz1="x+y";
+  Return _zz1;
+}
+
+======= End of IR3 Program =======
+

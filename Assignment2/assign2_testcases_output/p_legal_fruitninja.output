@@ -1,0 +1,144 @@
+Parsing...
+assign2_testcases/p_legal_fruitninja.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class Main{
+}
+
+class Ninja{
+  Fruit targetFruit;
+  Bool isMarried;
+  Int weight;
+  String name;
+}
+
+class Fruit{
+  Int weight;
+  Ninja owner;
+}
+
+=======  CMtd3 ======= 
+
+void main(Main this){
+  Ninja ninja;
+  Ninja opponent;
+  Int randomSeed;
+  Int specialFruitID;
+  [loadProfile_Ninja_0(ninja)];
+  Fruit _zz0=[getTargetFruit_Ninja_2(ninja)];
+  opponent=[getOwner_Fruit_5(_zz0)];
+  Bool _zz1=true;
+  [loadProfile_Ninja_1(opponent,_zz1)];
+  Int _zz4=[getID_Fruit_6(_zz2,_zz3)];
+  Fruit _zz2=[getTargetFruit_Ninja_2(ninja)];
+  Int _zz3=ninja.weight;
+  randomSeed=[getID_Ninja_4(ninja,_zz4)];
+  Int _zz5=1337;
+  If([randomSeed,_zz5](>)) goto 0;
+  println("Opponent won!");
+  goto 1;
+ Label 0:
+  println("Ninja won!");
+ Label 1:
+  println("Winner get a special fruit!");
+  Fruit _zz6=new Fruit();
+  Int _zz7=1337;
+  Int _zz9=(-)[_zz8];
+  Int _zz8=7331;
+  Int _zz10=[getID_Fruit_6(_zz6,_zz7)];
+  Int _zz11=[getID_Ninja_4(opponent,_zz9)];
+  specialFruitID=[_zz10,_zz11](+);
+  println(specialFruitID);
+  Return;
+}
+
+Ninja getOwner_Fruit_5(Fruit this){
+  Ninja _zz15=this.owner;
+  If([_zz15,null](==)) goto 2;
+  Ninja _zz16=this.owner;
+  Return _zz16;
+  goto 3;
+ Label 2:
+  Return null;
+ Label 3:
+}
+
+Int getID_Fruit_6(Fruit this,Int seed){
+  Int weight;
+  Int _zz12=this.weight;
+  Int _zz13=5;
+  Int _zz14=[_zz12,_zz13](*);
+  weight=[_zz14,seed](*);
+  Return weight;
+}
+
+void loadProfile_Ninja_0(Ninja this){
+  String _zz31=this.name;
+  readln(_zz31);
+  Int _zz32=this.weight;
+  Int _zz33=80;
+  Bool _zz34=[_zz32,_zz33](<);
+  If(this.isMarried) goto 6;
+  Bool _zz35=false;
+  goto 7;
+ Label 6:
+  Bool _zz35=(!)[_zz34];
+ Label 7:
+  If(_zz35) goto 8;
+  String _zz38=this.name;
+  println(_zz38);
+  goto 9;
+ Label 8:
+  println("Middle age crisis! Initiate slimming program!");
+  Int _zz36=this.weight;
+  Int _zz37=80;
+  If([_zz36,_zz37](>)) goto 10;
+  goto 11;
+ Label 10:
+  [trySlimming_Ninja_3(this)];
+  If([_zz36,_zz37](>)) goto 10;
+ Label 11:
+ Label 9:
+  Return;
+}
+
+void loadProfile_Ninja_1(Ninja this,Bool quick){
+  If((!)[quick]) goto 4;
+  String _zz30=this.name;
+  readln(_zz30);
+  goto 5;
+ Label 4:
+  [loadProfile_Ninja_0(this)];
+ Label 5:
+  Return;
+}
+
+Fruit getTargetFruit_Ninja_2(Ninja this){
+  Fruit _zz29=this.targetFruit;
+  Return _zz29;
+}
+
+void trySlimming_Ninja_3(Ninja this){
+  Int _zz21=this.weight;
+  Fruit _zz22=this.targetFruit;
+  Int _zz23=_zz22.weight;
+  Int _zz24=10;
+  Int _zz25=[_zz23,_zz24](*);
+  Int _zz26=2;
+  Int _zz27=this.weight;
+  Int _zz28=[_zz25,_zz26](/);
+  _zz21=[_zz27,_zz28](-);
+}
+
+Int getID_Ninja_4(Ninja this,Int seed){
+  Int _zz17=2;
+  Int _zz18=this.weight;
+  Int _zz19=[_zz17,_zz18](*);
+  Int _zz20=[_zz19,seed](+);
+  Return _zz20;
+}
+
+======= End of IR3 Program =======
+

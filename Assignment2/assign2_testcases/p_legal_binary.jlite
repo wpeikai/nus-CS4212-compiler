@@ -1,0 +1,10 @@
+class M{
+    void main () {
+        Int x;
+		Int y;
+		Bool a;
+		Bool b;
+		a= ((a&&b)||!b||(a||true)&&false)==(true);
+		x = x + y/3*7 + (y+x) --x;
+    }
+}

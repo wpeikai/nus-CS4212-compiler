@@ -1,0 +1,146 @@
+Parsing...
+assign2_testcases/p_legal_1.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class P1{
+}
+
+class DivideByX{
+  Int x;
+}
+
+class AlwaysDivide{
+  Int min;
+}
+
+class AlwaysDivideRecursive{
+  Int min;
+}
+
+class AlwaysDivideIterative{
+}
+
+class AlwaysDivideRecursiveFixed{
+}
+
+=======  CMtd3 ======= 
+
+void main(P1 this,Int a){
+  Int dummy1;
+  String dummy2;
+  Int x;
+  AlwaysDivide ad;
+  AlwaysDivideRecursive adr;
+  println("Hello world");
+  x=0;
+  readln(x);
+  ad=new AlwaysDivide();
+  ad.min=x;
+  Int _zz0=100;
+  [printDivide_AlwaysDivide_1(ad,_zz0)];
+  [doNothing_AlwaysDivide_2(ad)];
+  adr=new AlwaysDivideRecursive();
+  adr.min=x;
+  Int _zz1=100;
+  [printDivideRecursive_AlwaysDivideRecursive_3(adr,_zz1)];
+  AlwaysDivideRecursiveFixed _zz2=new AlwaysDivideRecursiveFixed();
+  Int _zz3=1000;
+  [printDivideRecursive_AlwaysDivideRecursiveFixed_6(_zz2,_zz3)];
+  println("Goodbye cruel world!");
+}
+
+void printDivideRecursive_AlwaysDivideRecursiveFixed_6(AlwaysDivideRecursiveFixed this,Int start){
+  Int _zz4=2;
+  If([start,_zz4](>=)) goto 0;
+  Return;
+  goto 1;
+ Label 0:
+  println(start);
+  Int _zz6=[start,_zz5](/);
+  Int _zz5=2;
+  [printDivideRecursive_AlwaysDivideRecursiveFixed_6(this,_zz6)];
+ Label 1:
+}
+
+Int printDivideIterative_AlwaysDivideIterative_4(AlwaysDivideIterative this,Int start,Int end){
+  If([start,end](>)) goto 6;
+  goto 7;
+ Label 6:
+  If([start,end](==)) goto 8;
+  Int _zz9=2;
+  start=[start,_zz9](/);
+  goto 9;
+ Label 8:
+  Int _zz8=9000;
+  Return _zz8;
+ Label 9:
+  If([start,end](>)) goto 6;
+ Label 7:
+  Int _zz10=42;
+  Return _zz10;
+}
+
+AlwaysDivideIterative get_AlwaysDivideIterative_5(AlwaysDivideIterative this){
+  If(true) goto 2;
+  println("aaa");
+  If(false) goto 4;
+  println("falsetrue");
+  Return null;
+  goto 5;
+ Label 4:
+  println("falsefalse");
+  Return null;
+ Label 5:
+  goto 3;
+ Label 2:
+  AlwaysDivideIterative _zz7=new AlwaysDivideIterative();
+  Return _zz7;
+ Label 3:
+}
+
+void printDivideRecursive_AlwaysDivideRecursive_3(AlwaysDivideRecursive this,Int start){
+  Int _zz11=this.min;
+  If([start,_zz11](>=)) goto 10;
+  Return;
+  goto 11;
+ Label 10:
+  println(start);
+  Int _zz13=[start,_zz12](/);
+  Int _zz12=2;
+  [printDivideRecursive_AlwaysDivideRecursive_3(this,_zz13)];
+ Label 11:
+}
+
+void printDivide_AlwaysDivide_1(AlwaysDivide this,Int start){
+  Int dummy1;
+  String dummy2;
+  Int _zz14=this.min;
+  If([start,_zz14](>=)) goto 14;
+  goto 15;
+ Label 14:
+  println(start);
+  Int _zz15=2;
+  start=[start,_zz15](/);
+  If([start,_zz14](>=)) goto 14;
+ Label 15:
+}
+
+void doNothing_AlwaysDivide_2(AlwaysDivide this){
+  If(true) goto 12;
+  goto 13;
+ Label 12:
+  println("qqq");
+  If(true) goto 12;
+ Label 13:
+}
+
+Int divide_DivideByX_0(DivideByX this,Int a){
+  Int _zz16=this.x;
+  Int _zz17=[a,_zz16](/);
+  Return _zz17;
+}
+
+======= End of IR3 Program =======
+

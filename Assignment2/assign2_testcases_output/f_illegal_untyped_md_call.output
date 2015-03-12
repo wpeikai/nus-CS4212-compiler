@@ -1,0 +1,4 @@
+Fatal error: exception Failure("
+Type-check error in M.main. AssignStmt expression fails:
+s=[[help.create()].m1(dummy)];Int
+")

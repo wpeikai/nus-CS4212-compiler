@@ -1,0 +1,12 @@
+Fatal error: exception Failure("
+Type-check error in C.m1Int
+. IfExpr1 expression fails:
+If(a)
+{
+  Return 1;
+}
+else
+{
+  Return 1;
+}
+")

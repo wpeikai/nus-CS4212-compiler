@@ -1,0 +1,13 @@
+class M
+{
+    void main () {
+        Int dummy;
+		C help;
+        dummy = help.nof;  
+    }
+}
+
+class C
+{
+	Int f;
+}

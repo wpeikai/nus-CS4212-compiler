@@ -1,0 +1,38 @@
+Parsing...
+assign2_testcases/sample3.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class MainTest{
+}
+
+class A{
+  Bool result1;
+}
+
+=======  CMtd3 ======= 
+
+void main(MainTest this,Int a,String b,String hhhhh){
+  A _zz0=new A();
+  Bool _zz1=true;
+  String _zz2="yyy";
+  String _zz3="78977987";
+  String _zz4=[qqqqq_A_0(_zz0,_zz1,_zz2,_zz3)];
+  println(_zz4);
+}
+
+String qqqqq_A_0(A this,Bool xxxxesult2,String dpzoeesult1,String dpzoeesult2){
+  Int u;
+  If([dpzoeesult1,dpzoeesult2](!=)) goto 0;
+  String _zz6="true";
+  Return _zz6;
+  goto 1;
+ Label 0:
+  String _zz5="false";
+  Return _zz5;
+ Label 1:
+}
+
+======= End of IR3 Program =======
+

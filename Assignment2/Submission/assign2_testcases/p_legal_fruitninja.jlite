@@ -1,0 +1,91 @@
+class Main {
+  void main() {
+    Ninja ninja;
+    Ninja opponent;
+    Int randomSeed;
+    Int specialFruitID;
+
+    ninja.loadProfile();
+
+    opponent = ninja.getTargetFruit().getOwner();
+    opponent.loadProfile(true);
+
+    randomSeed = ninja.getID(ninja.getTargetFruit().getID(ninja.weight));
+
+    if (randomSeed > 1337) {
+      println("Ninja won!");
+    } else {
+      println("Opponent won!");
+    }
+
+    println("Winner get a special fruit!");
+    specialFruitID = (new Fruit()).getID(1337) + opponent.getID(-7331);
+    println(specialFruitID);
+
+    return;
+  }
+}
+
+class Ninja {
+  String name;
+  Int weight;
+  Bool isMarried;
+
+  Fruit targetFruit;
+
+  void loadProfile() {
+    readln(name);
+
+    if (isMarried && !(weight<80)) {
+      println("Middle age crisis! Initiate slimming program!");
+      while(weight > 80) {
+        trySlimming();
+      }
+    } else {
+      println(name);
+    }
+
+    return;
+  }
+
+  void loadProfile(Bool quick) {
+    if (!quick) {
+      loadProfile();
+    } else {
+      readln(name);
+    }
+
+    return;
+  }
+
+  Fruit getTargetFruit() {
+    return targetFruit;
+  }
+
+  void trySlimming() {
+    weight = weight-(targetFruit.weight*10)/2;
+  }
+
+  Int getID(Int seed) {
+    return 2*weight+seed;
+  }
+}
+
+class Fruit {
+  Ninja owner;
+  Int weight;
+
+  Ninja getOwner() {
+    if (owner == NULL) {
+      return NULL;
+    } else {
+      return owner;
+    }
+  }
+
+  Int getID(Int seed) {
+    Int weight;
+    weight = this.weight*5*seed;
+    return weight;
+  }
+}

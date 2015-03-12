@@ -1,0 +1,74 @@
+Parsing...
+assign2_testcases/sample1.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class Main{
+}
+
+class A{
+  Int print_times5;
+  Int print_times4;
+  Int print_times3;
+  Int print_times2;
+  Int print_times1;
+  Bool result1;
+}
+
+class B{
+  Int b;
+  Bool res;
+  Int b1234;
+}
+
+class C{
+  String i_789456123;
+}
+
+=======  CMtd3 ======= 
+
+void main(Main this,Int a,Bool b,Int m){
+  A _zz0=new A();
+  String _zz1=[azert123456_____A_0(_zz0,a,b)];
+  println(_zz1);
+}
+
+Bool y123_B_2(B this,Int a){
+  A resClass;
+  Bool _zz2=this.res;
+  Int _zz3=this.b;
+  _zz2=[a,_zz3](==);
+  resClass=new A();
+  Bool _zz4=this.res;
+  [print_result_A_1(resClass,_zz4)];
+  Bool _zz5=true;
+  Return _zz5;
+}
+
+String azert123456_____A_0(A this,Int z,Bool f){
+  Int aze;
+  If(false) goto 0;
+  Int _zz6=6;
+  If([z,_zz6](>)) goto 2;
+  goto 3;
+ Label 2:
+  println("tttt");
+  If([z,_zz6](>)) goto 2;
+ Label 3:
+  String _zz7="y";
+  Return _zz7;
+  goto 1;
+ Label 0:
+  aze=789;
+ Label 1:
+  String _zz8="yy";
+  Return _zz8;
+}
+
+void print_result_A_1(A this,Bool a){
+  Return;
+}
+
+======= End of IR3 Program =======
+

@@ -1,0 +1,54 @@
+Parsing...
+assign2_testcases/sample2.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class MainTest{
+}
+
+=======  CMtd3 ======= 
+
+void main(MainTest this,Int rty,Int cvb){
+  Int a;
+  Int b;
+  Int c;
+  Int d;
+  Int e;
+  Int f;
+  Int g;
+  Int _zz0=5;
+  Int _zz1=8;
+  Int _zz2=7;
+  Int _zz3=[_zz0,_zz1](/);
+  a=[_zz2,_zz3](+);
+  Int _zz4=9;
+  Int _zz5=[rty,_zz4](*);
+  Int _zz6=8;
+  a=[_zz5,_zz6](/);
+  Int _zz7=4;
+  Int _zz8=[e,_zz7](*);
+  Int _zz9=7;
+  a=[_zz8,_zz9](-);
+  Int _zz10=4;
+  Int _zz11=[cvb,_zz10](-);
+  Int _zz12=7;
+  a=[_zz11,_zz12](-);
+  Int _zz13=4;
+  Int _zz14=7;
+  Int _zz15=8;
+  Int _zz16=[cvb,_zz13](-);
+  Int _zz17=[_zz14,_zz15](*);
+  a=[_zz16,_zz17](-);
+  Int _zz18=[a,b](*);
+  Int _zz19=[_zz18,c](*);
+  Int _zz20=[_zz19,d](*);
+  Int _zz21=[_zz20,e](*);
+  Int _zz22=[_zz21,f](*);
+  rty=[_zz22,g](*);
+  Return;
+}
+
+
+======= End of IR3 Program =======
+

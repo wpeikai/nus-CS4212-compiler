@@ -1,0 +1,60 @@
+Parsing...
+assign2_testcases/p_legal_ex1.jlite
+======= IR3 Program =======
+
+======= CData3 ======= 
+
+class Main{
+}
+
+class Compute{
+  Int chachedValue;
+  Bool computedSquares;
+}
+
+=======  CMtd3 ======= 
+
+void main(Main this,Int i,Int a,Int b,Int d){
+  Int t1;
+  Int t2;
+  Compute help;
+  help=new Compute();
+  Int _zz0=[addSquares_Compute_2(help,a,b)];
+  Int _zz1=[square_Compute_0(help,i)];
+  t1=[_zz0,_zz1](+);
+  t2=[square_Compute_0(help,d)];
+  If([t2,t1](>)) goto 0;
+  println("Square of d larger than sum of squares");
+  goto 1;
+ Label 0:
+  println("Square of d larger than sum of squares");
+ Label 1:
+}
+
+Int square_Compute_0(Compute this,Int a){
+  Int _zz8=[a,a](*);
+  Return _zz8;
+}
+
+Int add_Compute_1(Compute this,Int a,Int b){
+  Int _zz7=[a,b](+);
+  Return _zz7;
+}
+
+Int addSquares_Compute_2(Compute this,Int a,Int b){
+  If(this.computedSquares) goto 2;
+  Bool _zz3=this.computedSquares;
+  _zz3=true;
+  Int _zz4=[square_Compute_0(this,a)];
+  Int _zz5=[square_Compute_0(this,b)];
+  Int _zz6=[add_Compute_1(this,_zz4,_zz5)];
+  Return _zz6;
+  goto 3;
+ Label 2:
+  Int _zz2=this.chachedValue;
+  Return _zz2;
+ Label 3:
+}
+
+======= End of IR3 Program =======
+

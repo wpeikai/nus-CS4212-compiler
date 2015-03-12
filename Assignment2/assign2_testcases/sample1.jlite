@@ -1,0 +1,56 @@
+class Main {
+    void main (Int a, Bool b, Int m) {
+        println(new A().azert123456____(a, b));
+    }
+}
+
+class A{
+    Bool result1;
+    Int print_times1;
+    Int print_times2;
+    Int print_times3;
+    Int print_times4;
+    Int print_times5;
+
+    String azert123456____(Int z, Bool f) {
+        Int aze;
+        if(false){
+            aze = 789;
+        }
+        else {
+            while(z > 6){
+                println("tttt");
+            }
+            return "y";
+
+        }
+        return "yy";
+    }
+
+    void print_result(Bool a){
+      return;
+    }
+}
+
+
+class B {
+    Int b1234;
+    Bool res;
+    Int b;
+
+    Bool y123(Int a) {
+        A resClass;
+        res = a == b;
+        resClass = new A();
+        resClass.print_result(res);
+        return true;
+    }
+}
+
+
+class C {
+    String i_789456123;
+}
+
+
+

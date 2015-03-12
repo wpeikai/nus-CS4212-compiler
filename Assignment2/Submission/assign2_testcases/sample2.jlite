@@ -1,0 +1,18 @@
+class MainTest {
+    void main (Int rty, Int cvb) {
+        Int a;
+        Int b;
+        Int c;
+        Int d;
+        Int e;
+        Int f;
+        Int g;
+        a = 7 + 5 / 8;
+        a = rty * 9 / 8;
+        a = e * 4 - 7;
+        a = cvb - 4 - 7;
+        a = cvb - 4 - 7 * 8;
+        rty = a * b * c * d * e * f * g;
+        return;
+    }
+}

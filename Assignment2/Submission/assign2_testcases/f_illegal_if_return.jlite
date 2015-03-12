@@ -1,0 +1,19 @@
+class M
+{
+    void main () {
+        Int dummy;
+        dummy = 2;  
+    }
+}
+
+class C
+{
+    Int m1(Int a) {
+		if(a==0){
+			return 1;
+		}
+		else{
+			return "aa";
+		}
+    }
+}

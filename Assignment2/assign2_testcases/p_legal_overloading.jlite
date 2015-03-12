@@ -1,0 +1,28 @@
+class Main {
+
+void main(Int i,Int a, Int b,Int d){
+ Int t1;
+ Int t2;
+ Compute help;
+ help = new Compute();
+ t1 = help.add(2);
+ 
+}
+
+}
+
+class Compute {
+   
+   Int add(Int a){
+    return (a+0);
+   }
+   
+   Int add(String a){
+    return 0;
+   }
+   
+   String add(Int x, Int y){
+    return "x+y";
+   }
+ 
+}
