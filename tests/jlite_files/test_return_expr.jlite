@@ -1,5 +1,0 @@
-class MainTest {
-    Void main () {
-        return a * b * c * d * e * f * g;
-    }
-}
